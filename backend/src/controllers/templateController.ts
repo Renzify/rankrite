@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import {
+  createTemplate,
+  type CreateTemplateInput,
   getTemplateByName,
   getTemplateCatalog,
 } from "../services/templateService.ts";
@@ -43,6 +45,32 @@ export async function getTemplate(req: Request, res: Response) {
 
     res.status(500).json({
       message: "Failed to load template",
+    });
+  }
+}
+
+export async function createTemplateController(req: Request, res: Response) {
+  try {
+    const payload = req.body as CreateTemplateInput;
+    const template = await createTemplate(payload);
+    res.status(201).json(template);
+  } catch (error) {
+    if (error instanceof Error && error.message === "TEMPLATE_NAME_EXISTS") {
+      return res.status(409).json({
+        message: "Template name already exists",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_TEMPLATE_INPUT") {
+      return res.status(400).json({
+        message: "Invalid template input",
+      });
+    }
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Failed to create template",
     });
   }
 }
