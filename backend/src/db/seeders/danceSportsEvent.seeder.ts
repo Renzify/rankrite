@@ -7,19 +7,17 @@ import {
   templateOptionDependency,
 } from "../schema.ts";
 
-export async function seedGymnasticsTemplate() {
-  // Create the event template
+export async function seedDanceSportsTemplate() {
   const [template] = await db
     .insert(eventTemplate)
     .values({
-      name: "Gymnastics Template",
+      name: "Dance Sports Template",
       eventType: "sports",
       description:
-        "Dynamic gymnastics template supporting multiple disciplines, levels, and apparatus types.",
+        "Dynamic dance sports template supporting levels, disciplines, and style categories.",
     })
     .returning();
 
-  // Define base fields
   const fields = await db
     .insert(templateField)
     .values([
@@ -60,28 +58,32 @@ export async function seedGymnasticsTemplate() {
       },
       {
         templateId: template.id,
-        key: "apparatus",
-        label: "Select Apparatus",
+        key: "category",
+        label: "Select Category",
         fieldType: "select",
         sortOrder: 6,
+      },
+      {
+        templateId: template.id,
+        key: "style",
+        label: "Select Style",
+        fieldType: "select",
+        sortOrder: 7,
       },
     ])
     .returning();
 
   const getField = (key: string) => fields.find((f) => f.key === key)!;
 
-  // Add options
   const options = await db
     .insert(templateFieldOption)
     .values([
-      // sport
       {
         fieldId: getField("sport").id,
-        value: "gymnastics",
-        label: "Gymnastics",
+        value: "dance_sports",
+        label: "Dance Sports",
       },
 
-      // competition levels
       {
         fieldId: getField("competition_level").id,
         value: "school_level",
@@ -113,7 +115,6 @@ export async function seedGymnasticsTemplate() {
         label: "GAP Competition",
       },
 
-      // division class
       {
         fieldId: getField("division_class").id,
         value: "elementary",
@@ -125,90 +126,57 @@ export async function seedGymnasticsTemplate() {
         label: "Secondary",
       },
 
-      // age class
       {
         fieldId: getField("age_class").id,
         value: "pre_junior",
         label: "Pre-Junior",
       },
       { fieldId: getField("age_class").id, value: "junior", label: "Junior" },
-      {
-        fieldId: getField("age_class").id,
-        value: "developmental",
-        label: "Developmental",
-      },
-      { fieldId: getField("age_class").id, value: "hopes", label: "Hopes" },
+      { fieldId: getField("age_class").id, value: "youth", label: "Youth" },
+      { fieldId: getField("age_class").id, value: "adult", label: "Adult" },
 
-      // discipline
       {
         fieldId: getField("discipline").id,
-        value: "aerobic",
-        label: "Aerobic Gymnastics",
+        value: "standard",
+        label: "Standard",
       },
       {
         fieldId: getField("discipline").id,
-        value: "mens_artistic",
-        label: "Men's Artistic Gymnastics",
+        value: "latin",
+        label: "Latin",
       },
       {
         fieldId: getField("discipline").id,
-        value: "womens_artistic",
-        label: "Women's Artistic Gymnastics",
-      },
-      {
-        fieldId: getField("discipline").id,
-        value: "rhythmic",
-        label: "Rhythmic Gymnastics",
+        value: "breaking",
+        label: "Breaking",
       },
 
-      // apparatus (all possible, will be filtered by dependencies)
+      { fieldId: getField("category").id, value: "solo", label: "Solo" },
+      { fieldId: getField("category").id, value: "duo", label: "Duo" },
+      { fieldId: getField("category").id, value: "group", label: "Group" },
+
+      { fieldId: getField("style").id, value: "waltz", label: "Waltz" },
+      { fieldId: getField("style").id, value: "tango", label: "Tango" },
+      { fieldId: getField("style").id, value: "foxtrot", label: "Foxtrot" },
       {
-        fieldId: getField("apparatus").id,
-        value: "freehand",
-        label: "Freehand",
+        fieldId: getField("style").id,
+        value: "quickstep",
+        label: "Quickstep",
       },
-      { fieldId: getField("apparatus").id, value: "ball", label: "Ball" },
-      { fieldId: getField("apparatus").id, value: "clubs", label: "Clubs" },
-      { fieldId: getField("apparatus").id, value: "ribbon", label: "Ribbon" },
-      { fieldId: getField("apparatus").id, value: "rope", label: "Rope" },
-      { fieldId: getField("apparatus").id, value: "hoop", label: "Hoop" },
-      { fieldId: getField("apparatus").id, value: "vault", label: "Vault" },
+      { fieldId: getField("style").id, value: "cha_cha", label: "Cha-Cha" },
+      { fieldId: getField("style").id, value: "rumba", label: "Rumba" },
+      { fieldId: getField("style").id, value: "samba", label: "Samba" },
+      { fieldId: getField("style").id, value: "jive", label: "Jive" },
       {
-        fieldId: getField("apparatus").id,
-        value: "mushroom",
-        label: "Mushroom",
-      },
-      {
-        fieldId: getField("apparatus").id,
-        value: "floor_exercise",
-        label: "Floor Exercise",
-      },
-      {
-        fieldId: getField("apparatus").id,
-        value: "high_bar",
-        label: "High Bar",
+        fieldId: getField("style").id,
+        value: "breaking_battle",
+        label: "Breaking Battle",
       },
       {
-        fieldId: getField("apparatus").id,
-        value: "balance_beam",
-        label: "Balance Beam",
+        fieldId: getField("style").id,
+        value: "showcase",
+        label: "Showcase",
       },
-      {
-        fieldId: getField("apparatus").id,
-        value: "individual_men",
-        label: "Individual Men",
-      },
-      {
-        fieldId: getField("apparatus").id,
-        value: "individual_women",
-        label: "Individual Women",
-      },
-      {
-        fieldId: getField("apparatus").id,
-        value: "mixed_pair",
-        label: "Mixed Pair",
-      },
-      { fieldId: getField("apparatus").id, value: "trio", label: "Trio" },
     ])
     .returning();
 
@@ -217,23 +185,17 @@ export async function seedGymnasticsTemplate() {
       (o) => o.fieldId === getField(fieldKey).id && o.value === value,
     )!;
 
-  // Conditional display logic
   await db.insert(templateFieldCondition).values([
-    // Show competition_level only for Gymnastics
     {
       childFieldId: getField("competition_level").id,
       parentFieldId: getField("sport").id,
-      parentOptionId: getOption("sport", "gymnastics").id,
+      parentOptionId: getOption("sport", "dance_sports").id,
     },
-
-    // Show discipline only for Gymnastics
     {
       childFieldId: getField("discipline").id,
       parentFieldId: getField("sport").id,
-      parentOptionId: getOption("sport", "gymnastics").id,
+      parentOptionId: getOption("sport", "dance_sports").id,
     },
-
-    // Show division_class if competition_level is any of these:
     ...["school_level", "division_level", "regional_level", "palaro_level"].map(
       (val) => ({
         childFieldId: getField("division_class").id,
@@ -241,43 +203,58 @@ export async function seedGymnasticsTemplate() {
         parentOptionId: getOption("competition_level", val).id,
       }),
     ),
-
-    // Show age_class if batang pinoy or gap
     ...["batang_pinoy_level", "gap_competition"].map((val) => ({
       childFieldId: getField("age_class").id,
       parentFieldId: getField("competition_level").id,
       parentOptionId: getOption("competition_level", val).id,
     })),
-
-    // Show apparatus only after discipline is selected
-    ...["aerobic", "mens_artistic", "womens_artistic", "rhythmic"].map(
-      (discipline) => ({
-        childFieldId: getField("apparatus").id,
-        parentFieldId: getField("discipline").id,
-        parentOptionId: getOption("discipline", discipline).id,
-      }),
-    ),
+    ...["standard", "latin", "breaking"].map((val) => ({
+      childFieldId: getField("category").id,
+      parentFieldId: getField("discipline").id,
+      parentOptionId: getOption("discipline", val).id,
+    })),
+    ...["standard", "latin", "breaking"].map((val) => ({
+      childFieldId: getField("style").id,
+      parentFieldId: getField("discipline").id,
+      parentOptionId: getOption("discipline", val).id,
+    })),
   ]);
 
-  //  Apparatus dependencies by discipline
-  const deps: Record<string, string[]> = {
-    rhythmic: ["freehand", "ball", "clubs", "ribbon", "rope", "hoop"],
-    aerobic: ["individual_men", "individual_women", "mixed_pair", "trio"],
-    mens_artistic: ["vault", "mushroom", "floor_exercise", "high_bar"],
-    womens_artistic: ["floor_exercise", "vault", "balance_beam", "high_bar"],
-  };
+  const deps: Record<string, { field: "category" | "style"; value: string }[]> =
+    {
+      standard: [
+        { field: "category", value: "duo" },
+        { field: "category", value: "group" },
+        { field: "style", value: "waltz" },
+        { field: "style", value: "tango" },
+        { field: "style", value: "foxtrot" },
+        { field: "style", value: "quickstep" },
+      ],
+      latin: [
+        { field: "category", value: "duo" },
+        { field: "category", value: "group" },
+        { field: "style", value: "cha_cha" },
+        { field: "style", value: "rumba" },
+        { field: "style", value: "samba" },
+        { field: "style", value: "jive" },
+      ],
+      breaking: [
+        { field: "category", value: "solo" },
+        { field: "category", value: "duo" },
+        { field: "style", value: "breaking_battle" },
+        { field: "style", value: "showcase" },
+      ],
+    };
 
-  const depInserts = Object.entries(deps).flatMap(
-    ([discipline, apparatusList]) =>
-      apparatusList.map((app) => ({
-        childFieldId: getField("apparatus").id,
-        childOptionId: getOption("apparatus", app).id,
-        parentFieldId: getField("discipline").id,
-        parentOptionId: getOption("discipline", discipline).id,
-      })),
+  const depInserts = Object.entries(deps).flatMap(([discipline, pairs]) =>
+    pairs.map((pair) => ({
+      childFieldId: getField(pair.field).id,
+      childOptionId: getOption(pair.field, pair.value).id,
+      parentFieldId: getField("discipline").id,
+      parentOptionId: getOption("discipline", discipline).id,
+    })),
   );
 
   await db.insert(templateOptionDependency).values(depInserts);
-
-  console.log("✅ Gymnastics Template Seeded Successfully");
 }
+
