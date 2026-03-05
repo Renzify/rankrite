@@ -1,10 +1,14 @@
 import { seedGymnasticsTemplate } from "../src/db/seeders/gymnasticEvent.seeder.ts";
+import { seedArnisTemplate } from "../src/db/seeders/arnisEvent.seeder.ts";
+import { seedDanceSportsTemplate } from "../src/db/seeders/danceSportsEvent.seeder.ts";
 
 const seeders = {
   gymnastics: seedGymnasticsTemplate,
+  arnis: seedArnisTemplate,
+  dance_sports: seedDanceSportsTemplate,
 } as const;
 
-// This type resolves to "gymnastics"
+// This type resolves to available seeder keys.
 type SeederName = keyof typeof seeders;
 
 const target = process.argv[2] as SeederName | undefined;

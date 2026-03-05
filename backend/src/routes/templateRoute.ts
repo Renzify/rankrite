@@ -1,8 +1,12 @@
 import { Router } from "express";
-import { getGymnasticsTemplate } from "../controllers/templateController.ts";
+import {
+  getTemplate,
+  listTemplateCatalog,
+} from "../controllers/templateController.ts";
 
 const router = Router();
 
-router.get("/templates/gymnastics", getGymnasticsTemplate);
+router.get("/templates/catalog", listTemplateCatalog);
+router.get("/templates/:name", getTemplate);
 
 export default router;
