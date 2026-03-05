@@ -11,3 +11,8 @@ export const getTemplateByName = async (templateName) => {
   );
   return res.data;
 };
+
+export const createTemplate = async (payload) => {
+  const res = await axiosInstance.post("/templates", payload);
+  return res.data;
+};
