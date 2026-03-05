@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node --watch src/index.ts",
     "start": "node src/index.ts",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:seed:gymnastics": "tsx scripts/seed.ts gymnastics",
+    "db:refresh:gymnastics": "tsx scripts/refreshGymnastics.ts"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +27,7 @@
     "@types/pg": "^8.18.0",
     "drizzle-kit": "^0.31.9",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }
