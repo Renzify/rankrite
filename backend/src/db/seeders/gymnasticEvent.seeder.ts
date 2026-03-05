@@ -1,14 +1,14 @@
-import { db } from "../index.ts"; // your drizzle db instance
+import { db } from "../index.ts";
 import {
   eventTemplate,
   templateField,
   templateFieldOption,
   templateFieldCondition,
   templateOptionDependency,
-} from "../schema.ts"; // adjust to your path
+} from "../schema.ts";
 
 export async function seedGymnasticsTemplate() {
-  // 1️⃣ Create the event template
+  // Create the event template
   const [template] = await db
     .insert(eventTemplate)
     .values({
@@ -19,7 +19,7 @@ export async function seedGymnasticsTemplate() {
     })
     .returning();
 
-  // 2️⃣ Define base fields
+  // Define base fields
   const fields = await db
     .insert(templateField)
     .values([
@@ -70,7 +70,7 @@ export async function seedGymnasticsTemplate() {
 
   const getField = (key: string) => fields.find((f) => f.key === key)!;
 
-  // 3️⃣ Add options
+  // Add options
   const options = await db
     .insert(templateFieldOption)
     .values([
@@ -223,7 +223,7 @@ export async function seedGymnasticsTemplate() {
       (o) => o.fieldId === getField(fieldKey).id && o.value === value,
     )!;
 
-  // 4️⃣ Conditional display logic
+  // Conditional display logic
   await db.insert(templateFieldCondition).values([
     // Show division_class if competition_level is any of these:
     ...["school_level", "division_level", "regional_level", "palaro_level"].map(
@@ -242,7 +242,7 @@ export async function seedGymnasticsTemplate() {
     })),
   ]);
 
-  // 5️⃣ Apparatus dependencies by discipline
+  //  Apparatus dependencies by discipline
   const deps: Record<string, string[]> = {
     rhythmic: ["freehand", "ball", "clubs", "ribbon", "rope", "hoop"],
     aerobic: ["individual_men", "individual_women", "mixed_pair", "trio"],

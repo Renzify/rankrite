@@ -13,7 +13,7 @@ async function main() {
   console.log("🧹 Refreshing Gymnastics Template Data...");
 
   try {
-    // 1️⃣ Find the template
+    // Find the template
     const [template] = await db
       .select()
       .from(eventTemplate)
@@ -26,7 +26,7 @@ async function main() {
 
     const templateId = template.id;
 
-    // 2️⃣ Get all field IDs for this template
+    // Get all field IDs for this template
     const fieldIds = (
       await db
         .select({ id: templateField.id })
@@ -37,7 +37,7 @@ async function main() {
     if (fieldIds.length === 0) {
       console.log("⚠️ Template found but no fields to remove.");
     } else {
-      // 3️⃣ Delete dependencies in correct order
+      // Delete dependencies in correct order
       await db
         .delete(templateOptionDependency)
         .where(inArray(templateOptionDependency.childFieldId, fieldIds));
@@ -50,7 +50,7 @@ async function main() {
       await db.delete(templateField).where(inArray(templateField.id, fieldIds));
     }
 
-    // 4️⃣ Finally, remove the template itself
+    // Remove the template itself
     await db.delete(eventTemplate).where(eq(eventTemplate.id, templateId));
 
     console.log(

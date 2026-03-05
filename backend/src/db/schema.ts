@@ -12,10 +12,10 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-/* =========================================================
-   1) TEMPLATE / CONFIG LAYER
-   This defines the event creation flow dynamically
-========================================================= */
+/*
+  Template
+  Defines the event creation flow dynamically
+*/
 
 export const eventTemplate = pgTable("event_template", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -138,10 +138,10 @@ export const templateOptionDependency = pgTable("template_option_dependency", {
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-/* =========================================================
-   2) EVENT INSTANCE LAYER
+/*
+   Event Instance
    Actual created event based on template
-========================================================= */
+*/
 
 export const event = pgTable("event", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -159,8 +159,7 @@ export const event = pgTable("event", {
 });
 
 /*
-  Stores the actual selected values for each dynamic field.
-  This is what replaces hardcoded sport/level/discipline tables in the event record.
+  Stores the actual selected values for each field.
 */
 export const eventFieldValue = pgTable("event_field_value", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -215,10 +214,9 @@ export const eventPhase = pgTable("event_phase", {
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-/* =========================================================
-   3) JUDGES
-   These remain fixed because they are transactional
-========================================================= */
+/*
+   Judges
+*/
 
 export const judgeType = pgTable("judge_type", {
   id: serial("id").primaryKey(),
@@ -261,9 +259,9 @@ export const eventJudgeAssignment = pgTable("event_judge_assignment", {
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-/* =========================================================
-   4) CONTESTANTS / ENTRIES
-========================================================= */
+/* 
+   Contestants / Entries
+*/
 
 export const contestant = pgTable("contestant", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -290,9 +288,9 @@ export const eventContestant = pgTable("event_contestant", {
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-/* =========================================================
-   5) SCORING
-========================================================= */
+/*
+   Scoring
+*/
 
 export const scoreSheet = pgTable("score_sheet", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -380,9 +378,9 @@ export const scoreSummary = pgTable("score_summary", {
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-/* =========================================================
-   6) DISPLAY / RANKING SETTINGS
-========================================================= */
+/*
+   Display / Ranking Settings
+*/
 
 export const rankingPresentationMode = pgTable("ranking_presentation_mode", {
   id: serial("id").primaryKey(),
@@ -409,9 +407,9 @@ export const eventDisplaySettings = pgTable("event_display_settings", {
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-/* =========================================================
-   RELATIONS
-========================================================= */
+/* 
+   Relations
+*/
 
 export const eventTemplateRelations = relations(eventTemplate, ({ many }) => ({
   fields: many(templateField),
