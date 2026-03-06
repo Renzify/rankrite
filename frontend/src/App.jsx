@@ -4,6 +4,9 @@ import { Toaster } from "react-hot-toast";
 
 import DynamicTemplateForm from "./components/DynamicTemplateForm";
 import TemplateBuilderForm from "./components/TemplateBuilderForm";
+import EventManagement from "./pages/EventManagement";
+import EventDetails from "./pages/EventDetails";
+import LiveDisplayControl from "./pages/LiveDisplayControl";
 
 function App() {
   return (
@@ -23,6 +26,14 @@ function App() {
             Dynamic Form
           </NavLink>
           <NavLink
+            to="/events"
+            className={({ isActive }) =>
+              `btn btn-sm ${isActive ? "btn-primary" : "btn-ghost"}`
+            }
+          >
+            Event Management
+          </NavLink>
+          <NavLink
             to="/builder"
             className={({ isActive }) =>
               `btn btn-sm ${isActive ? "btn-primary" : "btn-ghost"}`
@@ -30,12 +41,23 @@ function App() {
           >
             Template Builder
           </NavLink>
+          <NavLink
+            to="/live-display"
+            className={({ isActive }) =>
+              `btn btn-sm ${isActive ? "btn-primary" : "btn-ghost"}`
+            }
+          >
+            Live Display
+          </NavLink>
         </div>
       </div>
 
       <Routes>
         <Route path="/" element={<DynamicTemplateForm />} />
+        <Route path="/events" element={<EventManagement />} />
+        <Route path="/events/:id" element={<EventDetails />} />
         <Route path="/builder" element={<TemplateBuilderForm />} />
+        <Route path="/live-display" element={<LiveDisplayControl />} />
       </Routes>
 
       <Toaster />
