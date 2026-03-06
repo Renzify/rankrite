@@ -13,9 +13,9 @@ import {
 import { relations } from "drizzle-orm";
 
 /*
-  Template
-  Defines the event creation flow dynamically
-*/
+    Template
+    Defines the event creation flow dynamically
+  */
 
 export const eventTemplate = pgTable("event_template", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -81,11 +81,11 @@ export const templateFieldOption = pgTable("template_field_option", {
 });
 
 /*
-  Controls visibility / availability of child fields.
-  Example:
-  - show "division_class" if competition_level = school/division/regional/palaro
-  - show "age_class" if competition_level = batang_pinoy/gap
-*/
+    Controls visibility / availability of child fields.
+    Example:
+    - show "division_class" if competition_level = school/division/regional/palaro
+    - show "age_class" if competition_level = batang_pinoy/gap
+  */
 export const templateFieldCondition = pgTable("template_field_condition", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -108,14 +108,14 @@ export const templateFieldCondition = pgTable("template_field_condition", {
 });
 
 /*
-  Optional:
-  Lets you define that the available options of one field
-  depend on a selected option from another field.
+    Optional:
+    Lets you define that the available options of one field
+    depend on a selected option from another field.
 
-  Example:
-  - if discipline = rhythmic, apparatus options = ribbon, hoop, rope...
-  - if discipline = aerobic, apparatus options = trio, mixed pair...
-*/
+    Example:
+    - if discipline = rhythmic, apparatus options = ribbon, hoop, rope...
+    - if discipline = aerobic, apparatus options = trio, mixed pair...
+  */
 export const templateOptionDependency = pgTable("template_option_dependency", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -139,9 +139,9 @@ export const templateOptionDependency = pgTable("template_option_dependency", {
 });
 
 /*
-   Event Instance
-   Actual created event based on template
-*/
+    Event Instance
+    Actual created event based on template
+  */
 
 export const event = pgTable("event", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -159,8 +159,8 @@ export const event = pgTable("event", {
 });
 
 /*
-  Stores the actual selected values for each field.
-*/
+    Stores the actual selected values for each field.
+  */
 export const eventFieldValue = pgTable("event_field_value", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -183,9 +183,9 @@ export const eventFieldValue = pgTable("event_field_value", {
 });
 
 /*
-  Optional helper table for "current active apparatus"
-  without hardcoding apparatus as a dedicated master table.
-*/
+    Optional helper table for "current active apparatus"
+    without hardcoding apparatus as a dedicated master table.
+  */
 export const eventPhase = pgTable("event_phase", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -199,10 +199,10 @@ export const eventPhase = pgTable("event_phase", {
   isActive: boolean("is_active").notNull().default(false),
 
   /*
-    Optional link to a selected field option.
-    Example:
-    phaseType=apparatus_round, linked to the selected apparatus option
-  */
+      Optional link to a selected field option.
+      Example:
+      phaseType=apparatus_round, linked to the selected apparatus option
+    */
   linkedFieldId: uuid("linked_field_id").references(() => templateField.id, {
     onDelete: "set null",
   }),
@@ -215,8 +215,8 @@ export const eventPhase = pgTable("event_phase", {
 });
 
 /*
-   Judges
-*/
+    Judges
+  */
 
 export const judgeType = pgTable("judge_type", {
   id: serial("id").primaryKey(),
@@ -249,9 +249,9 @@ export const eventJudgeAssignment = pgTable("event_judge_assignment", {
   judgeNumber: integer("judge_number").notNull().default(1),
 
   /*
-    Optional phase binding if judges differ per apparatus/round
-    Example: assign a judge specifically to Ribbon round
-  */
+      Optional phase binding if judges differ per apparatus/round
+      Example: assign a judge specifically to Ribbon round
+    */
   eventPhaseId: uuid("event_phase_id").references(() => eventPhase.id, {
     onDelete: "set null",
   }),
@@ -260,8 +260,8 @@ export const eventJudgeAssignment = pgTable("event_judge_assignment", {
 });
 
 /* 
-   Contestants / Entries
-*/
+    Contestants / Entries
+  */
 
 export const contestant = pgTable("contestant", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -289,8 +289,8 @@ export const eventContestant = pgTable("event_contestant", {
 });
 
 /*
-   Scoring
-*/
+    Scoring
+  */
 
 export const scoreSheet = pgTable("score_sheet", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -304,9 +304,9 @@ export const scoreSheet = pgTable("score_sheet", {
     .references(() => contestant.id, { onDelete: "cascade" }),
 
   /*
-    Instead of apparatusId, use phase
-    so this works even if later the "scoring unit" is not an apparatus
-  */
+      Instead of apparatusId, use phase
+      so this works even if later the "scoring unit" is not an apparatus
+    */
   eventPhaseId: uuid("event_phase_id").references(() => eventPhase.id, {
     onDelete: "set null",
   }),
@@ -379,8 +379,8 @@ export const scoreSummary = pgTable("score_summary", {
 });
 
 /*
-   Display / Ranking Settings
-*/
+    Display / Ranking Settings
+  */
 
 export const rankingPresentationMode = pgTable("ranking_presentation_mode", {
   id: serial("id").primaryKey(),
@@ -408,8 +408,8 @@ export const eventDisplaySettings = pgTable("event_display_settings", {
 });
 
 /* 
-   Relations
-*/
+    Relations
+  */
 
 export const eventTemplateRelations = relations(eventTemplate, ({ many }) => ({
   fields: many(templateField),

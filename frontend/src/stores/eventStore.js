@@ -70,6 +70,10 @@ export const useEventStore = create((set, get) => ({
       ],
       currentPhaseId: "p1",
       currentContestantId: "c1",
+      scoringCriteria: [
+        { id: "sc-1", label: "Execution", weight: 0.6 },
+        { id: "sc-2", label: "Difficulty", weight: 0.4 },
+      ],
       scores: {},
       rankings: [],
     },
@@ -86,6 +90,7 @@ export const useEventStore = create((set, get) => ({
       phases: [],
       currentPhaseId: null,
       currentContestantId: null,
+      scoringCriteria: [],
       scores: {},
       rankings: [],
     },
@@ -102,6 +107,7 @@ export const useEventStore = create((set, get) => ({
       phases: [],
       currentPhaseId: null,
       currentContestantId: null,
+      scoringCriteria: [],
       scores: {},
       rankings: [],
     },
@@ -109,7 +115,7 @@ export const useEventStore = create((set, get) => ({
 
   // Selected event for viewing/editing
   selectedEvent: null,
-  selectedView: "scoring", // scoring | judges | contestants | rankings | display
+  selectedView: "scoring", // event_info | scoring | judge_scoring | judges | contestants | rankings | display
 
   // Get status options
   getStatusOptions: () => EVENT_STATUSES,
@@ -135,6 +141,7 @@ export const useEventStore = create((set, get) => ({
           phases: [],
           currentPhaseId: null,
           currentContestantId: null,
+          scoringCriteria: [],
           scores: {},
           rankings: [],
         },
@@ -225,6 +232,56 @@ export const useEventStore = create((set, get) => ({
               ...event,
               contestants: event.contestants.filter(
                 (c) => c.id !== contestantId,
+              ),
+            }
+          : event,
+      ),
+    })),
+
+  // Scoring criteria actions
+  addScoringCriterion: (eventId, criterion) =>
+    set((state) => ({
+      events: state.events.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              scoringCriteria: [
+                ...(event.scoringCriteria || []),
+                {
+                  id: crypto.randomUUID(),
+                  label: criterion.label,
+                  weight: criterion.weight ?? null,
+                },
+              ],
+            }
+          : event,
+      ),
+    })),
+
+  updateScoringCriterion: (eventId, criterionId, updates) =>
+    set((state) => ({
+      events: state.events.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              scoringCriteria: (event.scoringCriteria || []).map((criterion) =>
+                criterion.id === criterionId
+                  ? { ...criterion, ...updates }
+                  : criterion,
+              ),
+            }
+          : event,
+      ),
+    })),
+
+  removeScoringCriterion: (eventId, criterionId) =>
+    set((state) => ({
+      events: state.events.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              scoringCriteria: (event.scoringCriteria || []).filter(
+                (criterion) => criterion.id !== criterionId,
               ),
             }
           : event,

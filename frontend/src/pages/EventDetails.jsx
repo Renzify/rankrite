@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 const VIEWS = [
   { key: "event_info", label: "Event Info" },
   { key: "scoring", label: "Scoring" },
+  { key: "judge_scoring", label: "Judge Scoring" },
   { key: "judges", label: "Judges" },
   { key: "contestants", label: "Contestants" },
   { key: "rankings", label: "Rankings" },
@@ -33,11 +34,13 @@ function EventDetails() {
     removeContestantFromEvent,
     updateEventStatus,
     updateEvent,
+    addScoringCriterion,
+    updateScoringCriterion,
+    removeScoringCriterion,
   } = useEventStore();
 
   // Get dynamic template functionality
   const {
-    catalog,
     isCatalogLoading,
     selectedEventType,
     selectedSport,
@@ -55,7 +58,10 @@ function EventDetails() {
 
   const event = events.find((e) => e.id === id);
 
-  const [scoreInputs, setScoreInputs] = useState({});
+  const [scoreInput, setScoreInput] = useState("");
+  const [criterionScoreInputs, setCriterionScoreInputs] = useState({});
+  const [selectedJudgeId, setSelectedJudgeId] = useState("");
+  const [newCriterion, setNewCriterion] = useState({ label: "", weight: "" });
   const [newJudge, setNewJudge] = useState({
     fullName: "",
     judgeType: "",
@@ -116,6 +122,11 @@ function EventDetails() {
   const currentContestant = event.contestants.find(
     (c) => c.id === event.currentContestantId,
   );
+  const scoringCriteria = event.scoringCriteria || [];
+  const resolvedJudgeId =
+    selectedJudgeId && event.judges.some((judge) => judge.id === selectedJudgeId)
+      ? selectedJudgeId
+      : event.judges[0]?.id || "";
 
   // Calculate submission progress
   const totalPossibleScores = event.judges.length * event.contestants.length;
@@ -125,14 +136,116 @@ function EventDetails() {
   const progressPercent =
     totalPossibleScores > 0 ? (submittedScores / totalPossibleScores) * 100 : 0;
 
-  const handleSubmitScore = (judgeId) => {
-    const score = parseFloat(scoreInputs[judgeId]);
-    if (isNaN(score) || score < 0 || score > 10) {
-      toast.error("Please enter a valid score (0-10)");
+  const parseOptionalWeight = (weightValue) => {
+    if (
+      weightValue === null ||
+      weightValue === undefined ||
+      weightValue === ""
+    ) {
+      return null;
+    }
+
+    const parsedWeight = parseFloat(weightValue);
+    if (!Number.isFinite(parsedWeight) || parsedWeight <= 0) {
+      return null;
+    }
+
+    return parsedWeight;
+  };
+
+  const computeCriteriaScore = (inputMap) => {
+    const parsedScores = scoringCriteria.map((criterion) => {
+      const rawScore = parseFloat(inputMap[criterion.id]);
+      return {
+        score: rawScore,
+        weight: parseOptionalWeight(criterion.weight),
+      };
+    });
+
+    if (parsedScores.some((item) => !Number.isFinite(item.score))) {
+      return null;
+    }
+
+    if (parsedScores.some((item) => item.score < 0 || item.score > 10)) {
+      return null;
+    }
+
+    const hasCustomWeights = parsedScores.some((item) => item.weight !== null);
+
+    if (hasCustomWeights) {
+      const totalWeight = parsedScores.reduce(
+        (sum, item) => sum + (item.weight ?? 1),
+        0,
+      );
+      if (totalWeight <= 0) {
+        return null;
+      }
+
+      return (
+        parsedScores.reduce(
+          (sum, item) => sum + item.score * (item.weight ?? 1),
+          0,
+        ) / totalWeight
+      );
+    }
+
+    return (
+      parsedScores.reduce((sum, item) => sum + item.score, 0) /
+      parsedScores.length
+    );
+  };
+
+  const handleAddCriterion = () => {
+    if (!newCriterion.label.trim()) {
+      toast.error("Please enter a criterion name");
       return;
     }
-    submitScore(event.id, event.currentContestantId, judgeId, score);
-    setScoreInputs((prev) => ({ ...prev, [judgeId]: "" }));
+
+    const parsedWeight = parseOptionalWeight(newCriterion.weight);
+    if (newCriterion.weight !== "" && parsedWeight === null) {
+      toast.error("Weight must be a valid positive number");
+      return;
+    }
+
+    addScoringCriterion(event.id, {
+      label: newCriterion.label.trim(),
+      weight: parsedWeight,
+    });
+    setNewCriterion({ label: "", weight: "" });
+    toast.success("Criterion added!");
+  };
+
+  const handleSubmitJudgeScore = () => {
+    if (!resolvedJudgeId) {
+      toast.error("Select an authorized judge first");
+      return;
+    }
+
+    if (!event.currentContestantId || !event.currentPhaseId) {
+      toast.error("Select apparatus and contestant first");
+      return;
+    }
+
+    let finalScore = null;
+
+    if (scoringCriteria.length > 0) {
+      finalScore = computeCriteriaScore(criterionScoreInputs);
+      if (finalScore === null) {
+        toast.error("Please enter valid criterion scores (0-10)");
+        return;
+      }
+    } else {
+      const parsedScore = parseFloat(scoreInput);
+      if (!Number.isFinite(parsedScore) || parsedScore < 0 || parsedScore > 10) {
+        toast.error("Please enter a valid score (0-10)");
+        return;
+      }
+      finalScore = parsedScore;
+    }
+
+    submitScore(event.id, event.currentContestantId, resolvedJudgeId, finalScore);
+    setScoreInput("");
+    setCriterionScoreInputs({});
     computeRankings(event.id);
     toast.success("Score submitted!");
   };
@@ -455,165 +568,403 @@ function EventDetails() {
   );
 
   // Render Scoring View
-  const renderScoringView = () => (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="card border border-base-300 bg-base-100/90 shadow-xl">
-        <div className="card-body">
-          <h3 className="card-title text-lg">Current Contestant</h3>
-          {currentContestant ? (
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-content">
-                {currentContestant.entryNo}
-              </div>
-              <div>
-                <p className="text-xl font-semibold">
-                  {currentContestant.fullName}
-                </p>
-                <p className="text-base-content/60">
-                  {currentContestant.teamName}
-                </p>
+  const renderScoringView = () => {
+    const totalDefinedWeight = scoringCriteria.reduce(
+      (sum, criterion) => sum + (parseOptionalWeight(criterion.weight) ?? 0),
+      0,
+    );
+
+    return (
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="card border border-base-300 bg-base-100/90 shadow-xl">
+          <div className="card-body">
+            <h3 className="card-title text-lg">Setup Scoring Criteria</h3>
+            <p className="text-sm text-base-content/60">
+              Configure judging criteria here. Weight is optional.
+            </p>
+
+            <div className="grid gap-3 sm:grid-cols-[2fr_1fr_auto]">
+              <label className="form-control w-full">
+                <div className="label pb-1">
+                  <span className="label-text font-semibold">Criterion</span>
+                </div>
+                <input
+                  type="text"
+                  className="input input-bordered w-full"
+                  placeholder="e.g. Execution"
+                  value={newCriterion.label}
+                  onChange={(e) =>
+                    setNewCriterion((prev) => ({
+                      ...prev,
+                      label: e.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="form-control w-full">
+                <div className="label pb-1">
+                  <span className="label-text font-semibold">Weight (Optional)</span>
+                </div>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  className="input input-bordered w-full"
+                  placeholder="e.g. 0.4"
+                  value={newCriterion.weight}
+                  onChange={(e) =>
+                    setNewCriterion((prev) => ({
+                      ...prev,
+                      weight: e.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <div className="form-control w-full">
+                <div className="label pb-1">
+                  <span className="label-text font-semibold">&nbsp;</span>
+                </div>
+                <button className="btn btn-primary" onClick={handleAddCriterion}>
+                  Add
+                </button>
               </div>
             </div>
-          ) : (
-            <p className="text-base-content/60">No contestant selected</p>
-          )}
+          </div>
+        </section>
 
-          <div className="divider">Select Contestant</div>
-          <select
-            className="select select-bordered w-full"
-            value={event.currentContestantId || ""}
-            onChange={(e) => setCurrentContestant(event.id, e.target.value)}
-          >
-            <option value="">-- Select Contestant --</option>
-            {event.contestants.map((c) => (
-              <option key={c.id} value={c.id}>
-                #{c.entryNo} - {c.fullName}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
+        <section className="card border border-base-300 bg-base-100/90 shadow-xl">
+          <div className="card-body">
+            <h3 className="card-title text-lg">Criteria List</h3>
 
-      <section className="card border border-base-300 bg-base-100/90 shadow-xl">
-        <div className="card-body">
-          <h3 className="card-title text-lg">Submit Scores</h3>
-          <p className="text-sm text-base-content/60">
-            Enter scores for {currentContestant?.fullName || "contestant"}
-          </p>
+            {scoringCriteria.length === 0 ? (
+              <div className="alert border border-base-300 bg-base-200/60 text-base-content">
+                <span>No criteria yet. Add at least one criterion.</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {scoringCriteria.map((criterion) => (
+                  <div
+                    key={criterion.id}
+                    className="grid gap-2 rounded-lg border border-base-300 bg-base-200/40 p-3 sm:grid-cols-[2fr_1fr_auto]"
+                  >
+                    <input
+                      type="text"
+                      className="input input-bordered w-full"
+                      value={criterion.label}
+                      onChange={(e) =>
+                        updateScoringCriterion(event.id, criterion.id, {
+                          label: e.target.value,
+                        })
+                      }
+                    />
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      className="input input-bordered w-full"
+                      placeholder="Optional"
+                      value={criterion.weight ?? ""}
+                      onChange={(e) => {
+                        const nextWeight = e.target.value;
+                        if (nextWeight === "") {
+                          updateScoringCriterion(event.id, criterion.id, {
+                            weight: null,
+                          });
+                          return;
+                        }
 
-          <div className="space-y-3">
-            {event.judges.map((judge) => {
-              const scoreKey = `${event.currentContestantId}-${event.currentPhaseId}`;
-              const existingScore = event.scores[scoreKey]?.[judge.id];
-
-              return (
-                <div key={judge.id} className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <p className="font-semibold">{judge.fullName}</p>
-                    <p className="text-xs text-base-content/60">
-                      Judge #{judge.judgeNumber} - {judge.judgeType}
-                    </p>
+                        const parsedWeight = parseFloat(nextWeight);
+                        if (Number.isFinite(parsedWeight) && parsedWeight > 0) {
+                          updateScoringCriterion(event.id, criterion.id, {
+                            weight: parsedWeight,
+                          });
+                        }
+                      }}
+                    />
+                    <button
+                      className="btn btn-error btn-outline"
+                      onClick={() => removeScoringCriterion(event.id, criterion.id)}
+                    >
+                      Remove
+                    </button>
                   </div>
-                  {existingScore !== undefined ? (
-                    <span className="badge badge-success badge-lg">
-                      {existingScore.toFixed(2)}
-                    </span>
-                  ) : (
-                    <>
+                ))}
+              </div>
+            )}
+
+            <div className="stats stats-vertical mt-3 border border-base-300 bg-base-200/40">
+              <div className="stat py-3">
+                <div className="stat-title">Total Criteria</div>
+                <div className="stat-value text-2xl">{scoringCriteria.length}</div>
+              </div>
+              <div className="stat py-3">
+                <div className="stat-title">Defined Weight Sum</div>
+                <div className="stat-value text-2xl">{totalDefinedWeight.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="card border border-base-300 bg-base-100/90 shadow-xl lg:col-span-2">
+          <div className="card-body">
+            <h3 className="card-title text-lg">Score Submission Access</h3>
+            <p className="text-sm text-base-content/70">
+              Score submission has moved to the <strong>Judge Scoring</strong> view so only assigned judges can submit scores.
+            </p>
+          </div>
+        </section>
+      </div>
+    );
+  };
+
+  // Render Judge Scoring View
+  const renderJudgeScoringView = () => {
+    const scoreKey = `${event.currentContestantId}-${event.currentPhaseId}`;
+    const selectedJudge = event.judges.find((judge) => judge.id === resolvedJudgeId);
+    const existingScore = resolvedJudgeId
+      ? event.scores[scoreKey]?.[resolvedJudgeId]
+      : undefined;
+    const previewScore =
+      scoringCriteria.length > 0
+        ? computeCriteriaScore(criterionScoreInputs)
+        : null;
+
+    return (
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="card border border-base-300 bg-base-100/90 shadow-xl">
+          <div className="card-body">
+            <h3 className="card-title text-lg">Authorized Judge</h3>
+            <p className="text-sm text-base-content/60">
+              Only assigned judges should use this view to submit scores.
+            </p>
+
+            <select
+              className="select select-bordered w-full"
+              value={resolvedJudgeId}
+              onChange={(e) => {
+                setSelectedJudgeId(e.target.value);
+                setScoreInput("");
+                setCriterionScoreInputs({});
+              }}
+            >
+              <option value="">-- Select Judge --</option>
+              {event.judges.map((judge) => (
+                <option key={judge.id} value={judge.id}>
+                  Judge #{judge.judgeNumber} - {judge.fullName}
+                </option>
+              ))}
+            </select>
+
+            {event.judges.length === 0 && (
+              <div className="alert alert-warning mt-3">
+                <span>No judges assigned to this event.</span>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="card border border-base-300 bg-base-100/90 shadow-xl">
+          <div className="card-body">
+            <h3 className="card-title text-lg">Current Contestant</h3>
+            {currentContestant ? (
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-content">
+                  {currentContestant.entryNo}
+                </div>
+                <div>
+                  <p className="text-xl font-semibold">
+                    {currentContestant.fullName}
+                  </p>
+                  <p className="text-base-content/60">{currentContestant.teamName}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-base-content/60">No contestant selected</p>
+            )}
+
+            <div className="divider">Select Contestant</div>
+            <select
+              className="select select-bordered w-full"
+              value={event.currentContestantId || ""}
+              onChange={(e) => {
+                setCurrentContestant(event.id, e.target.value);
+                setScoreInput("");
+                setCriterionScoreInputs({});
+              }}
+            >
+              <option value="">-- Select Contestant --</option>
+              {event.contestants.map((contestant) => (
+                <option key={contestant.id} value={contestant.id}>
+                  #{contestant.entryNo} - {contestant.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+
+        <section className="card border border-base-300 bg-base-100/90 shadow-xl lg:col-span-2">
+          <div className="card-body">
+            <h3 className="card-title text-lg">Submit Score</h3>
+
+            {!resolvedJudgeId ? (
+              <div className="alert border border-base-300 bg-base-200/60 text-base-content">
+                <span>Select an authorized judge first.</span>
+              </div>
+            ) : (
+              <>
+                <div className="rounded-lg border border-base-300 bg-base-200/40 p-3">
+                  <p className="font-semibold">{selectedJudge?.fullName}</p>
+                  <p className="text-xs text-base-content/60">
+                    Judge #{selectedJudge?.judgeNumber} - {selectedJudge?.judgeType}
+                  </p>
+                </div>
+
+                {existingScore !== undefined ? (
+                  <div className="alert alert-success mt-3">
+                    <span>Score already submitted: {existingScore.toFixed(2)}</span>
+                  </div>
+                ) : scoringCriteria.length > 0 ? (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {scoringCriteria.map((criterion) => (
+                      <label key={criterion.id} className="form-control w-full">
+                        <div className="label pb-1">
+                          <span className="label-text font-semibold">
+                            {criterion.label}
+                          </span>
+                          {criterion.weight !== null && criterion.weight !== undefined && (
+                            <span className="label-text-alt">
+                              w: {parseOptionalWeight(criterion.weight)?.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="10"
+                          className="input input-bordered w-full"
+                          placeholder="0.00"
+                          value={criterionScoreInputs[criterion.id] || ""}
+                          onChange={(e) =>
+                            setCriterionScoreInputs((prev) => ({
+                              ...prev,
+                              [criterion.id]: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-3 max-w-xs">
+                    <label className="form-control w-full">
+                      <div className="label pb-1">
+                        <span className="label-text font-semibold">Score</span>
+                      </div>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         max="10"
-                        className="input input-bordered w-20"
+                        className="input input-bordered w-full"
                         placeholder="0.00"
-                        value={scoreInputs[judge.id] || ""}
-                        onChange={(e) =>
-                          setScoreInputs((prev) => ({
-                            ...prev,
-                            [judge.id]: e.target.value,
-                          }))
-                        }
+                        value={scoreInput}
+                        onChange={(e) => setScoreInput(e.target.value)}
                       />
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleSubmitScore(judge.id)}
+                    </label>
+                  </div>
+                )}
+
+                {existingScore === undefined && scoringCriteria.length > 0 && previewScore !== null && (
+                  <div className="mt-3 text-sm text-base-content/70">
+                    Computed score preview: <span className="font-semibold">{previewScore.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {existingScore === undefined && (
+                  <button
+                    className="btn btn-primary mt-4"
+                    onClick={handleSubmitJudgeScore}
+                  >
+                    Submit Score
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+
+        <section className="card border border-base-300 bg-base-100/90 shadow-xl lg:col-span-2">
+          <div className="card-body">
+            <h3 className="card-title text-lg">Contestant Queue</h3>
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Entry #</th>
+                    <th>Name</th>
+                    <th>Team</th>
+                    <th>Overall</th>
+                    <th>My Score</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {event.contestants.map((contestant) => {
+                    const contestantScoreKey = `${contestant.id}-${event.currentPhaseId}`;
+                    const contestantScores = event.scores[contestantScoreKey] || {};
+                    const isComplete =
+                      Object.keys(contestantScores).length === event.judges.length;
+                    const isCurrent = contestant.id === event.currentContestantId;
+                    const myScore = resolvedJudgeId
+                      ? contestantScores[resolvedJudgeId]
+                      : undefined;
+
+                    return (
+                      <tr
+                        key={contestant.id}
+                        className={isCurrent ? "bg-primary/10" : "hover"}
                       >
-                        Submit
-                      </button>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {event.judges.length === 0 && (
-            <div className="alert alert-warning">
-              <span>No judges assigned to this event</span>
+                        <td>{contestant.entryNo}</td>
+                        <td className="font-semibold">{contestant.fullName}</td>
+                        <td>{contestant.teamName}</td>
+                        <td>
+                          {isComplete ? (
+                            <span className="badge badge-success">Complete</span>
+                          ) : (
+                            <span className="badge badge-warning">Pending</span>
+                          )}
+                        </td>
+                        <td>
+                          {myScore !== undefined ? (
+                            <span className="badge badge-success">
+                              {myScore.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-base-content/50">--</span>
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            onClick={() => setCurrentContestant(event.id, contestant.id)}
+                          >
+                            Select
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
-      </section>
-
-      <section className="card border border-base-300 bg-base-100/90 shadow-xl lg:col-span-2">
-        <div className="card-body">
-          <h3 className="card-title text-lg">Contestant Queue</h3>
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Entry #</th>
-                  <th>Name</th>
-                  <th>Team</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {event.contestants.map((contestant) => {
-                  const scoreKey = `${contestant.id}-${event.currentPhaseId}`;
-                  const contestantScores = event.scores[scoreKey] || {};
-                  const isComplete =
-                    Object.keys(contestantScores).length ===
-                    event.judges.length;
-                  const isCurrent = contestant.id === event.currentContestantId;
-
-                  return (
-                    <tr
-                      key={contestant.id}
-                      className={isCurrent ? "bg-primary/10" : "hover"}
-                    >
-                      <td>{contestant.entryNo}</td>
-                      <td className="font-semibold">{contestant.fullName}</td>
-                      <td>{contestant.teamName}</td>
-                      <td>
-                        {isComplete ? (
-                          <span className="badge badge-success">Complete</span>
-                        ) : (
-                          <span className="badge badge-warning">Pending</span>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          className="btn btn-sm btn-ghost"
-                          onClick={() =>
-                            setCurrentContestant(event.id, contestant.id)
-                          }
-                        >
-                          Select
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
-        </div>
-      </section>
-    </div>
-  );
+        </section>
+      </div>
+    );
+  };
 
   // Render Judges View
   const renderJudgesView = () => (
@@ -1025,6 +1376,7 @@ function EventDetails() {
 
         {selectedView === "event_info" && renderEventInfoView()}
         {selectedView === "scoring" && renderScoringView()}
+        {selectedView === "judge_scoring" && renderJudgeScoringView()}
         {selectedView === "judges" && renderJudgesView()}
         {selectedView === "contestants" && renderContestantsView()}
         {selectedView === "rankings" && renderRankingsView()}
