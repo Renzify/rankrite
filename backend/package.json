@@ -10,7 +10,6 @@
     "db:seed:gymnastics": "tsx scripts/seed.ts gymnastics",
     "db:seed:arnis": "tsx scripts/seed.ts arnis",
     "db:seed:dance-sports": "tsx scripts/seed.ts dance_sports",
-    "db:refresh:gymnastics": "tsx scripts/refreshGymnastics.ts",
     "db:refresh:templates": "tsx scripts/refreshTemplates.ts"
   },
   "keywords": [],
