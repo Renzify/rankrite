@@ -5,6 +5,18 @@ import EventTypeSportSelect from "./EventTypeSportSelect";
 import TemplateFields from "./TemplateFields";
 import CurrentValuesSidebar from "./CurrentValuesSidebar";
 
+const STAGES = [
+  { key: "eventType", label: "Event Type" },
+  { key: "sport", label: "Sport" },
+  { key: "details", label: "Template Details" },
+];
+
+function getActiveStageIndex(selectedEventType, selectedSport) {
+  if (!selectedEventType) return 0;
+  if (!selectedSport) return 1;
+  return 2;
+}
+
 function DynamicTemplateForm() {
   const {
     catalog,
