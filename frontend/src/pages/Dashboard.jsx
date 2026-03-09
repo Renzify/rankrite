@@ -130,9 +130,9 @@ function EventList({ events }) {
           <tr>
             <th>#</th>
             <th>Event Name</th>
-            <th>Status</th>
-            <th>Created</th>
-            <th>Actions</th>
+            <th className="w-36 px-6">Status</th>
+            <th className="w-40 px-6">Created</th>
+            <th className="w-44 text-center">Actions</th>
           </tr>
         </thead>
 
@@ -145,21 +145,32 @@ function EventList({ events }) {
               >
                 <th>{index + 1}</th>
                 <td>{event.name}</td>
-                <td>{event.status}</td>
-                <td>{event.created}</td>
-                <td className="space-x-2">
-                  {event.status !== "Finished" ? (
-                    <button type="button" className="btn btn-sm btn-neutral">
-                      Edit
+                <td className="px-6">{event.status}</td>
+                <td className="px-6">{event.created}</td>
+                <td className="w-44">
+                  <div className="flex items-center justify-center gap-2">
+                    {event.status !== "Finished" ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm w-16 justify-center"
+                      >
+                        Edit
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-sm w-16 justify-center"
+                      >
+                        View
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-sm hover:bg-red-500 hover:text-white w-16 justify-center"
+                    >
+                      Delete
                     </button>
-                  ) : (
-                    <button type="button" className="btn btn-sm btn-neutral">
-                      View
-                    </button>
-                  )}
-                  <button type="button" className="btn btn-sm btn-neutral">
-                    Delete
-                  </button>
+                  </div>
                 </td>
               </tr>
             ))
