@@ -4,10 +4,11 @@ import { Toaster } from "react-hot-toast";
 
 import DynamicTemplateForm from "./components/DynamicTemplateForm";
 import TemplateBuilderForm from "./components/TemplateBuilderForm";
+import Footer from "./components/Footer";
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
       <div className="navbar border-b border-base-300 bg-base-100/90 px-4">
         <div className="flex-1">
           <p className="text-lg font-semibold">Rankrite</p>
@@ -33,12 +34,15 @@ function App() {
         </div>
       </div>
 
-      <Routes>
-        <Route path="/" element={<DynamicTemplateForm />} />
-        <Route path="/builder" element={<TemplateBuilderForm />} />
-      </Routes>
+      <div className="flex-grow">
+        <Routes>
+          <Route path="/" element={<DynamicTemplateForm />} />
+          <Route path="/builder" element={<TemplateBuilderForm />} />
+        </Routes>
+      </div>
 
       <Toaster />
+      <Footer />
     </div>
   );
 }

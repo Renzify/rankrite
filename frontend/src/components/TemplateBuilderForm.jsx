@@ -1,5 +1,6 @@
 import toast from "react-hot-toast";
 import { useTemplateBuilder } from "../hooks/useTemplateBuilder";
+import Footer from "./Footer";
 
 function TemplateBuilderForm() {
   const {
@@ -30,7 +31,6 @@ function TemplateBuilderForm() {
     <div className="relative min-h-screen overflow-hidden bg-slate-100">
       <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-fuchsia-300/40 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-cyan-300/40 blur-3xl" />
-
       <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8">
         <section className="card border border-base-300 bg-gradient-to-br from-slate-900 via-blue-800 to-teal-600 text-base-100 shadow-xl">
           <div className="card-body">
