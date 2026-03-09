@@ -9,12 +9,12 @@ import Dashboard from "./pages/Dashboard";
 
 function AppLayout() {
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <Footer />
-      <main className="p-4">
+      <main className="flex-1 p-4">
         <Outlet />
       </main>
+      <Footer />
     </div>
   );
 }

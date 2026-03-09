@@ -39,7 +39,7 @@ function Header() {
 
   return (
     <header className="navbar rounded-2xl border border-base-300 bg-base-100/95 px-4 shadow-sm">
-      <div className="navbar-start gap-3">
+      <div className="navbar-start gap-3 ml-15">
         <div className="avatar placeholder">
           <div className="w-10 rounded-full bg-primary text-primary-content"></div>
         </div>
@@ -48,7 +48,7 @@ function Header() {
         </div>
       </div>
 
-      <div className="navbar-end gap-2">
+      <div className="navbar-end gap-2 mr-15">
         <DropdownMenu
           ref={notificationDropdownRef}
           menuClassName="menu mt-2 w-72 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg"
