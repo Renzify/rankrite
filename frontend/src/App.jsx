@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import DynamicTemplateForm from "./components/DynamicTemplateForm";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 function AppLayout() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/" element={<DynamicTemplateForm />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
         </Route>
       </Routes>
       <Toaster />
