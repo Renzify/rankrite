@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import StatusBadge from "../components/StatusBadge";
 
 const EVENTS = [
   {
@@ -76,7 +77,7 @@ function Statistics({ events }) {
   const toBeHeld = events.filter((event) => event.status === "Draft").length;
 
   return (
-    <div className="mt-4 grid grid-cols-3 divide-x-4 divide-base-300 rounded-lg border border-base-300 p-4 text-center">
+    <div className="mt-10 grid grid-cols-3 divide-x-4 divide-base-300 rounded-lg border border-base-300 p-4 text-center">
       <div>
         <h2 className="text-lg font-semibold">Total Events</h2>
         <h4 className="text-xl font-medium">{totalEvents}</h4>
@@ -95,7 +96,7 @@ function Statistics({ events }) {
 
 function AddEvent({ statusFilter, setStatusFilter, statusOptions }) {
   return (
-    <div className="mt-4 flex justify-between">
+    <div className="mt-10 flex justify-between">
       <div>
         <button type="button" className="btn btn-neutral btn-soft">
           Add Event
@@ -145,7 +146,9 @@ function EventList({ events }) {
               >
                 <th>{index + 1}</th>
                 <td>{event.name}</td>
-                <td className="px-6">{event.status}</td>
+                <td className="px-6">
+                  <StatusBadge status={event.status} />
+                </td>
                 <td className="px-6">{event.created}</td>
                 <td className="w-44">
                   <div className="flex items-center justify-center gap-2">
