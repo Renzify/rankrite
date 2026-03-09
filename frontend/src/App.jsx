@@ -1,18 +1,33 @@
 import React from "react";
-import { Routes, Route } from "react-router";
+import { Routes, Route, Outlet } from "react-router";
 import { Toaster } from "react-hot-toast";
 
+import Header from "./components/Header";
 import DynamicTemplateForm from "./components/DynamicTemplateForm";
+import Dashboard from "./pages/Dashboard";
+
+function AppLayout() {
+  return (
+    <div className="min-h-screen">
+      <Header />
+      <main className="p-4">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
 
 function App() {
   return (
-    <div>
+    <>
       <Routes>
-        <Route path="/" element={<DynamicTemplateForm />} />
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<DynamicTemplateForm />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
       </Routes>
-
       <Toaster />
-    </div>
+    </>
   );
 }
 
