@@ -34,6 +34,13 @@ function DynamicTemplateForm() {
     getFilteredOptions,
   } = useDynamicTemplate();
 
+  // Handle event title separately from template fields
+  const eventTitle = formValues.eventTitle || "";
+
+  const handleEventTitleChange = (e) => {
+    updateFieldValue("eventTitle", e.target.value);
+  };
+
   const activeStageIndex = getActiveStageIndex(
     selectedEventType,
     selectedSport,
@@ -185,6 +192,24 @@ function DynamicTemplateForm() {
                 </label>
               </div>
 
+              {/* Event Title Input - Shown when sport is selected */}
+              {selectedSport ? (
+                <label className="form-control w-full">
+                  <div className="label pb-1">
+                    <span className="label-text font-semibold">
+                      Event Title
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    placeholder="e.g. Regional Gymnastics Championship 2024"
+                    value={eventTitle}
+                    onChange={handleEventTitleChange}
+                  />
+                </label>
+              ) : null}
+
               {!selectedSport ? (
                 <div className="alert border border-base-300 bg-base-200/60 text-base-content">
                   <span>
@@ -308,6 +333,12 @@ function DynamicTemplateForm() {
               <h3 className="card-title text-lg">Current Values</h3>
 
               <div className="stats stats-vertical border border-base-300 bg-base-200/40 shadow-none">
+                <div className="stat py-3">
+                  <div className="stat-title">Event Title</div>
+                  <div className="stat-value text-base">
+                    {eventTitle || "-"}
+                  </div>
+                </div>
                 <div className="stat py-3">
                   <div className="stat-title">Event Type</div>
                   <div className="stat-value text-base">
