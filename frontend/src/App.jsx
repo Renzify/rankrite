@@ -1,4 +1,3 @@
-import React from "react";
 import { Routes, Route, Outlet } from "react-router";
 import { Toaster } from "react-hot-toast";
 
