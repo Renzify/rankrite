@@ -73,8 +73,8 @@ function Title() {
 
 function Statistics({ events }) {
   const totalEvents = events.length;
-  const onGoing = events.filter((event) => event.status === "Live").length;
-  const toBeHeld = events.filter((event) => event.status === "Draft").length;
+  const draft = events.filter((event) => event.status === "Draft").length;
+  const finished = events.filter((event) => event.status === "Finished").length;
 
   return (
     <div className="mt-10 grid grid-cols-3 divide-x-4 divide-base-300 rounded-lg border border-base-300 p-4 text-center">
@@ -83,12 +83,12 @@ function Statistics({ events }) {
         <h4 className="text-xl font-medium">{totalEvents}</h4>
       </div>
       <div>
-        <h2 className="text-lg font-semibold">On Going</h2>
-        <h4 className="text-xl font-medium">{onGoing}</h4>
+        <h2 className="text-lg font-semibold">Draft</h2>
+        <h4 className="text-xl font-medium">{draft}</h4>
       </div>
       <div>
-        <h2 className="text-lg font-semibold">To be Held</h2>
-        <h4 className="text-xl font-medium">{toBeHeld}</h4>
+        <h2 className="text-lg font-semibold">Finished</h2>
+        <h4 className="text-xl font-medium">{finished}</h4>
       </div>
     </div>
   );
