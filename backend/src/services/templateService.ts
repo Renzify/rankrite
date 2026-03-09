@@ -9,6 +9,23 @@ import {
 
 import { eq, inArray } from "drizzle-orm";
 
+export type CreateTemplateFieldInput = {
+  key: string;
+  label: string;
+  fieldType: "select" | "text" | "number";
+  isRequired?: boolean;
+  options?: Array<{ value: string; label: string }>;
+};
+
+export type CreateTemplateInput = {
+  name: string;
+  eventType: string;
+  description?: string;
+  sportValue: string;
+  sportLabel: string;
+  fields?: CreateTemplateFieldInput[];
+};
+
 async function buildTemplatePayload(template: typeof eventTemplate.$inferSelect) {
   const fields = await db.query.templateField.findMany({
     where: eq(templateField.templateId, template.id),
@@ -99,4 +116,113 @@ export async function getTemplateCatalog() {
       sports: sportOptions,
     };
   });
+}
+
+export async function createTemplate(input: CreateTemplateInput) {
+  const name = input.name?.trim();
+  const eventType = input.eventType?.trim();
+  const description = input.description?.trim() || null;
+  const sportValue = input.sportValue?.trim();
+  const sportLabel = input.sportLabel?.trim();
+
+  if (!name || !eventType || !sportValue || !sportLabel) {
+    throw new Error("INVALID_TEMPLATE_INPUT");
+  }
+
+  const existingTemplate = await db.query.eventTemplate.findFirst({
+    where: eq(eventTemplate.name, name),
+  });
+
+  if (existingTemplate) {
+    throw new Error("TEMPLATE_NAME_EXISTS");
+  }
+
+  const [template] = await db
+    .insert(eventTemplate)
+    .values({
+      name,
+      eventType,
+      description,
+      isActive: true,
+    })
+    .returning();
+
+  const customFields = (input.fields ?? []).map((field) => ({
+    key: field.key.trim(),
+    label: field.label.trim(),
+    fieldType: field.fieldType,
+    isRequired: field.isRequired ?? true,
+    options: field.options ?? [],
+  }));
+
+  const fieldsToInsert = [
+    {
+      templateId: template.id,
+      key: "sport",
+      label: "Select Sport",
+      fieldType: "select" as const,
+      sortOrder: 1,
+      isRequired: true,
+    },
+    ...customFields.map((field, index) => ({
+      templateId: template.id,
+      key: field.key,
+      label: field.label,
+      fieldType: field.fieldType,
+      sortOrder: index + 2,
+      isRequired: field.isRequired,
+    })),
+  ];
+
+  const insertedFields = await db
+    .insert(templateField)
+    .values(fieldsToInsert)
+    .returning();
+
+  const getFieldByKey = (key: string) =>
+    insertedFields.find((field) => field.key === key);
+
+  const optionRows: Array<{
+    fieldId: string;
+    value: string;
+    label: string;
+    sortOrder: number;
+  }> = [];
+
+  const sportField = getFieldByKey("sport");
+  if (sportField) {
+    optionRows.push({
+      fieldId: sportField.id,
+      value: sportValue,
+      label: sportLabel,
+      sortOrder: 1,
+    });
+  }
+
+  customFields.forEach((field) => {
+    if (field.fieldType !== "select") return;
+
+    const matchingField = getFieldByKey(field.key);
+    if (!matchingField) return;
+
+    field.options.forEach((option, index) => {
+      const value = option.value.trim();
+      const label = option.label.trim();
+
+      if (!value || !label) return;
+
+      optionRows.push({
+        fieldId: matchingField.id,
+        value,
+        label,
+        sortOrder: index + 1,
+      });
+    });
+  });
+
+  if (optionRows.length) {
+    await db.insert(templateFieldOption).values(optionRows);
+  }
+
+  return buildTemplatePayload(template);
 }

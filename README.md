@@ -1,0 +1,1 @@
+RankRite is a dynamic event scoring and ranking system for competitive sports events. The key innovation: instead of hardcoding sports-specific logic, it uses a flexible template-based architecture. Users define event structures once as templates, then create actual events by filling out these templates with specific data.
