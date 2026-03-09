@@ -1,6 +1,5 @@
 import toast from "react-hot-toast";
 import { useTemplateBuilder } from "../hooks/useTemplateBuilder";
-import Footer from "./Footer";
 
 function TemplateBuilderForm() {
   const {
