@@ -11,11 +11,11 @@ const STAGES = [
   { key: "details", label: "Template Details" },
 ];
 
-function getActiveStageIndex(selectedEventType, selectedSport) {
-  if (!selectedEventType) return 0;
-  if (!selectedSport) return 1;
-  return 2;
-}
+// function getActiveStageIndex(selectedEventType, selectedSport) {
+//   if (!selectedEventType) return 0;
+//   if (!selectedSport) return 1;
+//   return 2;
+// }
 
 function DynamicTemplateForm() {
   const {
@@ -132,7 +132,7 @@ function DynamicTemplateForm() {
               {!selectedSport ? (
                 <div className="alert border border-base-300 bg-base-200/60 text-base-content">
                   <span>
-                    Choose a sport to load its template-specific fields.
+                    Choose an event to load its template-specific fields.
                   </span>
                 </div>
               ) : null}
