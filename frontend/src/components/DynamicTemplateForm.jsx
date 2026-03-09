@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
-import Footer from "./Footer";
 
 const STAGES = [
   { key: "eventType", label: "Event Type" },
