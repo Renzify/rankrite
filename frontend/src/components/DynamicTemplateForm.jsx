@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
+import Footer from "./Footer";
 
 const STAGES = [
   { key: "eventType", label: "Event Type" },
@@ -33,7 +34,10 @@ function DynamicTemplateForm() {
     getFilteredOptions,
   } = useDynamicTemplate();
 
-  const activeStageIndex = getActiveStageIndex(selectedEventType, selectedSport);
+  const activeStageIndex = getActiveStageIndex(
+    selectedEventType,
+    selectedSport,
+  );
   const totalSports = useMemo(
     () =>
       selectedEventType
@@ -93,13 +97,11 @@ function DynamicTemplateForm() {
                 const isActive = activeStageIndex === index;
                 const isConnectorActive =
                   index < STAGES.length - 1 &&
-                  (activeStageIndex === index || activeStageIndex === index + 1);
+                  (activeStageIndex === index ||
+                    activeStageIndex === index + 1);
 
                 return (
-                  <div
-                    key={stage.key}
-                    className="contents"
-                  >
+                  <div key={stage.key} className="contents">
                     <div
                       className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
                         isActive
@@ -147,15 +149,14 @@ function DynamicTemplateForm() {
                   <select
                     className={`select select-bordered w-full ${isCatalogLoading ? "select-disabled" : ""}`}
                     value={selectedEventType}
-                    onChange={(event) => setSelectedEventType(event.target.value)}
+                    onChange={(event) =>
+                      setSelectedEventType(event.target.value)
+                    }
                     disabled={isCatalogLoading}
                   >
                     <option value="">-- Select Event Type --</option>
                     {eventTypeOptions.map((eventType) => (
-                      <option
-                        key={eventType.value}
-                        value={eventType.value}
-                      >
+                      <option key={eventType.value} value={eventType.value}>
                         {eventType.label}
                       </option>
                     ))}
@@ -164,7 +165,9 @@ function DynamicTemplateForm() {
 
                 <label className="form-control w-full">
                   <div className="label pb-1">
-                    <span className="label-text font-semibold">Select Sport</span>
+                    <span className="label-text font-semibold">
+                      Select Sport
+                    </span>
                   </div>
                   <select
                     className={`select select-bordered w-full ${!selectedEventType || isCatalogLoading ? "select-disabled" : ""}`}
@@ -174,10 +177,7 @@ function DynamicTemplateForm() {
                   >
                     <option value="">-- Select Sport --</option>
                     {sportOptions.map((sport) => (
-                      <option
-                        key={sport.value}
-                        value={sport.value}
-                      >
+                      <option key={sport.value} value={sport.value}>
                         {sport.label}
                       </option>
                     ))}
@@ -206,13 +206,18 @@ function DynamicTemplateForm() {
                 </div>
               ) : null}
 
-              {selectedSport && template && !isTemplateLoading && !templateError ? (
+              {selectedSport &&
+              template &&
+              !isTemplateLoading &&
+              !templateError ? (
                 <form className="space-y-4">
                   <div className="rounded-xl border border-base-300 bg-base-200/40 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
                       Template
                     </p>
-                    <h3 className="mt-1 text-lg font-semibold">{template.name}</h3>
+                    <h3 className="mt-1 text-lg font-semibold">
+                      {template.name}
+                    </h3>
                     <p className="mt-1 text-sm text-base-content/70">
                       {template.description}
                     </p>
@@ -220,7 +225,9 @@ function DynamicTemplateForm() {
 
                   {visibleFields.length === 0 ? (
                     <div className="alert border border-base-300 bg-base-200/60 text-base-content">
-                      <span>No additional fields are required for this sport.</span>
+                      <span>
+                        No additional fields are required for this sport.
+                      </span>
                     </div>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -228,10 +235,7 @@ function DynamicTemplateForm() {
                         const fieldOptions = getFilteredOptions(field);
 
                         return (
-                          <label
-                            key={field.id}
-                            className="form-control w-full"
-                          >
+                          <label key={field.id} className="form-control w-full">
                             <div className="label pb-1">
                               <span className="label-text font-semibold">
                                 {field.label}
@@ -244,16 +248,16 @@ function DynamicTemplateForm() {
                                 id={field.key}
                                 value={formValues[field.key] || ""}
                                 onChange={(event) =>
-                                  updateFieldValue(field.key, event.target.value)
+                                  updateFieldValue(
+                                    field.key,
+                                    event.target.value,
+                                  )
                                 }
                                 disabled={fieldOptions.length === 0}
                               >
                                 <option value="">-- Select --</option>
                                 {fieldOptions.map((option) => (
-                                  <option
-                                    key={option.id}
-                                    value={option.value}
-                                  >
+                                  <option key={option.id} value={option.value}>
                                     {option.label}
                                   </option>
                                 ))}
@@ -267,7 +271,10 @@ function DynamicTemplateForm() {
                                 className="input input-bordered w-full"
                                 value={formValues[field.key] || ""}
                                 onChange={(event) =>
-                                  updateFieldValue(field.key, event.target.value)
+                                  updateFieldValue(
+                                    field.key,
+                                    event.target.value,
+                                  )
                                 }
                               />
                             ) : null}
@@ -279,7 +286,10 @@ function DynamicTemplateForm() {
                                 className="input input-bordered w-full"
                                 value={formValues[field.key] || ""}
                                 onChange={(event) =>
-                                  updateFieldValue(field.key, event.target.value)
+                                  updateFieldValue(
+                                    field.key,
+                                    event.target.value,
+                                  )
                                 }
                               />
                             ) : null}
@@ -306,7 +316,9 @@ function DynamicTemplateForm() {
                 </div>
                 <div className="stat py-3">
                   <div className="stat-title">Sport</div>
-                  <div className="stat-value text-base">{selectedSport || "-"}</div>
+                  <div className="stat-value text-base">
+                    {selectedSport || "-"}
+                  </div>
                 </div>
                 <div className="stat py-3">
                   <div className="stat-title">Visible Fields</div>
