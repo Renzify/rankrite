@@ -7,6 +7,7 @@ import DynamicTemplateForm from "./components/DynamicTemplateForm";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 import EventDetails from "./pages/EventDetails";
 
 function AppLayout() {
@@ -31,6 +32,7 @@ function App() {
           <Route path="/events/details" element={<EventDetails />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
       </Routes>
       <Toaster />
