@@ -1,40 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useOutletContext } from "react-router";
 
-function formatScore(value) {
-  return Number.isFinite(value) ? value.toFixed(3) : "-";
-}
-
 export default function ScoringTab() {
-  const {
-    eventTitle,
-    selectedSport,
-    formValues,
-    selectableFields,
-    getFilteredOptions,
-    judges,
-    judgeScores,
-    setJudgeScores,
-  } = useOutletContext();
-
-  const apparatusField = useMemo(
-    () =>
-      selectableFields.find((field) => field.key === "apparatus") ??
-      selectableFields.find((field) =>
-        /apparatus/i.test(`${field.key} ${field.label}`),
-      ),
-    [selectableFields],
-  );
-
-  const apparatusOptions = apparatusField
-    ? getFilteredOptions(apparatusField)
-    : [];
-  const apparatusValue = apparatusField
-    ? formValues[apparatusField.key] || ""
-    : "";
-  const apparatusLabel =
-    apparatusOptions.find((option) => option.value === apparatusValue)?.label ||
-    apparatusValue;
+  const { judges, judgeScores, setJudgeScores, contestants } =
+    useOutletContext();
 
   useEffect(() => {
     setJudgeScores((prev) => {
@@ -61,19 +30,6 @@ export default function ScoringTab() {
 
   const scoringLocked =
     judges.length > 0 && judges.every((judge) => judgeScores[judge.id]?.locked);
-
-  const submittedScores = judges
-    .map((judge) => Number.parseFloat(judgeScores[judge.id]?.value))
-    .filter((score, index) => {
-      const judge = judges[index];
-      return Number.isFinite(score) && judgeScores[judge.id]?.locked;
-    });
-
-  const submittedCount = submittedScores.length;
-  const totalScore = submittedScores.reduce((sum, score) => sum + score, 0);
-  const averageScore = submittedCount ? totalScore / submittedCount : null;
-  const highestScore = submittedCount ? Math.max(...submittedScores) : null;
-  const lowestScore = submittedCount ? Math.min(...submittedScores) : null;
 
   const handleJudgeLock = (judgeId) => {
     if (scoringLocked) return;
@@ -179,26 +135,48 @@ export default function ScoringTab() {
           Computation
         </h3>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-base-300 bg-base-200/40 p-4">
-            <p className="text-xs uppercase text-base-content/60">Submitted</p>
-            <p className="text-xl font-semibold">{submittedCount}</p>
-          </div>
-
-          <div className="rounded-xl border border-base-300 bg-base-200/40 p-4">
-            <p className="text-xs uppercase text-base-content/60">Average</p>
-            <p className="text-xl font-semibold">{formatScore(averageScore)}</p>
-          </div>
-
-          <div className="rounded-xl border border-base-300 bg-base-200/40 p-4">
-            <p className="text-xs uppercase text-base-content/60">Highest</p>
-            <p className="text-xl font-semibold">{formatScore(highestScore)}</p>
-          </div>
-
-          <div className="rounded-xl border border-base-300 bg-base-200/40 p-4">
-            <p className="text-xs uppercase text-base-content/60">Lowest</p>
-            <p className="text-xl font-semibold">{formatScore(lowestScore)}</p>
-          </div>
+        <div className="overflow-x-auto rounded-xl border border-base-300 bg-base-100">
+          <table className="table table-zebra">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Contestant</th>
+                <th>Delegation</th>
+                <th>D</th>
+                <th>A</th>
+                <th>E</th>
+                <th>Penalties</th>
+                <th>Total</th>
+                <th>Final</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contestants.length ? (
+                contestants.map((contestant, index) => (
+                  <tr key={contestant.id}>
+                    <th>{index + 1}</th>
+                    <td>{contestant.fullName}</td>
+                    <td>{contestant.delegation}</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>--</td>
+                    <td>Pending integration</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={10} className="text-base-content/60">
+                    No contestants available. Import contestants in the
+                    Contestants tab first.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
