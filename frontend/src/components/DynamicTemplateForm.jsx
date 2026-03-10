@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import { useTemplateStore } from "../stores/templateStore";
+import { useEventStore } from "../stores/eventStore";
 import EventTypeSportSelect from "./EventTypeSportSelect";
 import TemplateFields from "./TemplateFields";
 import CurrentValuesSidebar from "./CurrentValuesSidebar";
@@ -45,6 +46,7 @@ function DynamicTemplateForm() {
   const setCurrentTab = useTemplateStore((state) => state.setCurrentTab);
   const judges = useTemplateStore((state) => state.judges);
   const contestants = useTemplateStore((state) => state.contestants);
+  const saveDraft = useEventStore((state) => state.saveDraft);
 
   // Handle event title separately from template fields
   const eventTitle = formValues.eventTitle || "";
@@ -75,8 +77,24 @@ function DynamicTemplateForm() {
 
   const canCreateEvent = judges.length > 0 && contestants.length > 0;
 
-  const handleSaveDraft = () => {
-    toast.success("Saved as draft");
+  const handleSaveDraft = async () => {
+    try {
+      await saveDraft({ template, formValues, eventTitle });
+      toast.success("Saved as draft");
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "NO_TEMPLATE_SELECTED") {
+          toast.error("No template selected.");
+          return;
+        }
+        if (error.message === "NO_EVENT_TITLE") {
+          toast.error("Please enter an event title before saving.");
+          return;
+        }
+      }
+      console.error("Failed to save draft:", error);
+      toast.error("Failed to save draft. Please try again.");
+    }
   };
 
   const handleCreateEvent = () => {
