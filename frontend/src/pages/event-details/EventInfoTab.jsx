@@ -67,17 +67,21 @@ export default function EventInfoTab() {
           type="text"
           className="input input-bordered w-full"
           value={formValues.eventTitle || "Gymnastics Regional 2024"}
-          onChange={(event) => updateFieldValue("eventTitle", event.target.value)}
+          onChange={(event) =>
+            updateFieldValue("eventTitle", event.target.value)
+          }
         />
       </label>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70 mt-5">
           Selected Fields
         </h3>
         {selectableFields.length === 0 ? (
           <div className="alert border border-base-300 bg-base-200/60 text-base-content">
-            <span>No selectable fields yet. Select event type and sport first.</span>
+            <span>
+              No selectable fields yet. Select event type and sport first.
+            </span>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -87,7 +91,9 @@ export default function EventInfoTab() {
               return (
                 <label key={field.id} className="form-control w-full">
                   <div className="label pb-1">
-                    <span className="label-text font-semibold">{field.label}</span>
+                    <span className="label-text font-semibold">
+                      {field.label}
+                    </span>
                   </div>
                   <select
                     className={`select select-bordered w-full ${options.length === 0 ? "select-disabled" : ""}`}
