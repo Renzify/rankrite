@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import { useTemplateStore } from "../stores/templateStore";
-import FormStages from "./FormStages";
 import EventTypeSportSelect from "./EventTypeSportSelect";
 import TemplateFields from "./TemplateFields";
 import CurrentValuesSidebar from "./CurrentValuesSidebar";
@@ -138,12 +137,6 @@ function DynamicTemplateForm() {
           </div>
         </section>
 
-        {/* Form Stages Indicator */}
-        <FormStages
-          selectedEventType={selectedEventType}
-          selectedSport={selectedSport}
-        />
-
         {/* Tab Navigation - Always visible */}
         <TabNavigation isFormComplete={isFormComplete} />
 
@@ -213,17 +206,27 @@ function DynamicTemplateForm() {
 
                   {/* Continue Button */}
                   {selectedSport && !isTemplateLoading && (
-                    <button
-                      onClick={handleContinueToJudges}
-                      disabled={!isFormComplete}
-                      className={`btn ${
-                        isFormComplete
-                          ? "btn-primary"
-                          : "btn-disabled !opacity-100 !text-white/80 !bg-slate-500/30 !border-slate-500/40 !shadow-none grayscale cursor-not-allowed"
-                      } mt-4`}
-                    >
-                      Continue to Add Judges →
-                    </button>
+                    <div className="mt-4 flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+                      {isFormComplete && (
+                        <button
+                          onClick={handleSaveDraft}
+                          className="btn btn-outline w-full sm:w-auto"
+                        >
+                          Save as Draft
+                        </button>
+                      )}
+                      <button
+                        onClick={handleContinueToJudges}
+                        disabled={!isFormComplete}
+                        className={`btn w-full sm:w-auto ${
+                          isFormComplete
+                            ? "btn-primary"
+                            : "btn-disabled !opacity-100 !text-white/80 !bg-slate-500/30 !border-slate-500/40 !shadow-none grayscale cursor-not-allowed"
+                        }`}
+                      >
+                        Continue to Add Judges →
+                      </button>
+                    </div>
                   )}
                 </>
               )}
