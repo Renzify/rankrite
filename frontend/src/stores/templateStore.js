@@ -13,6 +13,11 @@ export const useTemplateStore = create((set) => ({
   isTemplateLoading: false,
   templateError: null,
 
+  // Tab and participant management
+  currentTab: "details", // details | judges | contestants
+  judges: [],
+  contestants: [],
+
   setCatalog: (catalog) => set({ catalog }),
   setCatalogLoading: (isCatalogLoading) => set({ isCatalogLoading }),
   setCatalogError: (catalogError) => set({ catalogError }),
@@ -24,6 +29,9 @@ export const useTemplateStore = create((set) => ({
       template: null,
       formValues: {},
       templateError: null,
+      currentTab: "details",
+      judges: [],
+      contestants: [],
     }),
 
   setSelectedSport: (selectedSport) =>
@@ -32,6 +40,9 @@ export const useTemplateStore = create((set) => ({
       template: null,
       formValues: {},
       templateError: null,
+      currentTab: "details",
+      judges: [],
+      contestants: [],
     }),
 
   setTemplate: (template) =>
@@ -39,7 +50,14 @@ export const useTemplateStore = create((set) => ({
       template,
       formValues: state.selectedSport ? { sport: state.selectedSport } : {},
     })),
-  clearTemplate: () => set({ template: null, formValues: {} }),
+  clearTemplate: () =>
+    set({
+      template: null,
+      formValues: {},
+      currentTab: "details",
+      judges: [],
+      contestants: [],
+    }),
   setTemplateLoading: (isTemplateLoading) => set({ isTemplateLoading }),
   setTemplateError: (templateError) => set({ templateError }),
 
@@ -65,5 +83,47 @@ export const useTemplateStore = create((set) => ({
 
       return { formValues: next };
     }),
-}));
 
+  setCurrentTab: (currentTab) => set({ currentTab }),
+
+  addJudge: (judge) =>
+    set((state) => ({
+      judges: [...state.judges, { ...judge, id: Date.now() + Math.random() }],
+    })),
+
+  removeJudge: (judgeId) =>
+    set((state) => ({
+      judges: state.judges.filter((judge) => judge.id !== judgeId),
+    })),
+
+  updateJudge: (judgeId, updatedJudge) =>
+    set((state) => ({
+      judges: state.judges.map((judge) =>
+        judge.id === judgeId ? { ...judge, ...updatedJudge } : judge,
+      ),
+    })),
+
+  addContestant: (contestant) =>
+    set((state) => ({
+      contestants: [
+        ...state.contestants,
+        { ...contestant, id: Date.now() + Math.random() },
+      ],
+    })),
+
+  removeContestant: (contestantId) =>
+    set((state) => ({
+      contestants: state.contestants.filter(
+        (contestant) => contestant.id !== contestantId,
+      ),
+    })),
+
+  updateContestant: (contestantId, updatedContestant) =>
+    set((state) => ({
+      contestants: state.contestants.map((contestant) =>
+        contestant.id === contestantId
+          ? { ...contestant, ...updatedContestant }
+          : contestant,
+      ),
+    })),
+}));

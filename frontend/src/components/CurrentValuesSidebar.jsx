@@ -5,41 +5,118 @@ function CurrentValuesSidebar({
   template,
   visibleFields,
   formValues,
+  currentTab,
+  judges,
+  contestants,
 }) {
   return (
     <aside className="card border border-base-300 bg-base-100/90 shadow-lg">
       <div className="card-body gap-4">
-        <h3 className="card-title text-lg">Current Values</h3>
+        {currentTab === "details" && (
+          <>
+            <h3 className="card-title text-lg">Current Values</h3>
 
-        <div className="stats stats-vertical border border-base-300 bg-base-200/40 shadow-none">
-          <div className="stat py-3">
-            <div className="stat-title">Event Title</div>
-            <div className="stat-value text-base">{eventTitle || "-"}</div>
-          </div>
-          <div className="stat py-3">
-            <div className="stat-title">Event Type</div>
-            <div className="stat-value text-base">
-              {selectedEventType || "-"}
+            <div className="stats stats-vertical border border-base-300 bg-base-200/40 shadow-none">
+              <div className="stat py-3">
+                <div className="stat-title">Event Title</div>
+                <div className="stat-value text-base">{eventTitle || "-"}</div>
+              </div>
+              <div className="stat py-3">
+                <div className="stat-title">Event Type</div>
+                <div className="stat-value text-base">
+                  {selectedEventType || "-"}
+                </div>
+              </div>
+              <div className="stat py-3">
+                <div className="stat-title">Sport</div>
+                <div className="stat-value text-base">
+                  {selectedSport || "-"}
+                </div>
+              </div>
+              <div className="stat py-3">
+                <div className="stat-title">Visible Fields</div>
+                <div className="stat-value text-base">
+                  {template ? visibleFields.length : 0}
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="stat py-3">
-            <div className="stat-title">Sport</div>
-            <div className="stat-value text-base">{selectedSport || "-"}</div>
-          </div>
-          <div className="stat py-3">
-            <div className="stat-title">Visible Fields</div>
-            <div className="stat-value text-base">
-              {template ? visibleFields.length : 0}
-            </div>
-          </div>
-        </div>
 
-        <div>
-          <p className="mb-2 text-sm font-semibold">Form Data Preview</p>
-          <pre className="max-h-96 overflow-auto rounded-xl bg-neutral p-4 text-xs text-neutral-content">
-            {JSON.stringify(formValues, null, 2)}
-          </pre>
-        </div>
+            <div>
+              <p className="mb-2 text-sm font-semibold">Form Data Preview</p>
+              <pre className="max-h-96 overflow-auto rounded-xl bg-neutral p-4 text-xs text-neutral-content">
+                {JSON.stringify(formValues, null, 2)}
+              </pre>
+            </div>
+          </>
+        )}
+
+        {currentTab === "judges" && (
+          <>
+            <h3 className="card-title text-lg">
+              Added Judges ({judges.length})
+            </h3>
+
+            {judges.length > 0 ? (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {judges.map((judge) => (
+                  <div
+                    key={judge.id}
+                    className="card border border-base-300 bg-base-100"
+                  >
+                    <div className="card-body flex flex-row items-center justify-between gap-4 py-3">
+                      <div className="flex-1">
+                        <p className="font-semibold">{judge.fullName}</p>
+                        <p className="text-sm text-base-content/60">
+                          {judge.judgeType} • Judge #{judge.judgeNumber}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="alert alert-info">
+                <span>No judges added yet.</span>
+              </div>
+            )}
+          </>
+        )}
+
+        {currentTab === "contestants" && (
+          <>
+            <h3 className="card-title text-lg">
+              Added Contestants ({contestants.length})
+            </h3>
+
+            {contestants.length > 0 ? (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {contestants.map((contestant, index) => (
+                  <div
+                    key={contestant.id}
+                    className="card border border-base-300 bg-base-100"
+                  >
+                    <div className="card-body flex flex-row items-center justify-between gap-4 py-3">
+                      <div className="flex-1">
+                        <p className="font-semibold">
+                          #{index + 1} - {contestant.fullName}
+                        </p>
+                        <p className="text-sm text-base-content/60">
+                          {contestant.teamName &&
+                            `Team: ${contestant.teamName} • `}
+                          {contestant.gender && `Gender: ${contestant.gender}`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="alert alert-info">
+                <span>No contestants added yet.</span>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </aside>
   );

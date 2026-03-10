@@ -1,4 +1,4 @@
-import { Routes, Route, Outlet } from "react-router";
+import { Navigate, Outlet, Route, Routes } from "react-router";
 import { Toaster } from "react-hot-toast";
 
 import Header from "./components/Header";
@@ -30,7 +30,16 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<DynamicTemplateForm />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/events/details" element={<EventDetails />} />
+
+          <Route path="/events/details" element={<EventDetails />}>
+            <Route index element={<Navigate to="event-info" replace />} />
+            <Route path="event-info" element={<EventInfoTab />} />
+            <Route path="judges" element={<JudgesTab />} />
+            <Route path="contestant" element={<ContestantTab />} />
+            <Route path="scoring" element={<ScoringTab />} />
+            <Route path="display-control" element={<DisplayControlTab />} />
+          </Route>
+
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
