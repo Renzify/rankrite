@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 
 function SignupCard() {
@@ -112,9 +113,9 @@ function SignupCard() {
         {/* Login link */}
         <p className="text-center text-sm">
           Already have an account?{" "}
-          <a href="/login" className="link link-primary">
+          <Link to="/auth/login" className="link link-primary">
             Login
-          </a>
+          </Link>
         </p>
       </div>
     </div>

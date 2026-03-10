@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 
 function LoginCard() {
@@ -58,9 +59,9 @@ function LoginCard() {
               <input type="checkbox" className="checkbox checkbox-primary" />
               <span className="label-text">Remember me</span>
             </label>
-            <a href="/forgot-password" className="link link-primary text-sm">
+            <Link to="/auth/forgot-password" className="link link-primary text-sm">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           {/* Login Button */}
@@ -73,10 +74,10 @@ function LoginCard() {
 
         {/* Sign up link */}
         <p className="text-center text-sm">
-          Don't have an account?{" "}
-          <a href="/signup" className="link link-primary">
+          Don&apos;t have an account?{" "}
+          <Link to="/auth/signup" className="link link-primary">
             Sign Up
-          </a>
+          </Link>
         </p>
       </div>
     </div>

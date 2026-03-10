@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { ArrowLeft } from "lucide-react";
 
 function ForgotPasswordCard() {
@@ -14,7 +15,7 @@ function ForgotPasswordCard() {
         </h2>
 
         <p className="text-center text-base-content/70 mb-6">
-          Enter your email and we'll send you a link to reset your password
+          Enter your email and we&apos;ll send you a link to reset your password
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -41,10 +42,10 @@ function ForgotPasswordCard() {
 
         {/* Back to Login */}
         <div className="form-control">
-          <a href="/login" className="btn btn-ghost btn-sm gap-2">
+          <Link to="/auth/login" className="btn btn-ghost btn-sm gap-2">
             <ArrowLeft size={16} />
             Back to Login
-          </a>
+          </Link>
         </div>
       </div>
     </div>
