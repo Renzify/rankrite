@@ -60,8 +60,8 @@ function JudgesTab() {
       {/* Add Judge Form */}
       <div className="card border border-base-300 bg-base-100">
         <div className="card-body">
-          <div className="space-y-4">
-            <label className="form-control w-full">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="form-control w-full sm:col-span-2">
               <div className="label pb-1">
                 <span className="label-text font-semibold">
                   Full Name <span className="text-error">*</span>

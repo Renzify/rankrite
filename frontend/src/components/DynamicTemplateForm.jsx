@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import { useTemplateStore } from "../stores/templateStore";
 import FormStages from "./FormStages";
@@ -57,17 +58,31 @@ function DynamicTemplateForm() {
   const isFormComplete = useMemo(() => {
     if (!selectedSport || !template) return false;
 
+    const isEventTitleFilled = eventTitle.trim().length > 0;
+    if (!isEventTitleFilled) return false;
+
     return visibleFields.every((field) => {
       if (!field.isRequired) return true;
       const value = formValues[field.key];
       return value !== undefined && value !== null && value !== "";
     });
-  }, [selectedSport, template, visibleFields, formValues]);
+  }, [selectedSport, template, visibleFields, formValues, eventTitle]);
 
   const handleContinueToJudges = () => {
     if (isFormComplete) {
       setCurrentTab("judges");
     }
+  };
+
+  const canCreateEvent = judges.length > 0 && contestants.length > 0;
+
+  const handleSaveDraft = () => {
+    toast.success("Saved as draft");
+  };
+
+  const handleCreateEvent = () => {
+    if (!canCreateEvent) return;
+    toast.success("Event created");
   };
 
   const totalSports = useMemo(
@@ -204,7 +219,7 @@ function DynamicTemplateForm() {
                       className={`btn ${
                         isFormComplete
                           ? "btn-primary"
-                          : "btn-disabled opacity-50"
+                          : "btn-disabled !opacity-100 !text-white/80 !bg-slate-500/30 !border-slate-500/40 !shadow-none grayscale cursor-not-allowed"
                       } mt-4`}
                     >
                       Continue to Add Judges →
@@ -236,6 +251,25 @@ function DynamicTemplateForm() {
             />
           )}
         </div>
+
+        {(currentTab === "judges" || currentTab === "contestants") && (
+          <div className="flex w-full flex-col gap-2 pt-3 sm:flex-row sm:justify-end">
+            <button
+              onClick={handleSaveDraft}
+              className="btn btn-outline w-full sm:w-auto"
+            >
+              Save as Draft
+            </button>
+            {canCreateEvent && (
+              <button
+                onClick={handleCreateEvent}
+                className="btn btn-success w-full sm:w-auto"
+              >
+                Create Event
+              </button>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
