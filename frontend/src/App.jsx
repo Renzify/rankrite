@@ -5,9 +5,10 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import DynamicTemplateForm from "./components/DynamicTemplateForm";
 import Dashboard from "./pages/Dashboard";
-import Login from "./auth/Login";
-import Signup from "./auth/Signup";
-import ForgotPassword from "./auth/ForgotPassword";
+import Auth from "./auth/Auth";
+import SignupCard from "./auth/components/SignupCard";
+import LoginCard from "./auth/components/LoginCard";
+import ForgotPasswordCard from "./auth/components/ForgotPasswordCard";
 import EventDetails from "./pages/EventDetails";
 import JudgeScore from "./pages/JudgeScore";
 import EventInfoTab from "./pages/event-details/EventInfoTab";
@@ -45,9 +46,13 @@ function App() {
             <Route path="display-control" element={<DisplayControlTab />} />
           </Route>
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth" element={<Auth />}>
+            <Route index element={<Navigate to="login" replace />} />
+            <Route path="login" element={<LoginCard />} />
+            <Route path="signup" element={<SignupCard />} />
+            <Route path="forgot-password" element={<ForgotPasswordCard />} />
+          </Route>
+
           <Route path="/judge-score" element={<JudgeScore />} />
         </Route>
       </Routes>
