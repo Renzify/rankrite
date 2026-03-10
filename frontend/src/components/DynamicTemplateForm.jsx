@@ -1,9 +1,13 @@
 import { useMemo } from "react";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
+import { useTemplateStore } from "../stores/templateStore";
 import FormStages from "./FormStages";
 import EventTypeSportSelect from "./EventTypeSportSelect";
 import TemplateFields from "./TemplateFields";
 import CurrentValuesSidebar from "./CurrentValuesSidebar";
+import TabNavigation from "./TabNavigation";
+import JudgesTab from "./JudgesTab";
+import ContestantsTab from "./ContestantsTab";
 
 const STAGES = [
   { key: "eventType", label: "Event Type" },
@@ -37,11 +41,33 @@ function DynamicTemplateForm() {
     getFilteredOptions,
   } = useDynamicTemplate();
 
+  const currentTab = useTemplateStore((state) => state.currentTab);
+  const setCurrentTab = useTemplateStore((state) => state.setCurrentTab);
+  const judges = useTemplateStore((state) => state.judges);
+  const contestants = useTemplateStore((state) => state.contestants);
+
   // Handle event title separately from template fields
   const eventTitle = formValues.eventTitle || "";
 
   const handleEventTitleChange = (e) => {
     updateFieldValue("eventTitle", e.target.value);
+  };
+
+  // Check if all required fields are filled
+  const isFormComplete = useMemo(() => {
+    if (!selectedSport || !template) return false;
+
+    return visibleFields.every((field) => {
+      if (!field.isRequired) return true;
+      const value = formValues[field.key];
+      return value !== undefined && value !== null && value !== "";
+    });
+  }, [selectedSport, template, visibleFields, formValues]);
+
+  const handleContinueToJudges = () => {
+    if (isFormComplete) {
+      setCurrentTab("judges");
+    }
   };
 
   const totalSports = useMemo(
@@ -103,11 +129,18 @@ function DynamicTemplateForm() {
           selectedSport={selectedSport}
         />
 
-        <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
+        {/* Tab Navigation - Always visible */}
+        <TabNavigation isFormComplete={isFormComplete} />
+
+        <div
+          className={`grid gap-4 ${currentTab === "details" ? "" : "lg:grid-cols-[1.7fr_1fr]"}`}
+        >
           {/* Main Form Section */}
           <section className="card border border-base-300 bg-base-100/90 shadow-xl">
             <div className="card-body gap-5">
-              <h2 className="card-title">Template Selection</h2>
+              {currentTab === "details" && (
+                <h2 className="card-title">Template Selection</h2>
+              )}
 
               {catalogError ? (
                 <div className="alert alert-error">
@@ -115,63 +148,93 @@ function DynamicTemplateForm() {
                 </div>
               ) : null}
 
-              {/* Event Type and Sport Selection */}
-              <EventTypeSportSelect
-                selectedEventType={selectedEventType}
-                selectedSport={selectedSport}
-                isCatalogLoading={isCatalogLoading}
-                eventTypeOptions={eventTypeOptions}
-                sportOptions={sportOptions}
-                eventTitle={eventTitle}
-                setSelectedEventType={setSelectedEventType}
-                setSelectedSport={setSelectedSport}
-                handleEventTitleChange={handleEventTitleChange}
-              />
+              {/* Event Type and Sport Selection - Only show on details tab */}
+              {currentTab === "details" && (
+                <>
+                  <EventTypeSportSelect
+                    selectedEventType={selectedEventType}
+                    selectedSport={selectedSport}
+                    isCatalogLoading={isCatalogLoading}
+                    eventTypeOptions={eventTypeOptions}
+                    sportOptions={sportOptions}
+                    eventTitle={eventTitle}
+                    setSelectedEventType={setSelectedEventType}
+                    setSelectedSport={setSelectedSport}
+                    handleEventTitleChange={handleEventTitleChange}
+                  />
 
-              {/* Loading/Error/Info Messages */}
-              {!selectedSport ? (
-                <div className="alert border border-base-300 bg-base-200/60 text-base-content">
-                  <span>
-                    Choose an event to load its template-specific fields.
-                  </span>
-                </div>
-              ) : null}
+                  {/* Loading/Error/Info Messages */}
+                  {!selectedSport ? (
+                    <div className="alert border border-base-300 bg-base-200/60 text-base-content">
+                      <span>
+                        Choose an event to load its template-specific fields.
+                      </span>
+                    </div>
+                  ) : null}
 
-              {selectedSport && isTemplateLoading ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="loading loading-spinner loading-sm" />
-                  Loading template...
-                </div>
-              ) : null}
+                  {selectedSport && isTemplateLoading ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="loading loading-spinner loading-sm" />
+                      Loading template...
+                    </div>
+                  ) : null}
 
-              {selectedSport && templateError ? (
-                <div className="alert alert-error">
-                  <span>{templateError}</span>
-                </div>
-              ) : null}
+                  {selectedSport && templateError ? (
+                    <div className="alert alert-error">
+                      <span>{templateError}</span>
+                    </div>
+                  ) : null}
 
-              {/* Dynamic Template Fields */}
-              <TemplateFields
-                template={template}
-                formValues={formValues}
-                visibleFields={visibleFields}
-                isTemplateLoading={isTemplateLoading}
-                templateError={templateError}
-                updateFieldValue={updateFieldValue}
-                getFilteredOptions={getFilteredOptions}
-              />
+                  {/* Dynamic Template Fields */}
+                  <TemplateFields
+                    template={template}
+                    formValues={formValues}
+                    visibleFields={visibleFields}
+                    isTemplateLoading={isTemplateLoading}
+                    templateError={templateError}
+                    updateFieldValue={updateFieldValue}
+                    getFilteredOptions={getFilteredOptions}
+                  />
+
+                  {/* Continue Button */}
+                  {selectedSport && !isTemplateLoading && (
+                    <button
+                      onClick={handleContinueToJudges}
+                      disabled={!isFormComplete}
+                      className={`btn ${
+                        isFormComplete
+                          ? "btn-primary"
+                          : "btn-disabled opacity-50"
+                      } mt-4`}
+                    >
+                      Continue to Add Judges →
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* Judges Tab */}
+              {currentTab === "judges" && <JudgesTab />}
+
+              {/* Contestants Tab */}
+              {currentTab === "contestants" && <ContestantsTab />}
             </div>
           </section>
 
-          {/* Sidebar with Current Values */}
-          <CurrentValuesSidebar
-            selectedEventType={selectedEventType}
-            selectedSport={selectedSport}
-            eventTitle={eventTitle}
-            template={template}
-            visibleFields={visibleFields}
-            formValues={formValues}
-          />
+          {/* Sidebar with Current Values - Only show when not on details tab */}
+          {currentTab !== "details" && (
+            <CurrentValuesSidebar
+              selectedEventType={selectedEventType}
+              selectedSport={selectedSport}
+              eventTitle={eventTitle}
+              template={template}
+              visibleFields={visibleFields}
+              formValues={formValues}
+              currentTab={currentTab}
+              judges={judges}
+              contestants={contestants}
+            />
+          )}
         </div>
       </main>
     </div>
