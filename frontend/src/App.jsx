@@ -9,17 +9,13 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import EventDetails from "./pages/EventDetails";
-import EventInfoTab from "./pages/event-details/EventInfoTab";
-import JudgesTab from "./pages/event-details/JudgesTab";
-import ContestantTab from "./pages/event-details/ContestantTab";
-import ScoringTab from "./pages/event-details/ScoringTab";
-import DisplayControlTab from "./pages/event-details/DisplayControlTab";
+import JudgeScore from "./pages/JudgeScore";
 
 function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1 p-4">
+      <main className="flex-1">
         <Outlet />
       </main>
       <Footer />
@@ -47,6 +43,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/judge-score" element={<JudgeScore />} />
         </Route>
       </Routes>
       <Toaster />
