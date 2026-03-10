@@ -1,4 +1,4 @@
-import ForgotPasswordCard from "../components/ForgotPasswordCard";
+import ForgotPasswordCard from "./components/ForgotPasswordCard";
 
 function ForgotPassword() {
   return (
