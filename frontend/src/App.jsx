@@ -10,6 +10,11 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import EventDetails from "./pages/EventDetails";
 import JudgeScore from "./pages/JudgeScore";
+import EventInfoTab from "./pages/event-details/EventInfoTab";
+import JudgesTab from "./pages/event-details/JudgesTab";
+import ContestantTab from "./pages/event-details/ContestantTab";
+import ScoringTab from "./pages/event-details/ScoringTab";
+import DisplayControlTab from "./pages/event-details/DisplayControlTab";
 
 function AppLayout() {
   return (
