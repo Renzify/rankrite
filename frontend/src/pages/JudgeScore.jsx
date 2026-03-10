@@ -1,19 +1,32 @@
 import React, { useState } from "react";
+import { User } from "lucide-react";
 
 function JudgeScore() {
   // Temporary data arrays
   // Single predefined judge (could be the logged-in judge)
   const currentJudge = {
     id: 1,
-    name: "John Smith",
+    name: "Chavit Singson",
     specialization: "Time Judge",
   };
 
   const contestants = [
-    { id: 1, name: "Alice Johnson", delegation: "Team Philippines" },
-    { id: 2, name: "Bob Williams", delegation: "Team USA" },
-    { id: 3, name: "Charlie Davis", delegation: "Team UK" },
-    { id: 4, name: "Diana Martinez", delegation: "Team Canada" },
+    {
+      id: 1,
+      name: "Manuel Marc Barcelona",
+      delegation: "Information and Communication Technology High School",
+    },
+    {
+      id: 2,
+      name: "Juan Dela Cruz",
+      delegation: "Del Rosario Elementary School",
+    },
+    { id: 3, name: "Clark Bengco", delegation: "Asian Montessori Center Inc." },
+    {
+      id: 4,
+      name: "Marky Mark Barcelona",
+      delegation: "Achievers Special Education Center",
+    },
   ];
 
   const [selectedJudge, setSelectedJudge] = useState(1);
@@ -155,14 +168,12 @@ function JudgeScore() {
               className={`flex items-center gap-4 p-4 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 transition-colors ${selectedJudge ? "ring-2 ring-primary" : ""}`}
               onClick={() => setSelectedJudge(currentJudge.id)}
             >
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-content font-bold text-lg">
-                {currentJudge.id}
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-content">
+                <User size={24} />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">{currentJudge.name}</h3>
-                <p className="text-sm text-base-content/70">
-                  Judge #{currentJudge.id}
-                </p>
+                <p className="text-sm text-base-content/70">Judge</p>
                 <p className="text-xs text-base-content/60">
                   {currentJudge.specialization}
                 </p>
