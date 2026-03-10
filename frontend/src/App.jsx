@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import EventDetails from "./pages/EventDetails";
+import JudgeScore from "./pages/JudgeScore";
 
 function AppLayout() {
   return (
@@ -33,6 +34,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/judge-score" element={<JudgeScore />} />
         </Route>
       </Routes>
       <Toaster />
