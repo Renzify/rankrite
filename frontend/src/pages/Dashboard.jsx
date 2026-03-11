@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import StatusBadge from "../components/StatusBadge";
 import { useEventStore } from "../stores/eventStore";
 import { useShallow } from "zustand/react/shallow";
@@ -38,6 +39,7 @@ const formatDate = (value) => {
 };
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("All Status");
   const { events, isLoading, error, loadEvents } = useEventStore(
     useShallow((state) => ({
@@ -71,6 +73,14 @@ function Dashboard() {
     return displayEvents.filter((event) => event.status === statusFilter);
   }, [displayEvents, statusFilter]);
 
+  const handleCreateEvent = () => {
+    navigate("/event-form");
+  };
+
+  const handleOpenEvent = () => {
+    navigate("/events/details");
+  };
+
   return (
     <div className="app-page space-y-6">
       <section>
@@ -87,9 +97,10 @@ function Dashboard() {
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         statusOptions={STATUS_OPTIONS}
+        onAddEvent={handleCreateEvent}
       />
 
-      <EventList events={filteredEvents} isLoading={isLoading} error={error} />
+      <EventList events={filteredEvents} isLoading={isLoading} error={error} onOpenEvent={handleOpenEvent}/>
     </div>
   );
 }
@@ -129,11 +140,15 @@ function Statistics({ events }) {
   );
 }
 
-function AddEvent({ statusFilter, setStatusFilter, statusOptions }) {
+function AddEvent({ statusFilter, setStatusFilter, statusOptions, onAddEvent }) {
   return (
     <section className="app-surface app-section">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <button type="button" className="btn btn-primary w-full sm:w-auto">
+        <button
+          type="button"
+          className="btn btn-primary w-full sm:w-auto"
+          onClick={onAddEvent}
+        >
           Add Event
         </button>
 
@@ -156,7 +171,7 @@ function AddEvent({ statusFilter, setStatusFilter, statusOptions }) {
   );
 }
 
-function EventList({ events, isLoading, error }) {
+function EventList({ events, isLoading, error, onOpenEvent }) {
   return (
     <section className="app-table-wrap">
       <table className="table">
@@ -187,7 +202,8 @@ function EventList({ events, isLoading, error }) {
             events.map((event, index) => (
               <tr
                 key={event.id}
-                className="transition-colors hover:bg-base-200"
+                className="cursor-pointer transition-colors hover:bg-base-200"
+                onClick={onOpenEvent}
               >
                 <th>{index + 1}</th>
                 <td>{event.name}</td>
@@ -200,6 +216,7 @@ function EventList({ events, isLoading, error }) {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline w-16 justify-center"
+                      onClick={(event) => event.stopPropagation()}
                     >
                       {event.status !== "Finished" ? "Edit" : "View"}
                     </button>
@@ -207,6 +224,7 @@ function EventList({ events, isLoading, error }) {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline w-16 justify-center hover:border-error hover:bg-error hover:text-error-content"
+                      onClick={(event) => event.stopPropagation()}
                     >
                       Delete
                     </button>

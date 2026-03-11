@@ -29,11 +29,12 @@ function JudgeScore() {
     },
   ];
 
-  const [selectedJudge, setSelectedJudge] = useState(1);
   const [selectedContestant, setSelectedContestant] = useState("");
   const [scoreValue, setScoreValue] = useState("5.00");
   const [decimalValue, setDecimalValue] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Selected judge is always the current judge
+  const selectedJudge = currentJudge.id;
 
   // Generate array 1-10 for slider
   const scoreRange = Array.from({ length: 10 }, (_, i) => i + 1);
@@ -164,10 +165,7 @@ function JudgeScore() {
               </span>
               <hr className="flex-1 border-base-300" />
             </div>
-            <div
-              className={`flex items-center gap-4 p-4 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 transition-colors ${selectedJudge ? "ring-2 ring-primary" : ""}`}
-              onClick={() => setSelectedJudge(currentJudge.id)}
-            >
+            <div className="flex items-center gap-4 p-4 bg-base-200 rounded-lg transition-colors ring-2 ring-primary">
               <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-content">
                 <User size={24} />
               </div>

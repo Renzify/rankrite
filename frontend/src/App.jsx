@@ -3,7 +3,7 @@ import { Toaster } from "react-hot-toast";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import DynamicTemplateForm from "./components/DynamicTemplateForm";
+import DynamicTemplateForm from "./pages/DynamicTemplateForm";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./auth/Auth";
 import SignupCard from "./auth/components/SignupCard";
@@ -34,7 +34,7 @@ function App() {
     <>
       <Routes>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<DynamicTemplateForm />} />
+          <Route path="/event-form" element={<DynamicTemplateForm />} />
           <Route path="/dashboard" element={<Dashboard />} />
 
           <Route path="/events/details" element={<EventDetails />}>
