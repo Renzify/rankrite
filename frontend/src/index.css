@@ -7,6 +7,15 @@
     "Plus Jakarta Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
+#root {
+  min-height: 100vh;
+}
+
 body {
   font-family: inherit;
 }

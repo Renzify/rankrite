@@ -16,6 +16,7 @@ import JudgesTab from "./pages/event-details/JudgesTab";
 import ContestantTab from "./pages/event-details/ContestantTab";
 import ScoringTab from "./pages/event-details/ScoringTab";
 import DisplayControlTab from "./pages/event-details/DisplayControlTab";
+import DisplayView from "./pages/event-details/DisplayView";
 
 function AppLayout() {
   return (
@@ -55,6 +56,7 @@ function App() {
 
           <Route path="/judge-score" element={<JudgeScore />} />
         </Route>
+        <Route path="/live-display" element={<DisplayView />} />
       </Routes>
       <Toaster />
     </>

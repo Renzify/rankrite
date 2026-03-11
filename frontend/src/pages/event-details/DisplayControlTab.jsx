@@ -1,8 +1,55 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router";
+import {
+  LIVE_DISPLAY_CHANNEL_NAME,
+  LIVE_DISPLAY_MESSAGE_TYPE,
+  formatLiveLabel,
+  writeLiveDisplayState,
+} from "../../lib/liveDisplaySync";
+
+const VIEW_MODE_OPTIONS = [
+  {
+    value: "manual",
+    label: "Manual Swapping",
+    description: "Operator advances the audience display manually.",
+  },
+  {
+    value: "auto",
+    label: "Automatic Swapping",
+    description:
+      "Rotate contestants automatically using the selected interval.",
+  },
+];
+
+const FREEZE_OPTIONS = [
+  {
+    value: "live",
+    label: "Live",
+    description: "Display updates normally.",
+  },
+  {
+    value: "frozen",
+    label: "Frozen",
+    description: "Hold the current frame on screen.",
+  },
+];
+
+const OUTPUT_OPTIONS = [
+  {
+    value: "visible",
+    label: "Visible",
+    description: "Audience can see the live display.",
+  },
+  {
+    value: "blackout",
+    label: "Blackout",
+    description: "Hide the audience output immediately.",
+  },
+];
 
 export default function DisplayControlTab() {
-  const { eventTitle, selectedSport, contestants } = useOutletContext();
+  const { eventTitle, selectedEventType, selectedSport, contestants } =
+    useOutletContext();
 
   const [viewMode, setViewMode] = useState("manual");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -10,6 +57,8 @@ export default function DisplayControlTab() {
   const [isAutoRunning, setIsAutoRunning] = useState(true);
   const [isFrozen, setIsFrozen] = useState(false);
   const [isBlackout, setIsBlackout] = useState(false);
+
+  const channelRef = useRef(null);
 
   const hasContestants = contestants.length > 0;
   const safeActiveIndex = hasContestants
@@ -21,6 +70,62 @@ export default function DisplayControlTab() {
   const nextIndex = hasContestants
     ? (safeActiveIndex + 1) % contestants.length
     : 0;
+
+  const liveDisplayPayload = useMemo(() => {
+    const scoreValue =
+      activeContestant?.score ??
+      activeContestant?.totalScore ??
+      activeContestant?.finalScore ??
+      "--";
+
+    return {
+      eventName: eventTitle || "Gymnastics Competition",
+      category: formatLiveLabel(selectedEventType, "Aerobic Gymnastics"),
+      division: formatLiveLabel(selectedSport, "Individual Women"),
+      contestant: {
+        name:
+          activeContestant?.fullName ||
+          activeContestant?.name ||
+          "Awaiting contestant",
+        delegation:
+          activeContestant?.delegation || activeContestant?.teamName || "-",
+        score: String(scoreValue),
+      },
+      isBlackout,
+      isFrozen,
+      mode: viewMode,
+      updatedAt: new Date().toISOString(),
+    };
+  }, [
+    activeContestant,
+    eventTitle,
+    isBlackout,
+    isFrozen,
+    selectedEventType,
+    selectedSport,
+    viewMode,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (typeof BroadcastChannel === "undefined") return;
+
+    channelRef.current = new BroadcastChannel(LIVE_DISPLAY_CHANNEL_NAME);
+
+    return () => {
+      channelRef.current?.close();
+      channelRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    writeLiveDisplayState(liveDisplayPayload);
+
+    channelRef.current?.postMessage({
+      type: LIVE_DISPLAY_MESSAGE_TYPE,
+      payload: liveDisplayPayload,
+    });
+  }, [liveDisplayPayload]);
 
   useEffect(() => {
     if (viewMode !== "auto") return;
@@ -52,23 +157,19 @@ export default function DisplayControlTab() {
     setActiveIndex((prev) => (prev + 1) % contestants.length);
   };
 
-  const handleFreezeToggle = () => {
-    setIsFrozen((prev) => !prev);
-  };
-
-  const handleBlackoutToggle = () => {
-    setIsBlackout((prev) => !prev);
+  const handleOpenLiveDisplay = () => {
+    window.open("/live-display", "_blank", "noopener,noreferrer");
   };
 
   return (
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold tracking-tight">Display Control</h2>
+        <h2 className="text-xl font-semibold tracking-tight">
+          Display Control
+        </h2>
         <div className="flex flex-wrap items-center gap-2">
           <div className="badge badge-outline">
-            {viewMode === "manual"
-              ? "1 by 1 transition"
-              : "live swapping (automatic)"}
+            {viewMode === "manual" ? "Manual Swapping" : "Automatic Swapping "}
           </div>
           {isFrozen ? <div className="badge badge-warning">Frozen</div> : null}
           {isBlackout ? (
@@ -77,27 +178,82 @@ export default function DisplayControlTab() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
-        <div className="space-y-4">
+      <div className="space-y-4">
+        <div className="app-surface p-4 md:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
+              Live Display Preview
+            </p>
+            <button
+              type="button"
+              className="btn btn-xs btn-outline"
+              onClick={handleOpenLiveDisplay}
+            >
+              Open Live Display
+            </button>
+          </div>
+
+          <div className="mt-4 flex justify-center rounded-3xl border border-base-300 bg-slate-900/80 p-5 md:p-6">
+            <div className="w-full max-w-[920px] rounded-[2rem] border border-slate-700 bg-slate-950 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+              <div className="mb-3 flex items-center justify-between px-2 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                <span>Live Feed</span>
+                {isFrozen ? (
+                  <span className="badge badge-warning badge-sm">Frozen</span>
+                ) : null}
+              </div>
+              <div className="overflow-hidden rounded-[1.25rem] border border-slate-800 bg-black">
+                <div className="aspect-video w-full">
+                  <iframe
+                    title="Live display preview"
+                    src="/live-display?preview=1"
+                    className="h-full w-full bg-slate-950"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="mt-3 text-xs text-base-content/70">
+            This preview renders the live display and updates in real time.
+          </p>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
           <div className="app-muted-panel">
             <h3 className="font-semibold">Viewing Mode</h3>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={`btn btn-sm ${viewMode === "manual" ? "btn-neutral" : "btn-outline"}`}
-                onClick={() => setViewMode("manual")}
-              >
-                1 by 1 transition
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${viewMode === "auto" ? "btn-neutral" : "btn-outline"}`}
-                onClick={() => setViewMode("auto")}
-              >
-                live swapping
-              </button>
-            </div>
+            <fieldset className="mt-3 space-y-2">
+              {VIEW_MODE_OPTIONS.map((option) => {
+                const isSelected = viewMode === option.value;
+
+                return (
+                  <label
+                    key={option.value}
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                      isSelected
+                        ? "border-base-content/30 bg-base-100"
+                        : "border-base-300/70 bg-base-200/30"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="view-mode"
+                      className="radio radio-sm mt-0.5"
+                      checked={isSelected}
+                      onChange={() => setViewMode(option.value)}
+                    />
+                    <span className="space-y-1">
+                      <span className="block text-sm font-semibold">
+                        {option.label}
+                      </span>
+                      <span className="block text-xs text-base-content/70">
+                        {option.description}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
 
             {viewMode === "manual" ? (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -125,7 +281,7 @@ export default function DisplayControlTab() {
                     <span className="label-text">Auto swap interval</span>
                   </div>
                   <select
-                    className="select select-bordered select-sm"
+                    className="select select-bordered select-sm mb-4"
                     value={swapSeconds}
                     onChange={(event) =>
                       setSwapSeconds(Number(event.target.value))
@@ -152,145 +308,146 @@ export default function DisplayControlTab() {
 
           <div className="app-muted-panel">
             <h3 className="font-semibold">Emergency Controls</h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={`btn btn-sm ${isFrozen ? "btn-warning" : "btn-outline"}`}
-                onClick={handleFreezeToggle}
-              >
-                {isFrozen ? "Unfreeze" : "Freeze"}
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${isBlackout ? "btn-error" : "btn-outline"}`}
-                onClick={handleBlackoutToggle}
-              >
-                {isBlackout ? "Disable Blackout" : "Blackout"}
-              </button>
+            <div className="mt-3 space-y-4">
+              <fieldset className="space-y-2">
+                <legend className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/60">
+                  Freeze State
+                </legend>
+                {FREEZE_OPTIONS.map((option) => {
+                  const isSelected =
+                    option.value === "frozen" ? isFrozen : !isFrozen;
+
+                  return (
+                    <label
+                      key={option.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                        isSelected
+                          ? "border-warning/40 bg-warning/10"
+                          : "border-base-300/70 bg-base-200/30"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="freeze-state"
+                        className="radio radio-sm radio-warning mt-0.5"
+                        checked={isSelected}
+                        onChange={() => setIsFrozen(option.value === "frozen")}
+                      />
+                      <span className="space-y-1">
+                        <span className="block text-sm font-semibold">
+                          {option.label}
+                        </span>
+                        <span className="block text-xs text-base-content/70">
+                          {option.description}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
+
+              <fieldset className="space-y-2">
+                <legend className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/60">
+                  Output State
+                </legend>
+                {OUTPUT_OPTIONS.map((option) => {
+                  const isSelected =
+                    option.value === "blackout" ? isBlackout : !isBlackout;
+
+                  return (
+                    <label
+                      key={option.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                        isSelected
+                          ? "border-error/40 bg-error/10"
+                          : "border-base-300/70 bg-base-200/30"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="output-state"
+                        className="radio radio-sm radio-error mt-0.5"
+                        checked={isSelected}
+                        onChange={() =>
+                          setIsBlackout(option.value === "blackout")
+                        }
+                      />
+                      <span className="space-y-1">
+                        <span className="block text-sm font-semibold">
+                          {option.label}
+                        </span>
+                        <span className="block text-xs text-base-content/70">
+                          {option.description}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
             </div>
             <p className="mt-3 text-xs text-base-content/70">
               Freeze holds the current preview frame. Blackout hides the live
               output.
             </p>
           </div>
+        </div>
+      </div>
 
-          <div className="app-table-wrap">
-            <table className="table table-zebra">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Contestant</th>
-                  <th>Delegation</th>
-                  <th>Preview State</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contestants.length ? (
-                  contestants.map((contestant, index) => {
-                    const isLive = safeActiveIndex === index;
-                    const isNext = nextIndex === index;
+      <div className="app-table-wrap">
+        <table className="table table-zebra">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Contestant</th>
+              <th>Delegation</th>
+              <th>Preview State</th>
+            </tr>
+          </thead>
+          <tbody>
+            {contestants.length ? (
+              contestants.map((contestant, index) => {
+                const isLive = safeActiveIndex === index;
+                const isNext = nextIndex === index;
 
-                    return (
-                      <tr key={contestant.id}>
-                        <th>{index + 1}</th>
-                        <td>{contestant.fullName}</td>
-                        <td>{contestant.delegation}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              isLive
-                                ? isBlackout
-                                  ? "badge-error"
-                                  : "badge-success"
-                                : isNext
-                                  ? "badge-info"
-                                  : "badge-ghost"
-                            }`}
-                          >
-                            {isLive
-                              ? isBlackout
-                                ? "Hidden"
-                                : "Live"
-                              : isNext
-                                ? "Next"
-                                : "Queued"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="text-base-content/60">
-                      No contestants available. Import contestants in
-                      Contestants tab first.
+                return (
+                  <tr key={contestant.id}>
+                    <th>{index + 1}</th>
+                    <td>{contestant.fullName}</td>
+                    <td>{contestant.delegation}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          isLive
+                            ? isBlackout
+                              ? "badge-error"
+                              : "badge-success"
+                            : isNext
+                              ? "badge-info"
+                              : "badge-ghost"
+                        }`}
+                      >
+                        {isLive
+                          ? isBlackout
+                            ? "Hidden"
+                            : "Live"
+                          : isNext
+                            ? "Next"
+                            : "Queued"}
+                      </span>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="app-surface p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
-            Mini Live Preview
-          </p>
-
-          <div className="mt-3 overflow-hidden rounded-xl border border-base-300 bg-slate-950 text-base-100">
-            <div className="flex items-center justify-between border-b border-white/20 px-4 py-2 text-xs">
-              <span>{eventTitle || "Event"}</span>
-              <span>{selectedSport || "Sport"}</span>
-            </div>
-
-            <div className="aspect-video p-4">
-              {isBlackout ? (
-                <div className="flex h-full flex-col items-center justify-center gap-2 rounded bg-black">
-                  <span className="text-xs uppercase tracking-wide text-white/70">
-                    Output Hidden
-                  </span>
-                  <span className="text-lg font-bold text-red-400">
-                    BLACKOUT ACTIVE
-                  </span>
-                </div>
-              ) : activeContestant ? (
-                <div className="flex h-full flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs uppercase tracking-wide text-base-100/70">
-                        Now Showing
-                      </p>
-                      {isFrozen ? (
-                        <span className="badge badge-warning badge-xs">
-                          Frozen
-                        </span>
-                      ) : null}
-                    </div>
-                    <h3 className="mt-2 text-2xl font-bold leading-tight">
-                      {activeContestant.fullName}
-                    </h3>
-                    <p className="mt-1 text-sm text-base-100/80">
-                      {activeContestant.delegation}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded border border-white/20 px-2 py-1">
-                      Score: --
-                    </div>
-                    <div className="rounded border border-white/20 px-2 py-1">
-                      Rank: --
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-base-100/70">
-                  No preview available
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={4} className="text-base-content/60">
+                  No contestants available. Import contestants in Contestants
+                  tab first.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
