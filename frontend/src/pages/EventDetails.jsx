@@ -66,7 +66,9 @@ export default function EventDetails() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
               Event Details
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">{eventTitle}</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight">
+              {eventTitle}
+            </h1>
           </div>
           <span className="badge badge-info badge-outline px-3 py-3 text-xs uppercase tracking-[0.1em]">
             Ongoing
@@ -74,7 +76,10 @@ export default function EventDetails() {
         </div>
       </section>
 
-      <div className="tabs tabs-boxed w-full gap-2 bg-base-200/50 p-1" role="tablist">
+      <div
+        className="tabs tabs-boxed w-full gap-2 bg-base-200/50 p-1"
+        role="tablist"
+      >
         {TAB_LINKS.map((tab) => (
           <NavLink
             key={tab.to}
