@@ -55,9 +55,11 @@ function App() {
             <Route path="forgot-password" element={<ForgotPasswordCard />} />
           </Route>
 
-          <Route path="/judge-score" element={<JudgeScore />} />
           <Route path="/activity-log" element={<ActivityLog />} />
         </Route>
+        <Route path="/judge-score" element={<JudgeScore />} />
+        <Route path="/judge/score" element={<JudgeScore />} />
+        <Route path="/judge-scoring" element={<JudgeScore />} />
         <Route path="/live-display" element={<DisplayView />} />
       </Routes>
       <Toaster />

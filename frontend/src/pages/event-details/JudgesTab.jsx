@@ -12,6 +12,7 @@ const JUDGE_TYPE_OPTIONS = [
 
 export default function JudgesTab() {
   const {
+    eventDetails,
     eventTitle,
     selectedSport,
     judgeFullName,
@@ -36,14 +37,18 @@ export default function JudgesTab() {
 
   const createJudgeScoringLink = (judge) => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const params = new URLSearchParams({
-      event: eventTitle || "event",
-      sport: selectedSport || "",
-      judgeId: judge.id,
-      judgeName: judge.fullName || "",
-    });
+    const params = new URLSearchParams();
+    const eventId = eventDetails?.event?.id;
 
-    return `${baseUrl}/judge/score?${params.toString()}`;
+    if (eventId) params.set("eventId", eventId);
+    if (eventTitle) params.set("eventTitle", eventTitle);
+    if (selectedSport) params.set("sport", selectedSport);
+    if (judge.id) params.set("judgeId", judge.id);
+    if (judge.fullName) params.set("judgeName", judge.fullName);
+    if (judge.judgeType) params.set("judgeType", judge.judgeType);
+
+    const queryString = params.toString();
+    return `${baseUrl}/judge-score${queryString ? `?${queryString}` : ""}`;
   };
 
   const handleGenerateLink = (judge) => {
