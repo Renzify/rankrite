@@ -6,6 +6,7 @@ import {
   eventContestant,
   eventFieldValue,
   eventJudgeAssignment,
+  eventTemplate,
   judge,
   judgeType,
 } from "../db/schema.ts";
@@ -174,6 +175,66 @@ export async function createEventDraft(input: CreateEventDraftInput) {
   });
 
   return result;
+}
+
+export type UpdateEventInput = {
+  templateId: string;
+  title: string;
+  fieldValues?: CreateEventDraftFieldValueInput[];
+};
+
+export async function updateEvent(
+  eventId: string,
+  input: UpdateEventInput,
+): Promise<EventDetails | null> {
+  const templateId = input.templateId?.trim();
+  const title = input.title?.trim();
+
+  if (!eventId?.trim() || !templateId || !title) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await db.query.event.findFirst({
+    where: eq(event.id, eventId),
+  });
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  const existingTemplate = await db.query.eventTemplate.findFirst({
+    where: eq(eventTemplate.id, templateId),
+  });
+
+  if (!existingTemplate) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(event)
+      .set({
+        templateId,
+        title,
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, eventId));
+
+    await tx.delete(eventFieldValue).where(eq(eventFieldValue.eventId, eventId));
+
+    const values = (input.fieldValues ?? []).map((value) => ({
+      eventId,
+      fieldId: value.fieldId,
+      optionId: value.optionId ?? null,
+      valueText: value.valueText ?? null,
+    }));
+
+    if (values.length) {
+      await tx.insert(eventFieldValue).values(values);
+    }
+  });
+
+  return getEventDetails(eventId);
 }
 
 export type EventListItem = {

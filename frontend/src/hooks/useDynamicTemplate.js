@@ -143,6 +143,10 @@ export function useDynamicTemplate() {
       return;
     }
 
+    if (template?.name === selectedSportOption.templateName) {
+      return;
+    }
+
     let isMounted = true;
 
     const loadTemplate = async () => {
@@ -178,6 +182,7 @@ export function useDynamicTemplate() {
     setTemplateError,
     setTemplateLoading,
     sportOptions,
+    template?.name,
   ]);
 
   const visibleFields = useMemo(() => {

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useParams } from "react-router";
+import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
-import { getEventDetails } from "../api/eventApi";
+import { getEventDetails, updateEvent } from "../api/eventApi";
 import StatusBadge from "../components/StatusBadge";
+import { buildEventPayload } from "../lib/eventPayload";
 
 const TAB_LINKS = [
   { to: "event-info", label: "Event Info" },
@@ -12,10 +14,29 @@ const TAB_LINKS = [
   { to: "display-control", label: "Display Control" },
 ];
 
+function applyLoadedEventDetails(data, actions) {
+  actions.setEventDetails(data);
+  actions.setSelectedEventType(data.template?.eventType ?? "");
+  actions.setSelectedSport(data.formValues?.sport ?? "");
+  actions.setJudges(data.judges ?? []);
+  actions.setContestants(
+    (data.contestants ?? []).map((contestant) => ({
+      ...contestant,
+      delegation: contestant.teamName ?? "",
+    })),
+  );
+  actions.setPendingFormValues({
+    ...data.formValues,
+    eventTitle: data.event.title,
+  });
+  actions.setDidHydrate(false);
+}
+
 export default function EventDetails() {
   const { eventId } = useParams();
   const {
     isCatalogLoading,
+    isTemplateLoading,
     selectedEventType,
     selectedSport,
     formValues,
@@ -40,6 +61,7 @@ export default function EventDetails() {
   const [loadError, setLoadError] = useState(null);
   const [pendingFormValues, setPendingFormValues] = useState(null);
   const [didHydrate, setDidHydrate] = useState(false);
+  const [isSavingEventInfo, setIsSavingEventInfo] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -56,20 +78,14 @@ export default function EventDetails() {
         const data = await getEventDetails(eventId);
         if (!isMounted) return;
 
-        setEventDetails(data);
-        setSelectedEventType(data.template?.eventType ?? "");
-        setSelectedSport(data.formValues?.sport ?? "");
-        setJudges(data.judges ?? []);
-        setContestants(
-          (data.contestants ?? []).map((contestant) => ({
-            ...contestant,
-            delegation: contestant.teamName ?? "",
-          })),
-        );
-
-        setPendingFormValues({
-          ...data.formValues,
-          eventTitle: data.event.title,
+        applyLoadedEventDetails(data, {
+          setEventDetails,
+          setSelectedEventType,
+          setSelectedSport,
+          setJudges,
+          setContestants,
+          setPendingFormValues,
+          setDidHydrate,
         });
       } catch (error) {
         if (!isMounted) return;
@@ -121,6 +137,68 @@ export default function EventDetails() {
     setJudges((prev) => [...prev, nextJudge]);
     setJudgeFullName("");
     setJudgeType("");
+  };
+
+  const handleResetEventInfo = () => {
+    if (!eventDetails) return;
+
+    applyLoadedEventDetails(eventDetails, {
+      setEventDetails,
+      setSelectedEventType,
+      setSelectedSport,
+      setJudges,
+      setContestants,
+      setPendingFormValues,
+      setDidHydrate,
+    });
+  };
+
+  const handleSaveEventInfo = async (eventTitleInput) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      return false;
+    }
+
+    try {
+      const payload = buildEventPayload({
+        template,
+        formValues,
+        eventTitle: eventTitleInput,
+      });
+
+      setIsSavingEventInfo(true);
+      const updatedDetails = await updateEvent(eventId, payload);
+
+      applyLoadedEventDetails(updatedDetails, {
+        setEventDetails,
+        setSelectedEventType,
+        setSelectedSport,
+        setJudges,
+        setContestants,
+        setPendingFormValues,
+        setDidHydrate,
+      });
+
+      toast.success("Event info updated");
+      return true;
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "NO_TEMPLATE_SELECTED") {
+          toast.error("No template selected.");
+          return false;
+        }
+        if (error.message === "NO_EVENT_TITLE") {
+          toast.error("Please enter an event title.");
+          return false;
+        }
+      }
+
+      console.error("Failed to update event info:", error);
+      toast.error("Failed to update event info. Please try again.");
+      return false;
+    } finally {
+      setIsSavingEventInfo(false);
+    }
   };
 
   if (isLoading) {
@@ -193,9 +271,11 @@ export default function EventDetails() {
           <Outlet
             context={{
               isCatalogLoading,
+              isTemplateLoading,
               selectedEventType,
               selectedSport,
               formValues,
+              eventDetails,
               eventTypeOptions,
               sportOptions,
               selectableFields,
@@ -203,6 +283,9 @@ export default function EventDetails() {
               setSelectedSport,
               updateFieldValue,
               getFilteredOptions,
+              isSavingEventInfo,
+              onResetEventInfo: handleResetEventInfo,
+              onSaveEventInfo: handleSaveEventInfo,
               eventTitle,
               judgeFullName,
               judgeType,

@@ -1,9 +1,28 @@
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router";
 
+function isConditionMet(condition, fields, values) {
+  const parentField = fields.find(
+    (field) => field.id === condition.parentFieldId,
+  );
+  if (!parentField) return false;
+
+  const selectedParentValue = values[parentField.key];
+  if (!selectedParentValue) return false;
+
+  const requiredOption = parentField.options?.find(
+    (option) => option.id === condition.parentOptionId,
+  );
+  if (!requiredOption) return false;
+
+  return selectedParentValue === requiredOption.value;
+}
+
 export default function EventInfoTab() {
   const {
     isCatalogLoading,
+    isTemplateLoading,
+    eventDetails,
     selectedEventType,
     selectedSport,
     formValues,
@@ -14,29 +33,94 @@ export default function EventInfoTab() {
     setSelectedSport,
     updateFieldValue,
     getFilteredOptions,
+    isSavingEventInfo,
+    onResetEventInfo,
+    onSaveEventInfo,
   } = useOutletContext();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
 
-  const eventTypeLabel =
-    eventTypeOptions.find((option) => option.value === selectedEventType)
-      ?.label || "--";
-  const sportLabel =
-    sportOptions.find((option) => option.value === selectedSport)?.label || "--";
+  const savedEventType = eventDetails?.template?.eventType ?? "";
+  const savedEventTypeLabel =
+    eventTypeOptions.find((option) => option.value === savedEventType)?.label ||
+    savedEventType ||
+    "--";
 
-  const displayFields = useMemo(
-    () =>
-      selectableFields.map((field) => {
-        const value = formValues[field.key];
-        if (value === undefined || value === null || value === "") {
-          return { field, display: "--" };
-        }
+  const savedSportLabel = useMemo(() => {
+    const savedTemplateFields = [
+      ...(eventDetails?.template?.fields ?? []),
+    ].sort((a, b) => a.sortOrder - b.sortOrder);
+    const savedFormValues = eventDetails?.formValues ?? {};
+    const savedSportField = savedTemplateFields.find(
+      (field) => field.key === "sport",
+    );
 
-        const option = (field.options ?? []).find((opt) => opt.value === value);
-        return { field, display: option?.label ?? String(value) };
-      }),
-    [formValues, selectableFields],
+    return (
+      (savedSportField?.options ?? []).find(
+        (option) => option.value === savedFormValues.sport,
+      )?.label ||
+      savedFormValues.sport ||
+      "--"
+    );
+  }, [eventDetails]);
+
+  const savedDisplayFields = useMemo(
+    () => {
+      const savedTemplateFields = [
+        ...(eventDetails?.template?.fields ?? []),
+      ].sort((a, b) => a.sortOrder - b.sortOrder);
+      const savedFormValues = eventDetails?.formValues ?? {};
+
+      return savedTemplateFields
+        .filter((field) => field.fieldType === "select" && field.key !== "sport")
+        .filter((field) => {
+          if (!field.conditions?.length) return true;
+          return field.conditions.some((condition) =>
+            isConditionMet(condition, savedTemplateFields, savedFormValues),
+          );
+        })
+        .map((field) => {
+          const value = savedFormValues[field.key];
+          if (value === undefined || value === null || value === "") {
+            return { field, display: "--" };
+          }
+
+          const option = (field.options ?? []).find((opt) => opt.value === value);
+          return { field, display: option?.label ?? String(value) };
+        });
+    },
+    [eventDetails],
   );
+
+  const canConfirmEdit =
+    draftTitle.trim().length > 0 &&
+    Boolean(selectedSport) &&
+    !isCatalogLoading &&
+    !isTemplateLoading &&
+    selectableFields.every((field) => {
+      if (!field.isRequired) return true;
+      const value = formValues[field.key];
+      return value !== undefined && value !== null && value !== "";
+    });
+
+  const handleStartEditing = () => {
+    setDraftTitle(eventDetails?.event?.title ?? formValues.eventTitle ?? "");
+    setIsEditing(true);
+  };
+
+  const handleCancelEditing = () => {
+    setDraftTitle(eventDetails?.event?.title ?? "");
+    onResetEventInfo?.();
+    setIsEditing(false);
+  };
+
+  const handleConfirmEdit = async () => {
+    const didSave = await onSaveEventInfo?.(draftTitle);
+    if (didSave) {
+      setIsEditing(false);
+    }
+  };
 
   return (
     <div className="w-full space-y-5">
@@ -44,13 +128,37 @@ export default function EventInfoTab() {
         <h2 className="text-xl font-semibold tracking-tight">
           {isEditing ? "Edit Event Info" : "Event Info"}
         </h2>
-        <button
-          type="button"
-          className={`btn btn-sm ${isEditing ? "btn-outline" : "btn-primary"}`}
-          onClick={() => setIsEditing((prev) => !prev)}
-        >
-          {isEditing ? "Cancel" : "Edit"}
-        </button>
+        {isEditing ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={handleCancelEditing}
+              disabled={isSavingEventInfo}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={handleConfirmEdit}
+              disabled={!canConfirmEdit || isSavingEventInfo}
+            >
+              {isSavingEventInfo ? (
+                <span className="loading loading-spinner loading-xs" />
+              ) : null}
+              Confirm Edit
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={handleStartEditing}
+          >
+            Edit
+          </button>
+        )}
       </div>
 
       {!isEditing ? (
@@ -60,13 +168,13 @@ export default function EventInfoTab() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
                 Event Type
               </p>
-              <p className="mt-2 text-sm font-semibold">{eventTypeLabel}</p>
+              <p className="mt-2 text-sm font-semibold">{savedEventTypeLabel}</p>
             </div>
             <div className="rounded-xl border border-base-300 bg-base-100 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
                 Sport
               </p>
-              <p className="mt-2 text-sm font-semibold">{sportLabel}</p>
+              <p className="mt-2 text-sm font-semibold">{savedSportLabel}</p>
             </div>
           </div>
 
@@ -75,7 +183,7 @@ export default function EventInfoTab() {
               Event Title
             </p>
             <p className="mt-2 text-sm font-semibold">
-              {formValues.eventTitle || "--"}
+              {eventDetails?.event?.title || "--"}
             </p>
           </div>
 
@@ -83,13 +191,13 @@ export default function EventInfoTab() {
             <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
               Selected Fields
             </h3>
-            {displayFields.length === 0 ? (
+            {savedDisplayFields.length === 0 ? (
               <div className="alert border border-base-300 bg-base-200/60 text-base-content">
                 <span>No selectable fields yet.</span>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
-                {displayFields.map(({ field, display }) => (
+                {savedDisplayFields.map(({ field, display }) => (
                   <div
                     key={field.id}
                     className="rounded-xl border border-base-300 bg-base-100 p-4"
@@ -153,12 +261,17 @@ export default function EventInfoTab() {
             <input
               type="text"
               className="input input-bordered w-full"
-              value={formValues.eventTitle || ""}
-              onChange={(event) =>
-                updateFieldValue("eventTitle", event.target.value)
-              }
+              value={draftTitle}
+              onChange={(event) => setDraftTitle(event.target.value)}
             />
           </label>
+
+          {selectedSport && isTemplateLoading ? (
+            <div className="flex items-center gap-2 text-sm text-base-content/70">
+              <span className="loading loading-spinner loading-sm" />
+              Loading updated fields...
+            </div>
+          ) : null}
 
           <div className="space-y-3">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70 mt-5">

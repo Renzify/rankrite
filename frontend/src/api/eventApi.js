@@ -15,3 +15,8 @@ export const getEventDetails = async (eventId) => {
   return res.data;
 };
 
+export const updateEvent = async (eventId, payload) => {
+  const res = await axiosInstance.put(`/events/${eventId}`, payload);
+  return res.data;
+};
+
