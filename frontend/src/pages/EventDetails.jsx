@@ -22,7 +22,8 @@ function applyLoadedEventDetails(data, actions) {
   actions.setContestants(
     (data.contestants ?? []).map((contestant) => ({
       ...contestant,
-      delegation: contestant.teamName ?? "",
+      teamName: contestant.teamName ?? contestant.delegation ?? "",
+      delegation: contestant.teamName ?? contestant.delegation ?? "",
     })),
   );
   actions.setPendingFormValues({
@@ -51,8 +52,6 @@ export default function EventDetails() {
     getFilteredOptions,
   } = useDynamicTemplate();
 
-  const [judgeFullName, setJudgeFullName] = useState("");
-  const [judgeType, setJudgeType] = useState("");
   const [judges, setJudges] = useState([]);
   const [contestants, setContestants] = useState([]);
   const [judgeScores, setJudgeScores] = useState({});
@@ -118,26 +117,6 @@ export default function EventDetails() {
     () => visibleFields.filter((field) => field.fieldType === "select"),
     [visibleFields],
   );
-
-  const canSubmitJudge = Boolean(judgeFullName.trim() && judgeType);
-
-  const handleJudgeSubmit = (event) => {
-    event.preventDefault();
-    if (!canSubmitJudge) return;
-
-    const nextJudge = {
-      id:
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}_${Math.random()}`,
-      fullName: judgeFullName.trim(),
-      judgeType,
-    };
-
-    setJudges((prev) => [...prev, nextJudge]);
-    setJudgeFullName("");
-    setJudgeType("");
-  };
 
   const handleResetEventInfo = () => {
     if (!eventDetails) return;
@@ -287,17 +266,12 @@ export default function EventDetails() {
               onResetEventInfo: handleResetEventInfo,
               onSaveEventInfo: handleSaveEventInfo,
               eventTitle,
-              judgeFullName,
-              judgeType,
               judges,
+              setJudges,
               judgeScores,
               setJudgeScores,
               contestants,
               setContestants,
-              setJudgeFullName,
-              setJudgeType,
-              canSubmitJudge,
-              handleJudgeSubmit,
             }}
           />
         </div>

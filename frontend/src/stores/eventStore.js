@@ -25,7 +25,7 @@ export const useEventStore = create((set) => ({
       })),
       contestants: (contestants ?? []).map((contestant, index) => ({
         fullName: contestant.fullName,
-        teamName: contestant.teamName ?? null,
+        teamName: contestant.teamName ?? contestant.delegation ?? null,
         gender: contestant.gender ?? null,
         entryNo: contestant.entryNo ?? index + 1,
       })),
