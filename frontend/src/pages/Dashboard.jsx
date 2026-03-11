@@ -100,7 +100,12 @@ function Dashboard() {
         onAddEvent={handleCreateEvent}
       />
 
-      <EventList events={filteredEvents} isLoading={isLoading} error={error} onOpenEvent={handleOpenEvent}/>
+      <EventList
+        events={filteredEvents}
+        isLoading={isLoading}
+        error={error}
+        onOpenEvent={handleOpenEvent}
+      />
     </div>
   );
 }
@@ -200,11 +205,7 @@ function EventList({ events, isLoading, error, onOpenEvent }) {
             </tr>
           ) : events.length ? (
             events.map((event, index) => (
-              <tr
-                key={event.id}
-                className="cursor-pointer transition-colors hover:bg-base-200"
-                onClick={onOpenEvent}
-              >
+              <tr key={event.id} className="transition-colors hover:bg-base-200">
                 <th>{index + 1}</th>
                 <td>{event.name}</td>
                 <td className="px-6">
@@ -216,15 +217,14 @@ function EventList({ events, isLoading, error, onOpenEvent }) {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline w-16 justify-center"
-                      onClick={(event) => event.stopPropagation()}
+                      onClick={onOpenEvent}
                     >
-                      {event.status !== "Finished" ? "Edit" : "View"}
+                      View
                     </button>
 
                     <button
                       type="button"
                       className="btn btn-sm btn-outline w-16 justify-center hover:border-error hover:bg-error hover:text-error-content"
-                      onClick={(event) => event.stopPropagation()}
                     >
                       Delete
                     </button>
