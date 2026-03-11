@@ -17,7 +17,7 @@ export default function EventInfoTab() {
 
   return (
     <div className="w-full space-y-5">
-      <h2 className="text-lg font-semibold">Edit Event Info</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Edit Event Info</h2>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="form-control w-full">
@@ -74,7 +74,7 @@ export default function EventInfoTab() {
       </label>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70 mt-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
           Selected Fields
         </h3>
         {selectableFields.length === 0 ? (

@@ -63,7 +63,7 @@ export default function DisplayControlTab() {
   return (
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Display Control</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Display Control</h2>
         <div className="flex flex-wrap items-center gap-2">
           <div className="badge badge-outline">
             {viewMode === "manual"
@@ -79,7 +79,7 @@ export default function DisplayControlTab() {
 
       <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
         <div className="space-y-4">
-          <div className="rounded-xl border border-base-300 bg-base-200/30 p-4">
+          <div className="app-muted-panel">
             <h3 className="font-semibold">Viewing Mode</h3>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -150,7 +150,7 @@ export default function DisplayControlTab() {
             )}
           </div>
 
-          <div className="rounded-xl border border-base-300 bg-base-200/30 p-4">
+          <div className="app-muted-panel">
             <h3 className="font-semibold">Emergency Controls</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -174,7 +174,7 @@ export default function DisplayControlTab() {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-base-300 bg-base-100">
+          <div className="app-table-wrap">
             <table className="table table-zebra">
               <thead>
                 <tr>
@@ -232,7 +232,7 @@ export default function DisplayControlTab() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-base-300 bg-base-100 p-4">
+        <div className="app-surface p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
             Mini Live Preview
           </p>
@@ -240,6 +240,7 @@ export default function DisplayControlTab() {
           <div className="mt-3 overflow-hidden rounded-xl border border-base-300 bg-slate-950 text-base-100">
             <div className="flex items-center justify-between border-b border-white/20 px-4 py-2 text-xs">
               <span>{eventTitle || "Event"}</span>
+              <span>{selectedSport || "Sport"}</span>
             </div>
 
             <div className="aspect-video p-4">

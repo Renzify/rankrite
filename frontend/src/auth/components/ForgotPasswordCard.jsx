@@ -2,27 +2,23 @@ import { Link } from "react-router";
 import { ArrowLeft } from "lucide-react";
 
 function ForgotPasswordCard() {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle forgot password logic here
+  const handleSubmit = (event) => {
+    event.preventDefault();
   };
 
   return (
-    <div className="card w-full max-w-md bg-base-100 shadow-xl border border-base-300">
-      <div className="card-body">
-        <h2 className="card-title text-3xl font-bold text-center w-full my-4 justify-center">
-          Forgot Password
-        </h2>
+    <div className="app-auth-card">
+      <div className="card-body p-6 md:p-7">
+        <h2 className="app-auth-title">Forgot Password</h2>
 
-        <p className="text-center text-base-content/70 mb-6">
-          Enter your email and we&apos;ll send you a link to reset your password
+        <p className="mb-1 text-center text-sm text-base-content/70">
+          Enter your email and we&apos;ll send you a reset link.
         </p>
 
-        <form onSubmit={handleSubmit}>
-          {/* Email Address */}
-          <div className="form-control mb-6">
-            <label className="label mb-2">
-              <span className="label-text">Email address</span>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="form-control">
+            <label className="label pb-1">
+              <span className="label-text font-medium">Email address</span>
             </label>
             <input
               type="email"
@@ -32,17 +28,13 @@ function ForgotPasswordCard() {
             />
           </div>
 
-          {/* Submit Button */}
-          <div className="form-control mb-4">
-            <button type="submit" className="btn btn-primary w-full">
-              Submit
-            </button>
-          </div>
+          <button type="submit" className="btn btn-primary w-full">
+            Submit
+          </button>
         </form>
 
-        {/* Back to Login */}
-        <div className="form-control">
-          <Link to="/auth/login" className="btn btn-ghost btn-sm gap-2">
+        <div className="pt-1">
+          <Link to="/auth/login" className="btn btn-ghost btn-sm gap-2 px-2">
             <ArrowLeft size={16} />
             Back to Login
           </Link>

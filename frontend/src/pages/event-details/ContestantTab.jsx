@@ -142,7 +142,7 @@ export default function ContestantTab() {
   return (
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Contestants</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Contestants</h2>
 
         <div className="flex flex-wrap gap-2">
           <input
@@ -168,13 +168,14 @@ export default function ContestantTab() {
           </button>
         </div>
       </div>
+
       {importMessage ? (
         <div className="alert border border-base-300 bg-base-200/60 text-base-content">
           <span>{importMessage}</span>
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-base-300 bg-base-100">
+      <div className="app-table-wrap">
         <table className="table">
           <thead>
             <tr>
