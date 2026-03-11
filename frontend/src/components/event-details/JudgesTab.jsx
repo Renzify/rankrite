@@ -1,7 +1,7 @@
 import { useState } from "react";
 import QRCode from "react-qr-code";
 import { useOutletContext } from "react-router";
-import { useTemplateStore } from "../stores/templateStore";
+import { useTemplateStore } from "../../stores/templateStore";
 
 const JUDGE_TYPE_OPTIONS = [
   "Difficulty Body",
@@ -45,8 +45,8 @@ export default function JudgesTab({ showLinkGeneration }) {
     showLinkGeneration ?? Boolean(eventDetails?.event?.id);
   const canSubmitJudge = Boolean(
     formData.fullName.trim() &&
-      formData.judgeType &&
-      Number.parseInt(formData.judgeNumber, 10) > 0,
+    formData.judgeType &&
+    Number.parseInt(formData.judgeNumber, 10) > 0,
   );
 
   const handleInputChange = (event) => {

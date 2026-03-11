@@ -4,7 +4,7 @@ import {
   LIVE_DISPLAY_MESSAGE_TYPE,
   LIVE_DISPLAY_STORAGE_KEY,
   readLiveDisplayState,
-} from "../../lib/liveDisplaySync";
+} from "../lib/liveDisplaySync";
 
 const DEFAULT_LIVE_STATE = {
   eventName: "Gymnastics Competition",
@@ -194,13 +194,13 @@ function DisplayView() {
                   isPreview={isPreview}
                 />
                 <InfoItem
-                  label="Category"
-                  value={liveState.category}
+                  label="Divison Level"
+                  value="School Level"
                   isPreview={isPreview}
                 />
                 <InfoItem
-                  label="Division"
-                  value={liveState.division}
+                  label="Apparatus"
+                  value="Individual Floor"
                   isPreview={isPreview}
                 />
               </div>
