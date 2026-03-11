@@ -182,12 +182,13 @@ export default function EventDetails() {
 
   if (isLoading) {
     return (
-      <div className="app-page app-page-wide space-y-5">
-        <section className="app-surface">
-          <div className="app-section">
-            <p className="text-sm text-base-content/70">Loading event...</p>
-          </div>
-        </section>
+      <div className="app-page app-page-wide">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+          <span className="loading loading-spinner loading-lg text-primary" />
+          <p className="text-sm font-medium text-base-content/70">
+            Loading event
+          </p>
+        </div>
       </div>
     );
   }
@@ -279,3 +280,4 @@ export default function EventDetails() {
     </div>
   );
 }
+
