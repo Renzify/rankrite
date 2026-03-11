@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useParams } from "react-router";
+import { NavLink, Outlet, useParams, useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import { getEventDetails, updateEvent } from "../api/eventApi";
 import StatusBadge from "../components/StatusBadge";
 import { buildEventPayload } from "../lib/eventPayload";
+import { MoveLeft } from "lucide-react";
 
 const TAB_LINKS = [
   { to: "event-info", label: "Event Info" },
@@ -35,6 +36,7 @@ function applyLoadedEventDetails(data, actions) {
 
 export default function EventDetails() {
   const { eventId } = useParams();
+  const navigate = useNavigate();
   const {
     isCatalogLoading,
     isTemplateLoading,
@@ -109,9 +111,7 @@ export default function EventDetails() {
   }, [pendingFormValues, template, didHydrate, setFormValues]);
 
   const eventTitle =
-    eventDetails?.event?.title ||
-    formValues.eventTitle ||
-    "Event Details";
+    eventDetails?.event?.title || formValues.eventTitle || "Event Details";
 
   const selectableFields = useMemo(
     () => visibleFields.filter((field) => field.fieldType === "select"),
@@ -207,6 +207,14 @@ export default function EventDetails() {
 
   return (
     <div className="app-page app-page-wide space-y-5">
+      <div>
+        <button
+          className="btn btn-neutral btn-soft text-sm hover:bg-neutral/80"
+          onClick={() => navigate("/dashboard")}
+        >
+          <MoveLeft /> Back to Events
+        </button>
+      </div>
       <section className="app-surface">
         <div className="app-section flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -280,4 +288,3 @@ export default function EventDetails() {
     </div>
   );
 }
-
