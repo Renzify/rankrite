@@ -42,34 +42,29 @@ function Dashboard() {
   }, [statusFilter]);
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-3/4">
-        <div>
-          <Title />
-        </div>
-        <div>
-          <Statistics events={EVENTS} />
-        </div>
-        <div>
-          <AddEvent
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            statusOptions={STATUS_OPTIONS}
-          />
-        </div>
-        <div>
-          <EventList events={filteredEvents} />
-        </div>
-      </div>
+    <div className="app-page space-y-6">
+      <section>
+        <h1 className="app-page-title">Manage Events</h1>
+        <p className="app-page-subtitle">
+          Review event lifecycle, monitor status, and manage actions in one
+          place.
+        </p>
+      </section>
+
+      <Statistics events={EVENTS} />
+
+      <AddEvent
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        statusOptions={STATUS_OPTIONS}
+      />
+
+      <EventList events={filteredEvents} />
     </div>
   );
 }
 
 export default Dashboard;
-
-function Title() {
-  return <h1 className="mt-4 text-2xl font-bold">Manage Events</h1>;
-}
 
 function Statistics({ events }) {
   const totalEvents = events.length;
@@ -77,37 +72,45 @@ function Statistics({ events }) {
   const finished = events.filter((event) => event.status === "Finished").length;
 
   return (
-    <div className="mt-10 grid grid-cols-3 divide-x-4 divide-base-300 rounded-lg border border-base-300 p-4 text-center">
-      <div>
-        <h2 className="text-lg font-semibold">Total Events</h2>
-        <h4 className="text-xl font-medium">{totalEvents}</h4>
+    <section className="app-surface app-section">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="app-muted-panel text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/60">
+            Total Events
+          </p>
+          <p className="mt-2 text-2xl font-bold">{totalEvents}</p>
+        </div>
+
+        <div className="app-muted-panel text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/60">
+            Draft
+          </p>
+          <p className="mt-2 text-2xl font-bold">{draft}</p>
+        </div>
+
+        <div className="app-muted-panel text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/60">
+            Finished
+          </p>
+          <p className="mt-2 text-2xl font-bold">{finished}</p>
+        </div>
       </div>
-      <div>
-        <h2 className="text-lg font-semibold">Draft</h2>
-        <h4 className="text-xl font-medium">{draft}</h4>
-      </div>
-      <div>
-        <h2 className="text-lg font-semibold">Finished</h2>
-        <h4 className="text-xl font-medium">{finished}</h4>
-      </div>
-    </div>
+    </section>
   );
 }
 
 function AddEvent({ statusFilter, setStatusFilter, statusOptions }) {
   return (
-    <div className="mt-10 flex justify-between">
-      <div>
-        <button type="button" className="btn btn-neutral btn-soft">
+    <section className="app-surface app-section">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <button type="button" className="btn btn-primary w-full sm:w-auto">
           Add Event
         </button>
-      </div>
 
-      <div>
-        <label className="form-control">
+        <label className="form-control w-full sm:w-56">
           <span className="sr-only">Filter by status</span>
           <select
-            className="select select-bordered"
+            className="select select-bordered w-full"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
           >
@@ -119,13 +122,13 @@ function AddEvent({ statusFilter, setStatusFilter, statusOptions }) {
           </select>
         </label>
       </div>
-    </div>
+    </section>
   );
 }
 
 function EventList({ events }) {
   return (
-    <div className="mt-4 overflow-x-auto rounded-lg border border-base-300 p-4">
+    <section className="app-table-wrap">
       <table className="table">
         <thead>
           <tr>
@@ -152,24 +155,16 @@ function EventList({ events }) {
                 <td className="px-6">{event.created}</td>
                 <td className="w-44">
                   <div className="flex items-center justify-center gap-2">
-                    {event.status !== "Finished" ? (
-                      <button
-                        type="button"
-                        className="btn btn-sm w-16 justify-center"
-                      >
-                        Edit
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn-sm w-16 justify-center"
-                      >
-                        View
-                      </button>
-                    )}
                     <button
                       type="button"
-                      className="btn btn-sm hover:bg-red-500 hover:text-white w-16 justify-center"
+                      className="btn btn-sm btn-outline w-16 justify-center"
+                    >
+                      {event.status !== "Finished" ? "Edit" : "View"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline w-16 justify-center hover:border-error hover:bg-error hover:text-error-content"
                     >
                       Delete
                     </button>
@@ -186,6 +181,6 @@ function EventList({ events }) {
           )}
         </tbody>
       </table>
-    </div>
+    </section>
   );
 }

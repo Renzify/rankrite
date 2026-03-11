@@ -59,44 +59,38 @@ export default function EventDetails() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-2 md:px-4">
-      <div className="mb-6">
-        <div className="rounded-xl border border-base-300 bg-base-100 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 p-5">
-            <div>
-              <h1 className="pt-2 pl-2 text-md font-semibold uppercase">
-                Event Details
-              </h1>
-            </div>
-            <div>
-              <button className="rounded bg-blue-500 px-2 py-1 text-white">
-                On Going
-              </button>
-            </div>
+    <div className="app-page app-page-wide space-y-5">
+      <section className="app-surface">
+        <div className="app-section flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
+              Event Details
+            </p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight">{eventTitle}</h1>
           </div>
-          <div className="px-5 pb-5">
-            <h1 className="text-3xl font-bold">{eventTitle}</h1>
-          </div>
+          <span className="badge badge-info badge-outline px-3 py-3 text-xs uppercase tracking-[0.1em]">
+            Ongoing
+          </span>
         </div>
+      </section>
+
+      <div className="tabs tabs-boxed w-full gap-2 bg-base-200/50 p-1" role="tablist">
+        {TAB_LINKS.map((tab) => (
+          <NavLink
+            key={tab.to}
+            to={tab.to}
+            role="tab"
+            className={({ isActive }) =>
+              `tab rounded-lg px-4 ${isActive ? "tab-active" : ""}`
+            }
+          >
+            {tab.label}
+          </NavLink>
+        ))}
       </div>
 
-      <div>
-        <div className="tabs tabs-border w-full gap-3" role="tablist">
-          {TAB_LINKS.map((tab) => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              role="tab"
-              className={({ isActive }) =>
-                `tab ${isActive ? "tab-active" : ""}`
-              }
-            >
-              {tab.label}
-            </NavLink>
-          ))}
-        </div>
-
-        <div className="border border-base-300 bg-base-100 p-6 md:p-8">
+      <section className="app-surface">
+        <div className="app-section">
           <Outlet
             context={{
               isCatalogLoading,
@@ -125,7 +119,7 @@ export default function EventDetails() {
             }}
           />
         </div>
-      </div>
+      </section>
     </div>
   );
 }

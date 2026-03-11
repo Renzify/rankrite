@@ -73,9 +73,9 @@ export default function JudgesTab() {
   return (
     <>
       <div className="w-full space-y-5">
-        <h2 className="text-lg font-semibold">Manage Judges</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Manage Judges</h2>
 
-        <div className="rounded-xl border border-base-300 bg-base-200/30 p-4">
+        <div className="app-muted-panel">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
             Current Event
           </p>
@@ -131,7 +131,7 @@ export default function JudgesTab() {
           </div>
         </form>
 
-        <div className="overflow-x-auto rounded-xl border border-base-300 bg-base-100">
+        <div className="app-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -177,7 +177,7 @@ export default function JudgesTab() {
           onClick={closeLinkModal}
         >
           <div
-            className="w-full max-w-2xl rounded-xl border border-base-300 bg-base-100 p-5 shadow-2xl"
+            className="w-full max-w-2xl rounded-2xl border border-base-300 bg-base-100 p-5 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -194,7 +194,7 @@ export default function JudgesTab() {
               </button>
             </div>
 
-            <div role="tablist" className="tabs tabs-bordered mt-4">
+            <div role="tablist" className="tabs tabs-boxed mt-4 w-fit gap-1 bg-base-200/50">
               <button
                 type="button"
                 role="tab"
@@ -219,7 +219,7 @@ export default function JudgesTab() {
                   <img
                     src={qrImageUrl}
                     alt={`QR code for ${activeJudgeName}`}
-                    className="h-56 w-56 rounded-lg border border-base-300 bg-white p-2"
+                    className="h-56 w-56 rounded-xl border border-base-300 bg-white p-2"
                   />
                   <p className="text-center text-xs text-base-content/60">
                     Scan this QR to open the judge scoring page.

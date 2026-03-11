@@ -5,23 +5,19 @@ import { Eye, EyeOff } from "lucide-react";
 function LoginCard() {
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle login logic here
+  const handleSubmit = (event) => {
+    event.preventDefault();
   };
 
   return (
-    <div className="card w-full max-w-md bg-base-100 shadow-xl border border-base-300">
-      <div className="card-body">
-        <h2 className="card-title text-4xl font-bold text-center w-full my-4 justify-center">
-          Login
-        </h2>
+    <div className="app-auth-card">
+      <div className="card-body p-6 md:p-7">
+        <h2 className="app-auth-title">Login</h2>
 
-        <form onSubmit={handleSubmit}>
-          {/* Email Address */}
-          <div className="form-control mb-4">
-            <label className="label mb-2">
-              <span className="label-text">Email address</span>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="form-control">
+            <label className="label pb-1">
+              <span className="label-text font-medium">Email address</span>
             </label>
             <input
               type="email"
@@ -31,10 +27,9 @@ function LoginCard() {
             />
           </div>
 
-          {/* Password */}
-          <div className="form-control mb-4">
-            <label className="label mb-2">
-              <span className="label-text">Password</span>
+          <div className="form-control">
+            <label className="label pb-1">
+              <span className="label-text font-medium">Password</span>
             </label>
             <div className="relative">
               <input
@@ -45,17 +40,16 @@ function LoginCard() {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle"
-                onClick={() => setShowPassword(!showPassword)}
+                className="btn btn-ghost btn-circle btn-sm absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={() => setShowPassword((prev) => !prev)}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {/* Remember me & Forgot password */}
-          <div className="flex justify-between items-center mb-6">
-            <label className="label cursor-pointer gap-2">
+          <div className="flex items-center justify-between pt-1">
+            <label className="label cursor-pointer gap-2 p-0">
               <input type="checkbox" className="checkbox checkbox-primary" />
               <span className="label-text">Remember me</span>
             </label>
@@ -64,18 +58,14 @@ function LoginCard() {
             </Link>
           </div>
 
-          {/* Login Button */}
-          <div className="form-control mb-4">
-            <button type="submit" className="btn btn-primary w-full">
-              Login
-            </button>
-          </div>
+          <button type="submit" className="btn btn-primary w-full">
+            Login
+          </button>
         </form>
 
-        {/* Sign up link */}
-        <p className="text-center text-sm">
+        <p className="pt-2 text-center text-sm text-base-content/80">
           Don&apos;t have an account?{" "}
-          <Link to="/auth/signup" className="link link-primary">
+          <Link to="/auth/signup" className="link link-primary font-medium">
             Sign Up
           </Link>
         </p>

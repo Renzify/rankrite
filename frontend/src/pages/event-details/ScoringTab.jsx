@@ -51,7 +51,7 @@ export default function ScoringTab() {
 
   return (
     <div className="w-full space-y-5">
-      <h2 className="text-lg font-semibold">Scoring Monitor</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Scoring Monitor</h2>
 
       {scoringLocked ? (
         <div className="alert alert-success">
@@ -59,7 +59,7 @@ export default function ScoringTab() {
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-base-300 bg-base-100">
+      <div className="app-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -135,7 +135,7 @@ export default function ScoringTab() {
           Computation
         </h3>
 
-        <div className="overflow-x-auto rounded-xl border border-base-300 bg-base-100">
+        <div className="app-table-wrap">
           <table className="table table-zebra">
             <thead>
               <tr>
