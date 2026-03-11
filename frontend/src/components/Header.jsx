@@ -51,7 +51,14 @@ function Header() {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-4">
+          <button
+            className="cursor-pointer"
+            onClick={() => navigate("/dashboard")}
+          >
+            {" "}
+            Home{" "}
+          </button>
           <DropdownMenu
             ref={notificationDropdownRef}
             menuClassName="menu mt-2 w-72 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg"

@@ -2,6 +2,19 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
+function ProfileFieldCard({ label, value, className = "" }) {
+  return (
+    <div
+      className={`rounded-xl border border-base-300 bg-base-100 p-4 ${className}`.trim()}
+    >
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-semibold">{value || "--"}</p>
+    </div>
+  );
+}
+
 function Settings() {
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -18,11 +31,8 @@ function Settings() {
     confirmPassword: "",
     lastPasswordUpdated: "January 15, 2025",
   });
-
-  // Track original settings to detect changes
   const [originalSettings, setOriginalSettings] = useState({ ...settings });
 
-  // Handle input field changes
   const handleChange = (field, value) => {
     setSettings((prev) => ({
       ...prev,
@@ -30,31 +40,58 @@ function Settings() {
     }));
   };
 
-  // Check if preferences have changed
   const hasPreferencesChanged =
     settings.theme !== originalSettings.theme ||
     settings.notifications !== originalSettings.notifications;
 
+  const hasProfileChanged =
+    settings.username !== originalSettings.username ||
+    settings.email !== originalSettings.email;
+
+  const canSaveProfile = Boolean(
+    settings.username.trim() && settings.email.trim() && hasProfileChanged,
+  );
+
   const handleSavePreferences = () => {
-    setOriginalSettings({ ...settings });
+    setOriginalSettings((prev) => ({
+      ...prev,
+      theme: settings.theme,
+      notifications: settings.notifications,
+    }));
     console.log("Preferences saved:", {
       theme: settings.theme,
       notifications: settings.notifications,
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Settings saved:", settings);
+  const handleStartEditing = () => {
+    setIsEditing(true);
   };
 
-  const toggleEdit = () => {
-    setIsEditing(!isEditing);
+  const handleCancelEditing = () => {
+    setSettings((prev) => ({
+      ...prev,
+      username: originalSettings.username,
+      email: originalSettings.email,
+    }));
+    setIsEditing(false);
+  };
+
+  const handleSaveProfile = () => {
+    setOriginalSettings((prev) => ({
+      ...prev,
+      username: settings.username,
+      email: settings.email,
+    }));
+    setIsEditing(false);
+    console.log("Profile saved:", {
+      username: settings.username,
+      email: settings.email,
+    });
   };
 
   const handleToggleChangePassword = () => {
     if (!isChangingPassword) {
-      // Clear password fields when starting to change password
       setSettings((prev) => ({
         ...prev,
         currentPassword: "",
@@ -69,23 +106,12 @@ function Settings() {
     <div className="app-page app-page-wide">
       <div className="flex flex-col items-center">
         <div className="w-full max-w-4xl">
-          {/* Header Section */}
           <section className="app-surface mb-5">
             <div className="app-section">
-              {/* Top Row: Back Button */}
-              <div className="flex items-center justify-between mb-4">
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-2 text-base-content/70 hover:text-primary transition-colors duration-200"
-                >
-                  <ArrowLeft size={20} />
-                  <span className="font-medium">Back</span>
-                </Link>
-              </div>
+              <div className="mb-4 flex items-center justify-between"></div>
 
-              {/* Bottom Row: Title and Subtitle */}
               <div className="p-2">
-                <h1 className="text-5xl font-bold tracking-tight mb-3">
+                <h1 className="mb-3 text-5xl font-bold tracking-tight">
                   Settings
                 </h1>
                 <p className="mt-1 text-sm text-base-content/70">
@@ -95,170 +121,125 @@ function Settings() {
             </div>
           </section>
 
-          {/* Single Div Box - Account Profile */}
           <section className="app-surface">
-            <div className="app-section">
-              <h2 className="text-2xl font-semibold mb-6">Account Profile</h2>
+            <div className="app-section space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl font-semibold">
+                  {isEditing ? "Edit Account Profile" : "Account Profile"}
+                </h2>
+                {isEditing ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleCancelEditing}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleSaveProfile}
+                      disabled={!canSaveProfile}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleStartEditing}
+                  >
+                    Edit Profile
+                  </button>
+                )}
+              </div>
 
-              <hr className="border-base-300 mb-6" />
-
-              {/* Profile Section */}
-              <div className="flex items-start gap-6 mb-8">
-                {/* Profile Picture with Change Photo */}
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
                 <div className="flex flex-col items-center gap-3">
                   <div className="avatar placeholder">
-                    <div className="w-24 rounded-full bg-neutral text-neutral-content">
-                      <span className="text-3xl">
-                        {settings.username.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                    <div className="w-24 rounded-full bg-neutral text-neutral-content" />
                   </div>
-                  {isEditing && (
+                  {isEditing ? (
                     <button type="button" className="btn btn-outline btn-sm">
                       Change Photo
                     </button>
-                  )}
+                  ) : null}
                 </div>
 
-                {/* Name, Email, and Edit Button */}
-                <div className="flex-1 flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-4xl font-semibold mt-3">
-                        {settings.username}
-                      </h3>
-                      <p className="text-xl text-base-content/60">
-                        {settings.email}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn-outline"
-                      onClick={toggleEdit}
-                    >
-                      {isEditing ? "Cancel" : "Edit Profile"}
-                    </button>
-                  </div>
+                <div className="flex-1">
+                  <h3 className="text-4xl font-semibold tracking-tight">
+                    {settings.username}
+                  </h3>
+                  <p className="mt-2 text-lg text-base-content/60">
+                    {settings.email}
+                  </p>
                 </div>
               </div>
 
-              {/* Account Details Header */}
-              <div className="flex items-center gap-2 mb-4">
-                <hr className="flex-1 border-base-300" />
-                <span className="text-sm font-medium text-base-content/70 whitespace-nowrap">
-                  Account Details:
-                </span>
-                <hr className="flex-1 border-base-300" />
-              </div>
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+                  Account Details
+                </h3>
 
-              {/* User Information Fields */}
-              <div className="grid gap-4 md:grid-cols-2">
-                {/* Full Name */}
-                <div className="border border-base-300 rounded-lg p-4">
-                  <label className="form-control w-full">
-                    <span className="label">
-                      <span className="label-text">Full Name</span>
-                    </span>
-                    <input
-                      type="text"
-                      className={`input input-bordered w-full ${!isEditing ? "input-disabled bg-base-200" : ""}`}
+                {!isEditing ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <ProfileFieldCard
+                      label="Full Name"
                       value={settings.username}
-                      onChange={(e) => handleChange("username", e.target.value)}
-                      disabled={!isEditing}
                     />
-                  </label>
-                </div>
-
-                {/* Email Address */}
-                <div className="border border-base-300 rounded-lg p-4">
-                  <label className="form-control w-full">
-                    <span className="label">
-                      <span className="label-text">Email Address</span>
-                    </span>
-                    <input
-                      type="email"
-                      className={`input input-bordered w-full ${!isEditing ? "input-disabled bg-base-200" : ""}`}
+                    <ProfileFieldCard
+                      label="Email Address"
                       value={settings.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
-                      disabled={!isEditing}
                     />
-                  </label>
-                </div>
+                    <ProfileFieldCard label="Role" value="Administrator" />
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="form-control w-full">
+                      <div className="label pb-1">
+                        <span className="label-text font-semibold">
+                          Full Name
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        className="input input-bordered w-full"
+                        value={settings.username}
+                        onChange={(event) =>
+                          handleChange("username", event.target.value)
+                        }
+                      />
+                    </label>
 
-                {/* Role */}
-                <div className="border border-base-300 rounded-lg p-4">
-                  <label className="form-control w-full">
-                    <span className="label">
-                      <span className="label-text">Role</span>
-                    </span>
-                    <input
-                      type="text"
-                      className="input input-bordered w-full input-disabled bg-base-200"
-                      value="Administrator"
-                      disabled
-                    />
-                  </label>
-                </div>
+                    <label className="form-control w-full">
+                      <div className="label pb-1">
+                        <span className="label-text font-semibold">
+                          Email Address
+                        </span>
+                      </div>
+                      <input
+                        type="email"
+                        className="input input-bordered w-full"
+                        value={settings.email}
+                        onChange={(event) =>
+                          handleChange("email", event.target.value)
+                        }
+                      />
+                    </label>
 
-                {/* Date Joined */}
-                <div className="border border-base-300 rounded-lg p-4">
-                  <label className="form-control w-full">
-                    <span className="label">
-                      <span className="label-text">Date Joined</span>
-                    </span>
-                    <input
-                      type="text"
-                      className="input input-bordered w-full input-disabled bg-base-200"
-                      value="January 15, 2025"
-                      disabled
-                    />
-                  </label>
-                </div>
-
-                {/* Last Login */}
-                <div className="border border-base-300 rounded-lg p-4 md:col-span-2">
-                  <label className="form-control w-full">
-                    <span className="label">
-                      <span className="label-text">Last Login</span>
-                    </span>
-                    <input
-                      type="text"
-                      className="input input-bordered w-full input-disabled bg-base-200"
-                      value="January 20, 2026 at 10:30 AM"
-                      disabled
-                    />
-                  </label>
-                </div>
+                    <ProfileFieldCard label="Role" value="Administrator" />
+                  </div>
+                )}
               </div>
-
-              {/* Save Button - Only shows when editing */}
-              {isEditing && (
-                <div className="mt-6 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={toggleEdit}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={toggleEdit}
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              )}
             </div>
           </section>
 
-          {/* Password and Preferences Row */}
-          <div className="grid gap-5 md:grid-cols-2 mt-5">
-            {/* Change Password Section */}
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
             <section className="app-surface">
               <div className="app-section">
-                <h2 className="text-xl font-semibold mb-4">Change Password</h2>
+                <h2 className="mb-4 text-xl font-semibold">Change Password</h2>
 
                 <div className="space-y-4">
                   <label className="form-control w-full">
@@ -270,13 +251,13 @@ function Settings() {
                         type={showCurrentPassword ? "text" : "password"}
                         className={`input input-bordered w-full pr-10 ${!isChangingPassword ? "input-disabled bg-base-200" : ""}`}
                         value={settings.currentPassword}
-                        onChange={(e) =>
-                          handleChange("currentPassword", e.target.value)
+                        onChange={(event) =>
+                          handleChange("currentPassword", event.target.value)
                         }
                         placeholder="Enter current password"
                         disabled={!isChangingPassword}
                       />
-                      {isChangingPassword && (
+                      {isChangingPassword ? (
                         <button
                           type="button"
                           className="absolute right-3 top-1/2 -translate-y-1/2"
@@ -290,25 +271,25 @@ function Settings() {
                             <Eye size={18} />
                           )}
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </label>
 
-                  {!isChangingPassword && (
+                  {!isChangingPassword ? (
                     <label className="form-control w-full">
                       <span className="label">
                         <span className="label-text">Last Updated</span>
                       </span>
                       <input
                         type="text"
-                        className="input input-bordered w-full input-disabled bg-base-200 mb-4"
+                        className="input input-bordered mb-4 w-full input-disabled bg-base-200"
                         value={settings.lastPasswordUpdated}
                         disabled
                       />
                     </label>
-                  )}
+                  ) : null}
 
-                  {isChangingPassword && (
+                  {isChangingPassword ? (
                     <>
                       <label className="form-control w-full">
                         <span className="label">
@@ -320,8 +301,8 @@ function Settings() {
                             className="input input-bordered w-full pr-10"
                             placeholder="Enter new password"
                             value={settings.newPassword}
-                            onChange={(e) =>
-                              handleChange("newPassword", e.target.value)
+                            onChange={(event) =>
+                              handleChange("newPassword", event.target.value)
                             }
                           />
                           <button
@@ -348,8 +329,11 @@ function Settings() {
                             className="input input-bordered w-full pr-10"
                             placeholder="Confirm new password"
                             value={settings.confirmPassword}
-                            onChange={(e) =>
-                              handleChange("confirmPassword", e.target.value)
+                            onChange={(event) =>
+                              handleChange(
+                                "confirmPassword",
+                                event.target.value,
+                              )
                             }
                           />
                           <button
@@ -368,7 +352,7 @@ function Settings() {
                         </div>
                       </label>
                     </>
-                  )}
+                  ) : null}
 
                   <button
                     type="button"
@@ -381,10 +365,9 @@ function Settings() {
               </div>
             </section>
 
-            {/* User Preferences Section */}
             <section className="app-surface">
               <div className="app-section">
-                <h2 className="text-xl font-semibold mb-4">Preferences</h2>
+                <h2 className="mb-4 text-xl font-semibold">Preferences</h2>
 
                 <div className="space-y-6">
                   <label className="form-control w-full">
@@ -392,9 +375,11 @@ function Settings() {
                       <span className="label-text">System Appearance</span>
                     </span>
                     <select
-                      className="select select-bordered w-full mb-4"
+                      className="select select-bordered mb-4 w-full"
                       value={settings.theme}
-                      onChange={(e) => handleChange("theme", e.target.value)}
+                      onChange={(event) =>
+                        handleChange("theme", event.target.value)
+                      }
                     >
                       <option value="light">Light</option>
                       <option value="dark">Dark</option>
@@ -406,12 +391,12 @@ function Settings() {
                       <span className="label-text">Notifications</span>
                     </span>
                     <select
-                      className="select select-bordered w-full mb-4"
+                      className="select select-bordered mb-4 w-full"
                       value={settings.notifications ? "enabled" : "disabled"}
-                      onChange={(e) =>
+                      onChange={(event) =>
                         handleChange(
                           "notifications",
-                          e.target.value === "enabled",
+                          event.target.value === "enabled",
                         )
                       }
                     >
@@ -433,8 +418,7 @@ function Settings() {
             </section>
           </div>
 
-          {/* Sign Out and Delete Account Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5">
+          <div className="mt-5 flex flex-col items-center justify-between gap-4 sm:flex-row">
             <button type="button" className="btn btn-error btn-outline">
               Delete Account
             </button>

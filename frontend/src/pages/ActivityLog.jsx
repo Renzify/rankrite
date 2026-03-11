@@ -188,16 +188,15 @@ function ActivityLog() {
           <section className="app-surface mb-5">
             <div className="app-section">
               {/* Top Row: Back Button and Activity Count */}
-              <div className="flex items-center justify-between mb-4">
-                {/* Left: Back Button */}
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-2 text-base-content/70 hover:text-primary transition-colors duration-200"
-                >
-                  <ArrowLeft size={20} />
-                  <span className="font-medium">Back</span>
-                </Link>
-
+              <div className="flex items-center justify-between">
+                <div className="p-2">
+                  <h1 className="text-5xl font-bold tracking-tight pb-2">
+                    Activity Log
+                  </h1>
+                  <p className="mt-1 text-sm text-base-content/70">
+                    Track all actions and changes in the system
+                  </p>
+                </div>
                 {/* Right: Activity Count Box */}
                 <div className="flex items-center gap-2 px-4 py-2 border border-base-300 rounded-lg bg-base-200/50">
                   <ListOrdered size={18} className="text-primary" />
@@ -208,14 +207,6 @@ function ActivityLog() {
               </div>
 
               {/* Bottom Row: Title and Subtitle */}
-              <div className="p-2">
-                <h1 className="text-5xl font-bold tracking-tight mb-3">
-                  Activity Log
-                </h1>
-                <p className="mt-1 text-sm text-base-content/70">
-                  Track all actions and changes in the system
-                </p>
-              </div>
             </div>
           </section>
 
