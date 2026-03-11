@@ -9,6 +9,16 @@ function CurrentValuesSidebar({
   judges,
   contestants,
 }) {
+  const formatContestantMeta = (contestant) => {
+    const parts = [];
+    const delegation = contestant.delegation || contestant.teamName;
+
+    if (delegation) parts.push(`Team: ${delegation}`);
+    if (contestant.gender) parts.push(`Gender: ${contestant.gender}`);
+
+    return parts.join(" - ");
+  };
+
   return (
     <aside className="app-surface-soft">
       <div className="app-section space-y-4">
@@ -67,7 +77,8 @@ function CurrentValuesSidebar({
                       <div className="flex-1">
                         <p className="font-semibold">{judge.fullName}</p>
                         <p className="text-sm text-base-content/60">
-                          {judge.judgeType} - Judge #{judge.judgeNumber}
+                          {judge.judgeType}
+                          {judge.judgeNumber ? ` - Judge #${judge.judgeNumber}` : ""}
                         </p>
                       </div>
                     </div>
@@ -101,9 +112,7 @@ function CurrentValuesSidebar({
                           #{index + 1} - {contestant.fullName}
                         </p>
                         <p className="text-sm text-base-content/60">
-                          {contestant.teamName &&
-                            `Team: ${contestant.teamName} - `}
-                          {contestant.gender && `Gender: ${contestant.gender}`}
+                          {formatContestantMeta(contestant)}
                         </p>
                       </div>
                     </div>

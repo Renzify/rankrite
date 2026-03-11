@@ -87,6 +87,11 @@ export const useTemplateStore = create((set) => ({
 
   setCurrentTab: (currentTab) => set({ currentTab }),
 
+  setJudges: (judges) =>
+    set((state) => ({
+      judges: typeof judges === "function" ? judges(state.judges) : judges,
+    })),
+
   addJudge: (judge) =>
     set((state) => ({
       judges: [...state.judges, { ...judge, id: Date.now() + Math.random() }],
@@ -102,6 +107,14 @@ export const useTemplateStore = create((set) => ({
       judges: state.judges.map((judge) =>
         judge.id === judgeId ? { ...judge, ...updatedJudge } : judge,
       ),
+    })),
+
+  setContestants: (contestants) =>
+    set((state) => ({
+      contestants:
+        typeof contestants === "function"
+          ? contestants(state.contestants)
+          : contestants,
     })),
 
   addContestant: (contestant) =>
