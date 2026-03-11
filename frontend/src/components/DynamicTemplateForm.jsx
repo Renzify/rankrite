@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router";
+import { MoveLeft } from "lucide-react";
 import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import { useTemplateStore } from "../stores/templateStore";
@@ -11,8 +13,8 @@ import JudgesTab from "./JudgesTab";
 import ContestantsTab from "./ContestantsTab";
 
 function DynamicTemplateForm() {
+  const navigate = useNavigate();
   const {
-    catalog,
     isCatalogLoading,
     catalogError,
     selectedEventType,
@@ -65,7 +67,13 @@ function DynamicTemplateForm() {
 
   const handleSaveDraft = async () => {
     try {
-      await saveDraft({ template, formValues, eventTitle, judges, contestants });
+      await saveDraft({
+        template,
+        formValues,
+        eventTitle,
+        judges,
+        contestants,
+      });
       toast.success("Saved as draft");
     } catch (error) {
       if (error instanceof Error) {
@@ -87,28 +95,26 @@ function DynamicTemplateForm() {
     if (!canCreateEvent) return;
     toast.success("Event created");
   };
-
-  const totalSports = useMemo(
-    () =>
-      selectedEventType
-        ? catalog
-            .filter((item) => item.eventType === selectedEventType)
-            .reduce((count, item) => count + (item.sports?.length ?? 0), 0)
-        : 0,
-    [catalog, selectedEventType],
-  );
-
   return (
     <div className="app-page app-page-wide space-y-5">
+      <div>
+        <button
+          className="btn btn-neutral btn-soft text-sm hover:bg-neutral/80"
+          onClick={() => navigate("/dashboard")}
+        >
+          <MoveLeft /> Back to Events
+        </button>
+      </div>
+
       <section className="app-surface text-base-100">
         <div className="app-section">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] opacity-80 text-black">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-black opacity-80">
             Event Setup
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl text-black">
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-black md:text-4xl">
             Dynamic Template Form
           </h1>
-          <p className="mt-2 max-w-3xl text-sm opacity-95 md:text-base text-black">
+          <p className="mt-2 max-w-3xl text-sm text-black opacity-95 md:text-base">
             Create your event by selecting an event type and field.
           </p>
         </div>
@@ -247,3 +253,4 @@ function DynamicTemplateForm() {
 }
 
 export default DynamicTemplateForm;
+
