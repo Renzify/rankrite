@@ -92,9 +92,6 @@ function Header() {
         >
           <ul>
             <li>
-              <button type="button">Profile</button>
-            </li>
-            <li>
               <button type="button">Settings</button>
             </li>
             <li>

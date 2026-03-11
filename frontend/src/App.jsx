@@ -34,7 +34,7 @@ function App() {
     <>
       <Routes>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<DynamicTemplateForm />} />
+          <Route path="/event-form" element={<DynamicTemplateForm />} />
           <Route path="/dashboard" element={<Dashboard />} />
 
           <Route path="/events/details" element={<EventDetails />}>
