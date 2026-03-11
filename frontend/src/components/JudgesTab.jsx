@@ -18,7 +18,7 @@ function createLocalId() {
     : `${Date.now()}_${Math.random()}`;
 }
 
-export default function JudgesTab() {
+export default function JudgesTab({ showLinkGeneration }) {
   const outletContext = useOutletContext() ?? {};
   const storeJudges = useTemplateStore((state) => state.judges);
   const storeSetJudges = useTemplateStore((state) => state.setJudges);
@@ -41,6 +41,8 @@ export default function JudgesTab() {
   const [copyMessage, setCopyMessage] = useState("");
 
   const eventId = eventDetails?.event?.id ?? "";
+  const shouldShowLinkGeneration =
+    showLinkGeneration ?? Boolean(eventDetails?.event?.id);
   const canSubmitJudge = Boolean(
     formData.fullName.trim() &&
       formData.judgeType &&
@@ -191,7 +193,7 @@ export default function JudgesTab() {
                 <th>Full Name</th>
                 <th>Judge Type</th>
                 <th>Judge Seat</th>
-                <th>Link Generation</th>
+                {shouldShowLinkGeneration ? <th>Link Generation</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -202,26 +204,31 @@ export default function JudgesTab() {
                     <td>{judge.fullName}</td>
                     <td>{judge.judgeType}</td>
                     <td>{judge.judgeNumber ?? "-"}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline"
-                        onClick={() => handleGenerateLink(judge)}
-                        disabled={!eventId}
-                        title={
-                          eventId
-                            ? "Generate judge scoring link"
-                            : "Available after the event is created."
-                        }
-                      >
-                        Generate
-                      </button>
-                    </td>
+                    {shouldShowLinkGeneration ? (
+                      <td>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleGenerateLink(judge)}
+                          disabled={!eventId}
+                          title={
+                            eventId
+                              ? "Generate judge scoring link"
+                              : "Available after the event is created."
+                          }
+                        >
+                          Generate
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-base-content/60">
+                  <td
+                    colSpan={shouldShowLinkGeneration ? 5 : 4}
+                    className="text-base-content/60"
+                  >
                     No judges added for this event yet.
                   </td>
                 </tr>
@@ -231,7 +238,7 @@ export default function JudgesTab() {
         </div>
       </div>
 
-      {isLinkModalOpen ? (
+      {shouldShowLinkGeneration && isLinkModalOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={closeLinkModal}
