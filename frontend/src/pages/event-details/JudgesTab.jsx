@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import QRCode from "react-qr-code";
 import { useOutletContext } from "react-router";
 
 const JUDGE_TYPE_OPTIONS = [
@@ -29,11 +30,6 @@ export default function JudgesTab() {
   const [activeJudgeName, setActiveJudgeName] = useState("");
   const [activeJudgeLink, setActiveJudgeLink] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
-
-  const qrImageUrl = useMemo(() => {
-    if (!activeJudgeLink) return "";
-    return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(activeJudgeLink)}`;
-  }, [activeJudgeLink]);
 
   const createJudgeScoringLink = (judge) => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -215,11 +211,14 @@ export default function JudgesTab() {
             <div className="mt-4">
               {linkModalTab === "qr" ? (
                 <div className="flex flex-col items-center gap-3">
-                  <img
-                    src={qrImageUrl}
-                    alt={`QR code for ${activeJudgeName}`}
-                    className="h-56 w-56 rounded-xl border border-base-300 bg-white p-2"
-                  />
+                  <div className="rounded-xl border border-base-300 bg-white p-4">
+                    <QRCode
+                      value={activeJudgeLink || " "}
+                      size={224}
+                      bgColor="#ffffff"
+                      fgColor="#111827"
+                    />
+                  </div>
                   <p className="text-center text-xs text-base-content/60">
                     Scan this QR to open the judge scoring page.
                   </p>
