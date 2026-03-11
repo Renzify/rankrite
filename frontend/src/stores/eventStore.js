@@ -1,7 +1,11 @@
 import { create } from "zustand";
-import { createEventDraft } from "../api/eventApi";
+import { createEventDraft, getEvents } from "../api/eventApi";
 
-export const useEventStore = create(() => ({
+export const useEventStore = create((set) => ({
+  events: [],
+  isLoading: false,
+  error: null,
+
   async saveDraft({ template, formValues, eventTitle, judges, contestants }) {
     if (!template) {
       throw new Error("NO_TEMPLATE_SELECTED");
@@ -65,6 +69,18 @@ export const useEventStore = create(() => ({
         entryNo: contestant.entryNo ?? index + 1,
       })),
     });
+  },
+
+  loadEvents: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const events = await getEvents();
+      set({ events, isLoading: false });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load events";
+      set({ error: message, isLoading: false });
+    }
   },
 }));
 

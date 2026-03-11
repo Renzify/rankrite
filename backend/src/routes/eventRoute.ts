@@ -1,9 +1,13 @@
 import { Router } from "express";
-import { createEventDraftController } from "../controllers/eventController.ts";
+import {
+  createEventDraftController,
+  listEventsController,
+} from "../controllers/eventController.ts";
 
 const router = Router();
 
 router.post("/events/draft", createEventDraftController);
+router.get("/events", listEventsController);
 
 export default router;
 
