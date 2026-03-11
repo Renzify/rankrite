@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { NavLink, Outlet, useParams } from "react-router";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
+import { getEventDetails } from "../api/eventApi";
+import StatusBadge from "../components/StatusBadge";
 
 const TAB_LINKS = [
   { to: "event-info", label: "Event Info" },
@@ -11,6 +13,7 @@ const TAB_LINKS = [
 ];
 
 export default function EventDetails() {
+  const { eventId } = useParams();
   const {
     isCatalogLoading,
     selectedEventType,
@@ -19,9 +22,11 @@ export default function EventDetails() {
     eventTypeOptions,
     sportOptions,
     visibleFields,
+    template,
     setSelectedEventType,
     setSelectedSport,
     updateFieldValue,
+    setFormValues,
     getFilteredOptions,
   } = useDynamicTemplate();
 
@@ -30,8 +35,68 @@ export default function EventDetails() {
   const [judges, setJudges] = useState([]);
   const [contestants, setContestants] = useState([]);
   const [judgeScores, setJudgeScores] = useState({});
+  const [eventDetails, setEventDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [pendingFormValues, setPendingFormValues] = useState(null);
+  const [didHydrate, setDidHydrate] = useState(false);
 
-  const eventTitle = formValues.eventTitle || "Gymnastics Regional 2024";
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEvent = async () => {
+      if (!eventId) {
+        setLoadError("Missing event id.");
+        return;
+      }
+      setIsLoading(true);
+      setLoadError(null);
+      setDidHydrate(false);
+      try {
+        const data = await getEventDetails(eventId);
+        if (!isMounted) return;
+
+        setEventDetails(data);
+        setSelectedEventType(data.template?.eventType ?? "");
+        setSelectedSport(data.formValues?.sport ?? "");
+        setJudges(data.judges ?? []);
+        setContestants(
+          (data.contestants ?? []).map((contestant) => ({
+            ...contestant,
+            delegation: contestant.teamName ?? "",
+          })),
+        );
+
+        setPendingFormValues({
+          ...data.formValues,
+          eventTitle: data.event.title,
+        });
+      } catch (error) {
+        if (!isMounted) return;
+        console.error(error);
+        setLoadError("Failed to load event details.");
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadEvent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [eventId, setSelectedEventType, setSelectedSport]);
+
+  useEffect(() => {
+    if (!pendingFormValues || !template || didHydrate) return;
+    setFormValues(pendingFormValues);
+    setDidHydrate(true);
+  }, [pendingFormValues, template, didHydrate, setFormValues]);
+
+  const eventTitle =
+    eventDetails?.event?.title ||
+    formValues.eventTitle ||
+    "Event Details";
 
   const selectableFields = useMemo(
     () => visibleFields.filter((field) => field.fieldType === "select"),
@@ -58,6 +123,30 @@ export default function EventDetails() {
     setJudgeType("");
   };
 
+  if (isLoading) {
+    return (
+      <div className="app-page app-page-wide space-y-5">
+        <section className="app-surface">
+          <div className="app-section">
+            <p className="text-sm text-base-content/70">Loading event...</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="app-page app-page-wide space-y-5">
+        <section className="app-surface">
+          <div className="app-section">
+            <p className="text-sm text-error">{loadError}</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="app-page app-page-wide space-y-5">
       <section className="app-surface">
@@ -70,9 +159,14 @@ export default function EventDetails() {
               {eventTitle}
             </h1>
           </div>
-          <span className="badge badge-info badge-outline px-3 py-3 text-xs uppercase tracking-[0.1em]">
-            Ongoing
-          </span>
+          {eventDetails?.event?.status ? (
+            <StatusBadge
+              status={eventDetails.event.status
+                .split("_")
+                .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(" ")}
+            />
+          ) : null}
         </div>
       </section>
 

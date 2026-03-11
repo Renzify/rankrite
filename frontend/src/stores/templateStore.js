@@ -60,6 +60,7 @@ export const useTemplateStore = create((set) => ({
     }),
   setTemplateLoading: (isTemplateLoading) => set({ isTemplateLoading }),
   setTemplateError: (templateError) => set({ templateError }),
+  setFormValues: (formValues) => set({ formValues }),
 
   updateFieldValue: (fieldKey, value) =>
     set((state) => {

@@ -1,4 +1,4 @@
-import { desc, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import {
   contestant,
@@ -9,6 +9,7 @@ import {
   judge,
   judgeType,
 } from "../db/schema.ts";
+import { getTemplateById } from "./templateService.ts";
 
 export type CreateEventDraftFieldValueInput = {
   fieldId: string;
@@ -194,5 +195,103 @@ export async function listEvents(): Promise<EventListItem[]> {
     })
     .from(event)
     .orderBy(desc(event.createdAt));
+}
+
+export type EventDetails = {
+  event: EventListItem & { templateId: string };
+  template: Awaited<ReturnType<typeof getTemplateById>>;
+  formValues: Record<string, string>;
+  judges: Array<{
+    id: string;
+    fullName: string;
+    judgeType: string;
+    judgeNumber: number;
+    eventPhaseId: string | null;
+  }>;
+  contestants: Array<{
+    id: string;
+    fullName: string;
+    teamName: string | null;
+    gender: string | null;
+    entryNo: number;
+  }>;
+};
+
+export async function getEventDetails(eventId: string): Promise<EventDetails | null> {
+  const eventRow = await db.query.event.findFirst({
+    where: eq(event.id, eventId),
+  });
+
+  if (!eventRow) return null;
+
+  const template = await getTemplateById(eventRow.templateId);
+  if (!template) return null;
+
+  const fieldValues = await db.query.eventFieldValue.findMany({
+    where: eq(eventFieldValue.eventId, eventId),
+    with: {
+      field: true,
+      option: true,
+    },
+  });
+
+  const formValues = fieldValues.reduce<Record<string, string>>((acc, value) => {
+    const key = value.field?.key;
+    if (!key) return acc;
+
+    if (value.option?.value) {
+      acc[key] = value.option.value;
+    } else if (value.valueText !== null && value.valueText !== undefined) {
+      acc[key] = value.valueText;
+    }
+
+    return acc;
+  }, {});
+
+  const judgeAssignments = await db.query.eventJudgeAssignment.findMany({
+    where: eq(eventJudgeAssignment.eventId, eventId),
+    with: {
+      judge: true,
+      judgeType: true,
+    },
+  });
+
+  const judges = judgeAssignments.map((assignment) => ({
+    id: assignment.judge?.id ?? assignment.judgeId,
+    fullName: assignment.judge?.fullName ?? "",
+    judgeType: assignment.judgeType?.name ?? "",
+    judgeNumber: assignment.judgeNumber,
+    eventPhaseId: assignment.eventPhaseId ?? null,
+  }));
+
+  const contestantLinks = await db.query.eventContestant.findMany({
+    where: eq(eventContestant.eventId, eventId),
+    with: {
+      contestant: true,
+    },
+  });
+
+  const contestants = contestantLinks.map((link) => ({
+    id: link.contestant?.id ?? link.contestantId,
+    fullName: link.contestant?.fullName ?? "",
+    teamName: link.contestant?.teamName ?? null,
+    gender: link.contestant?.gender ?? null,
+    entryNo: link.entryNo,
+  }));
+
+  return {
+    event: {
+      id: eventRow.id,
+      title: eventRow.title,
+      status: eventRow.status,
+      createdAt: eventRow.createdAt,
+      updatedAt: eventRow.updatedAt,
+      templateId: eventRow.templateId,
+    },
+    template,
+    formValues,
+    judges,
+    contestants,
+  };
 }
 
