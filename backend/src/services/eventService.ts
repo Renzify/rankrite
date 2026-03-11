@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { desc, inArray } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import {
   contestant,
@@ -19,7 +19,7 @@ export type CreateEventDraftFieldValueInput = {
 export type CreateEventDraftInput = {
   templateId: string;
   title: string;
-  status?: "draft" | "live" | "finished";
+  status?: "draft" | "live" | "finished" | "to_be_held";
   fieldValues?: CreateEventDraftFieldValueInput[];
   judges?: {
     fullName: string;
@@ -173,5 +173,26 @@ export async function createEventDraft(input: CreateEventDraftInput) {
   });
 
   return result;
+}
+
+export type EventListItem = {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export async function listEvents(): Promise<EventListItem[]> {
+  return db
+    .select({
+      id: event.id,
+      title: event.title,
+      status: event.status,
+      createdAt: event.createdAt,
+      updatedAt: event.updatedAt,
+    })
+    .from(event)
+    .orderBy(desc(event.createdAt));
 }
 

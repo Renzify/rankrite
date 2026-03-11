@@ -2,6 +2,7 @@ const STATUS_STYLE_BY_VALUE = {
   Draft: "border-slate-300 bg-slate-200 text-slate-700",
   Live: "border-emerald-300 bg-emerald-100 text-emerald-700",
   Finished: "border-amber-300 bg-amber-100 text-amber-700",
+  "To Be Held": "border-blue-300 bg-blue-100 text-blue-700",
 };
 
 function getStatusClassName(status) {

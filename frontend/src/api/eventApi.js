@@ -5,3 +5,8 @@ export const createEventDraft = async (payload) => {
   return res.data;
 };
 
+export const getEvents = async () => {
+  const res = await axiosInstance.get("/events");
+  return res.data;
+};
+

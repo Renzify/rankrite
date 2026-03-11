@@ -1,47 +1,77 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import StatusBadge from "../components/StatusBadge";
+import { useEventStore } from "../stores/eventStore";
+import { useShallow } from "zustand/react/shallow";
 
-const EVENTS = [
-  {
-    id: 1,
-    name: "Sports",
-    status: "Draft",
-    created: "12/20/2025",
-  },
-  {
-    id: 2,
-    name: "Hart Hagerty",
-    status: "Live",
-    created: "12/20/2025",
-  },
-  {
-    id: 3,
-    name: "Brice Swyre",
-    status: "Finished",
-    created: "12/20/2025",
-  },
-  {
-    id: 4,
-    name: "Gymnastics Open",
-    status: "Live",
-    created: "01/14/2026",
-  },
+const STATUS_OPTIONS = [
+  "All Status",
+  "Draft",
+  "To Be Held",
+  "Live",
+  "Finished",
 ];
+const STATUS_LABELS = {
+  draft: "Draft",
+  live: "Live",
+  finished: "Finished",
+  to_be_held: "To Be Held",
+};
 
-const STATUS_OPTIONS = ["All Status", "Draft", "Live", "Finished"];
+const formatStatus = (status) => {
+  if (!status) return "Unknown";
+  const normalized = status.toLowerCase();
+  return (
+    STATUS_LABELS[normalized] ??
+    `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`
+  );
+};
+
+const formatDate = (value) => {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
 
 function Dashboard() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("All Status");
+  const { events, isLoading, error, loadEvents } = useEventStore(
+    useShallow((state) => ({
+      events: state.events,
+      isLoading: state.isLoading,
+      error: state.error,
+      loadEvents: state.loadEvents,
+    })),
+  );
+
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
+
+  const displayEvents = useMemo(
+    () =>
+      events.map((event) => ({
+        id: event.id,
+        name: event.title,
+        status: formatStatus(event.status),
+        created: formatDate(event.createdAt),
+      })),
+    [events],
+  );
 
   const filteredEvents = useMemo(() => {
     if (statusFilter === "All Status") {
-      return EVENTS;
+      return displayEvents;
     }
 
-    return EVENTS.filter((event) => event.status === statusFilter);
-  }, [statusFilter]);
+    return displayEvents.filter((event) => event.status === statusFilter);
+  }, [displayEvents, statusFilter]);
 
   const handleCreateEvent = () => {
     navigate("/event-form");
@@ -61,7 +91,7 @@ function Dashboard() {
         </p>
       </section>
 
-      <Statistics events={EVENTS} />
+      <Statistics events={displayEvents} />
 
       <AddEvent
         statusFilter={statusFilter}
@@ -70,7 +100,7 @@ function Dashboard() {
         onAddEvent={handleCreateEvent}
       />
 
-      <EventList events={filteredEvents} onOpenEvent={handleOpenEvent} />
+      <EventList events={filteredEvents} isLoading={isLoading} error={error} onOpenEvent={handleOpenEvent}/>
     </div>
   );
 }
@@ -141,7 +171,7 @@ function AddEvent({ statusFilter, setStatusFilter, statusOptions, onAddEvent }) 
   );
 }
 
-function EventList({ events, onOpenEvent }) {
+function EventList({ events, isLoading, error, onOpenEvent }) {
   return (
     <section className="app-table-wrap">
       <table className="table">
@@ -156,7 +186,19 @@ function EventList({ events, onOpenEvent }) {
         </thead>
 
         <tbody>
-          {events.length ? (
+          {isLoading ? (
+            <tr className="transition-colors hover:bg-base-200">
+              <td colSpan={5} className="text-center text-base-content/60">
+                Loading events...
+              </td>
+            </tr>
+          ) : error ? (
+            <tr className="transition-colors hover:bg-base-200">
+              <td colSpan={5} className="text-center text-error">
+                {error}
+              </td>
+            </tr>
+          ) : events.length ? (
             events.map((event, index) => (
               <tr
                 key={event.id}
