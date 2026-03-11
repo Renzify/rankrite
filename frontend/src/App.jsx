@@ -12,6 +12,7 @@ import ForgotPasswordCard from "./auth/components/ForgotPasswordCard";
 import EventDetails from "./pages/EventDetails";
 import JudgeScore from "./pages/JudgeScore";
 import ActivityLog from "./pages/ActivityLog";
+import Settings from "./pages/Settings";
 import EventInfoTab from "./pages/event-details/EventInfoTab";
 import ScoringTab from "./pages/event-details/ScoringTab";
 import DisplayControlTab from "./pages/event-details/DisplayControlTab";
@@ -56,6 +57,7 @@ function App() {
           </Route>
 
           <Route path="/activity-log" element={<ActivityLog />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="/judge-score" element={<JudgeScore />} />
         <Route path="/judge/score" element={<JudgeScore />} />
