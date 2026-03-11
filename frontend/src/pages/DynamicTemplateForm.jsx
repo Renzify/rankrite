@@ -7,7 +7,6 @@ import { useTemplateStore } from "../stores/templateStore";
 import { useEventStore } from "../stores/eventStore";
 import EventTypeSportSelect from "../components/EventTypeSportSelect";
 import TemplateFields from "../components/TemplateFields";
-import CurrentValuesSidebar from "../components/CurrentValuesSidebar";
 import TabNavigation from "../components/TabNavigation";
 import JudgesTab from "../components/JudgesTab";
 import ContestantsTab from "../components/ContestantsTab";
@@ -125,10 +124,10 @@ function DynamicTemplateForm() {
 
       <TabNavigation isFormComplete={isFormComplete} />
 
-      <div
-        className={`grid gap-5 ${currentTab === "details" ? "" : "lg:grid-cols-[1.7fr_1fr]"}`}
-      >
-        <section className="app-surface-soft">
+      <div className="space-y-5">
+        <section
+          className={currentTab === "details" ? "app-surface-soft" : "app-surface"}
+        >
           <div className="app-section space-y-5">
             {currentTab === "details" && (
               <h2 className="text-xl font-semibold tracking-tight">
@@ -230,20 +229,6 @@ function DynamicTemplateForm() {
             )}
           </div>
         </section>
-
-        {currentTab !== "details" && (
-          <CurrentValuesSidebar
-            selectedEventType={selectedEventType}
-            selectedSport={selectedSport}
-            eventTitle={eventTitle}
-            template={template}
-            visibleFields={visibleFields}
-            formValues={formValues}
-            currentTab={currentTab}
-            judges={judges}
-            contestants={contestants}
-          />
-        )}
       </div>
 
       {(currentTab === "judges" || currentTab === "contestants") && (
