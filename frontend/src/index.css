@@ -3,8 +3,8 @@
 @plugin "daisyui";
 
 :root {
-  font-family: "Plus Jakarta Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
+  font-family:
+    "Plus Jakarta Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
@@ -20,7 +20,7 @@ textarea {
 
 @layer components {
   .app-page {
-    @apply mx-auto w-full max-w-6xl px-4 py-6 md:px-6 md:py-8;
+    @apply mx-auto w-3/4 max-w-6xl px-4 py-6 md:px-6 md:py-8;
   }
 
   .app-page-wide {
