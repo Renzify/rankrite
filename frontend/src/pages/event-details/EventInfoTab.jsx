@@ -74,7 +74,7 @@ export default function EventInfoTab() {
       </label>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70 mt-5">
           Selected Fields
         </h3>
         {selectableFields.length === 0 ? (

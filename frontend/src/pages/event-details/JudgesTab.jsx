@@ -74,17 +74,6 @@ export default function JudgesTab() {
     <>
       <div className="w-full space-y-5">
         <h2 className="text-xl font-semibold tracking-tight">Manage Judges</h2>
-
-        <div className="app-muted-panel">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
-            Current Event
-          </p>
-          <h3 className="mt-1 text-lg font-semibold">{eventTitle}</h3>
-          <p className="mt-1 text-sm text-base-content/70">
-            {selectedSport ? `Sport: ${selectedSport}` : "No sport selected yet."}
-          </p>
-        </div>
-
         <form
           className="grid gap-4 sm:grid-cols-[1.4fr_1fr_auto]"
           onSubmit={handleJudgeSubmit}
@@ -183,7 +172,9 @@ export default function JudgesTab() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold">Judge Scoring Access</h3>
-                <p className="text-sm text-base-content/70">{activeJudgeName}</p>
+                <p className="text-sm text-base-content/70">
+                  {activeJudgeName}
+                </p>
               </div>
               <button
                 type="button"
@@ -194,7 +185,10 @@ export default function JudgesTab() {
               </button>
             </div>
 
-            <div role="tablist" className="tabs tabs-boxed mt-4 w-fit gap-1 bg-base-200/50">
+            <div
+              role="tablist"
+              className="tabs tabs-boxed mt-4 w-fit gap-1 bg-base-200/50"
+            >
               <button
                 type="button"
                 role="tab"
@@ -229,7 +223,9 @@ export default function JudgesTab() {
                 <div className="space-y-3">
                   <label className="form-control w-full">
                     <div className="label pb-1">
-                      <span className="label-text font-semibold">Scoring Link</span>
+                      <span className="label-text font-semibold">
+                        Scoring Link
+                      </span>
                     </div>
                     <input
                       type="text"
