@@ -79,7 +79,7 @@ function DynamicTemplateForm() {
 
   const handleSaveDraft = async () => {
     try {
-      await saveDraft({ template, formValues, eventTitle });
+      await saveDraft({ template, formValues, eventTitle, judges, contestants });
       toast.success("Saved as draft");
     } catch (error) {
       if (error instanceof Error) {

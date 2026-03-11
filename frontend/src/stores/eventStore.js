@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createEventDraft } from "../api/eventApi";
 
 export const useEventStore = create(() => ({
-  async saveDraft({ template, formValues, eventTitle }) {
+  async saveDraft({ template, formValues, eventTitle, judges, contestants }) {
     if (!template) {
       throw new Error("NO_TEMPLATE_SELECTED");
     }
@@ -52,6 +52,18 @@ export const useEventStore = create(() => ({
       title,
       status: "draft",
       fieldValues,
+      judges: (judges ?? []).map((judge) => ({
+        fullName: judge.fullName,
+        judgeType: judge.judgeType,
+        judgeNumber: judge.judgeNumber,
+        eventPhaseId: judge.eventPhaseId ?? null,
+      })),
+      contestants: (contestants ?? []).map((contestant, index) => ({
+        fullName: contestant.fullName,
+        teamName: contestant.teamName ?? null,
+        gender: contestant.gender ?? null,
+        entryNo: contestant.entryNo ?? index + 1,
+      })),
     });
   },
 }));
