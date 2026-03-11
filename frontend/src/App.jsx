@@ -11,6 +11,7 @@ import LoginCard from "./auth/components/LoginCard";
 import ForgotPasswordCard from "./auth/components/ForgotPasswordCard";
 import EventDetails from "./pages/EventDetails";
 import JudgeScore from "./pages/JudgeScore";
+import ActivityLog from "./pages/ActivityLog";
 import EventInfoTab from "./pages/event-details/EventInfoTab";
 import JudgesTab from "./pages/event-details/JudgesTab";
 import ContestantTab from "./pages/event-details/ContestantTab";
@@ -54,6 +55,7 @@ function App() {
           </Route>
 
           <Route path="/judge-score" element={<JudgeScore />} />
+          <Route path="/activity-log" element={<ActivityLog />} />
         </Route>
       </Routes>
       <Toaster />
