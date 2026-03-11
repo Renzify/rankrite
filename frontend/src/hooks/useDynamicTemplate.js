@@ -66,6 +66,7 @@ export function useDynamicTemplate() {
   );
   const setTemplateError = useTemplateStore((state) => state.setTemplateError);
   const updateFieldValue = useTemplateStore((state) => state.updateFieldValue);
+  const setFormValues = useTemplateStore((state) => state.setFormValues);
 
   useEffect(() => {
     let isMounted = true;
@@ -233,6 +234,7 @@ export function useDynamicTemplate() {
     setSelectedEventType,
     setSelectedSport,
     updateFieldValue,
+    setFormValues,
     getFilteredOptions,
   };
 }

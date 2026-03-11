@@ -69,6 +69,16 @@ async function buildTemplatePayload(template: typeof eventTemplate.$inferSelect)
   };
 }
 
+export async function getTemplateById(id: string) {
+  const template = await db.query.eventTemplate.findFirst({
+    where: eq(eventTemplate.id, id),
+  });
+
+  if (!template) return null;
+
+  return buildTemplatePayload(template);
+}
+
 export async function getTemplateByName(name: string) {
   const template = await db.query.eventTemplate.findFirst({
     where: eq(eventTemplate.name, name),

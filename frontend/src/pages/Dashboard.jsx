@@ -77,8 +77,9 @@ function Dashboard() {
     navigate("/event-form");
   };
 
-  const handleOpenEvent = () => {
-    navigate("/events/details");
+  const handleOpenEvent = (eventId) => {
+    if (!eventId) return;
+    navigate(`/events/${eventId}`);
   };
 
   return (
@@ -217,7 +218,7 @@ function EventList({ events, isLoading, error, onOpenEvent }) {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline w-16 justify-center"
-                      onClick={onOpenEvent}
+                      onClick={() => onOpenEvent(event.id)}
                     >
                       View
                     </button>

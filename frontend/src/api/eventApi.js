@@ -10,3 +10,8 @@ export const getEvents = async () => {
   return res.data;
 };
 
+export const getEventDetails = async (eventId) => {
+  const res = await axiosInstance.get(`/events/${eventId}`);
+  return res.data;
+};
+

@@ -37,7 +37,7 @@ function App() {
           <Route path="/event-form" element={<DynamicTemplateForm />} />
           <Route path="/dashboard" element={<Dashboard />} />
 
-          <Route path="/events/details" element={<EventDetails />}>
+          <Route path="/events/:eventId" element={<EventDetails />}>
             <Route index element={<Navigate to="event-info" replace />} />
             <Route path="event-info" element={<EventInfoTab />} />
             <Route path="judges" element={<JudgesTab />} />
