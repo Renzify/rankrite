@@ -5,12 +5,12 @@ import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import { useTemplateStore } from "../stores/templateStore";
 import { useEventStore } from "../stores/eventStore";
-import EventTypeSportSelect from "./EventTypeSportSelect";
-import TemplateFields from "./TemplateFields";
-import CurrentValuesSidebar from "./CurrentValuesSidebar";
-import TabNavigation from "./TabNavigation";
-import JudgesTab from "./JudgesTab";
-import ContestantsTab from "./ContestantsTab";
+import EventTypeSportSelect from "../components/EventTypeSportSelect";
+import TemplateFields from "../components/TemplateFields";
+import CurrentValuesSidebar from "../components/CurrentValuesSidebar";
+import TabNavigation from "../components/TabNavigation";
+import JudgesTab from "../components/JudgesTab";
+import ContestantsTab from "../components/ContestantsTab";
 
 function DynamicTemplateForm() {
   const navigate = useNavigate();
@@ -253,4 +253,3 @@ function DynamicTemplateForm() {
 }
 
 export default DynamicTemplateForm;
-
