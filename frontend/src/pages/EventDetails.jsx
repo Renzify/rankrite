@@ -20,9 +20,12 @@ function applyLoadedEventDetails(data, actions) {
   actions.setSelectedSport(data.formValues?.sport ?? "");
   actions.setJudges(data.judges ?? []);
   actions.setContestants(
-    (data.contestants ?? []).map((contestant) => ({
+    (data.contestants ?? []).map((contestant, index) => ({
       ...contestant,
-      delegation: contestant.teamName ?? "",
+      delegation: contestant.teamName ?? contestant.delegation ?? "",
+      teamName: contestant.teamName ?? contestant.delegation ?? "",
+      gender: contestant.gender ?? "",
+      entryNo: contestant.entryNo ?? index + 1,
     })),
   );
   actions.setPendingFormValues({
@@ -51,8 +54,6 @@ export default function EventDetails() {
     getFilteredOptions,
   } = useDynamicTemplate();
 
-  const [judgeFullName, setJudgeFullName] = useState("");
-  const [judgeType, setJudgeType] = useState("");
   const [judges, setJudges] = useState([]);
   const [contestants, setContestants] = useState([]);
   const [judgeScores, setJudgeScores] = useState({});
@@ -119,24 +120,8 @@ export default function EventDetails() {
     [visibleFields],
   );
 
-  const canSubmitJudge = Boolean(judgeFullName.trim() && judgeType);
-
-  const handleJudgeSubmit = (event) => {
-    event.preventDefault();
-    if (!canSubmitJudge) return;
-
-    const nextJudge = {
-      id:
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}_${Math.random()}`,
-      fullName: judgeFullName.trim(),
-      judgeType,
-    };
-
-    setJudges((prev) => [...prev, nextJudge]);
-    setJudgeFullName("");
-    setJudgeType("");
+  const handleAddJudge = (judge) => {
+    setJudges((prev) => [...prev, judge]);
   };
 
   const handleResetEventInfo = () => {
@@ -287,17 +272,12 @@ export default function EventDetails() {
               onResetEventInfo: handleResetEventInfo,
               onSaveEventInfo: handleSaveEventInfo,
               eventTitle,
-              judgeFullName,
-              judgeType,
+              onAddJudge: handleAddJudge,
               judges,
               judgeScores,
               setJudgeScores,
               contestants,
               setContestants,
-              setJudgeFullName,
-              setJudgeType,
-              canSubmitJudge,
-              handleJudgeSubmit,
             }}
           />
         </div>

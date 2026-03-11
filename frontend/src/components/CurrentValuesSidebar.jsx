@@ -101,8 +101,8 @@ function CurrentValuesSidebar({
                           #{index + 1} - {contestant.fullName}
                         </p>
                         <p className="text-sm text-base-content/60">
-                          {contestant.teamName &&
-                            `Team: ${contestant.teamName} - `}
+                          {(contestant.teamName || contestant.delegation) &&
+                            `Team: ${contestant.teamName || contestant.delegation} - `}
                           {contestant.gender && `Gender: ${contestant.gender}`}
                         </p>
                       </div>

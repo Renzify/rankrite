@@ -35,7 +35,10 @@ function DynamicTemplateForm() {
   const currentTab = useTemplateStore((state) => state.currentTab);
   const setCurrentTab = useTemplateStore((state) => state.setCurrentTab);
   const judges = useTemplateStore((state) => state.judges);
+  const addJudge = useTemplateStore((state) => state.addJudge);
   const contestants = useTemplateStore((state) => state.contestants);
+  const addContestant = useTemplateStore((state) => state.addContestant);
+  const setContestants = useTemplateStore((state) => state.setContestants);
   const saveDraft = useEventStore((state) => state.saveDraft);
 
   const eventTitle = formValues.eventTitle || "";
@@ -210,8 +213,21 @@ function DynamicTemplateForm() {
               </>
             )}
 
-            {currentTab === "judges" && <JudgesTab />}
-            {currentTab === "contestants" && <ContestantsTab />}
+            {currentTab === "judges" && (
+              <JudgesTab
+                eventTitle={eventTitle}
+                selectedSport={selectedSport}
+                judges={judges}
+                onAddJudge={addJudge}
+              />
+            )}
+            {currentTab === "contestants" && (
+              <ContestantsTab
+                contestants={contestants}
+                onAddContestant={addContestant}
+                onContestantsChange={setContestants}
+              />
+            )}
           </div>
         </section>
 

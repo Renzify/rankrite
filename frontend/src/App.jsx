@@ -13,8 +13,8 @@ import EventDetails from "./pages/EventDetails";
 import JudgeScore from "./pages/JudgeScore";
 import ActivityLog from "./pages/ActivityLog";
 import EventInfoTab from "./pages/event-details/EventInfoTab";
-import JudgesTab from "./pages/event-details/JudgesTab";
-import ContestantTab from "./pages/event-details/ContestantTab";
+import JudgesTab from "./components/JudgesTab";
+import ContestantsTab from "./components/ContestantsTab";
 import ScoringTab from "./pages/event-details/ScoringTab";
 import DisplayControlTab from "./pages/event-details/DisplayControlTab";
 
@@ -41,8 +41,11 @@ function App() {
           <Route path="/events/:eventId" element={<EventDetails />}>
             <Route index element={<Navigate to="event-info" replace />} />
             <Route path="event-info" element={<EventInfoTab />} />
-            <Route path="judges" element={<JudgesTab />} />
-            <Route path="contestant" element={<ContestantTab />} />
+            <Route path="judges" element={<JudgesTab useRouteContext />} />
+            <Route
+              path="contestant"
+              element={<ContestantsTab useRouteContext />}
+            />
             <Route path="scoring" element={<ScoringTab />} />
             <Route path="display-control" element={<DisplayControlTab />} />
           </Route>

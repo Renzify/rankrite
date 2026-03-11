@@ -61,6 +61,13 @@ export const useTemplateStore = create((set) => ({
   setTemplateLoading: (isTemplateLoading) => set({ isTemplateLoading }),
   setTemplateError: (templateError) => set({ templateError }),
   setFormValues: (formValues) => set({ formValues }),
+  setContestants: (contestantsOrUpdater) =>
+    set((state) => ({
+      contestants:
+        typeof contestantsOrUpdater === "function"
+          ? contestantsOrUpdater(state.contestants)
+          : contestantsOrUpdater,
+    })),
 
   updateFieldValue: (fieldKey, value) =>
     set((state) => {
@@ -108,7 +115,12 @@ export const useTemplateStore = create((set) => ({
     set((state) => ({
       contestants: [
         ...state.contestants,
-        { ...contestant, id: Date.now() + Math.random() },
+        {
+          ...contestant,
+          id: Date.now() + Math.random(),
+          delegation: contestant.delegation ?? contestant.teamName ?? "",
+          teamName: contestant.teamName ?? contestant.delegation ?? "",
+        },
       ],
     })),
 
