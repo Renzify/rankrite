@@ -18,6 +18,7 @@ import DisplayControlTab from "./components/event-details/DisplayControlTab";
 import DisplayView from "./pages/DisplayView";
 import JudgesTab from "./components/event-details/JudgesTab";
 import ContestantsTab from "./components/event-details/ContestantsTab";
+import Settings from "./pages/Settings";
 
 function AppLayout() {
   return (
@@ -56,6 +57,7 @@ function App() {
           </Route>
 
           <Route path="/activity-log" element={<ActivityLog />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="/judge-score" element={<JudgeScore />} />
         <Route path="/judge/score" element={<JudgeScore />} />

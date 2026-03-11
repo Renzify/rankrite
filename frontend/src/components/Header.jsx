@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
+import { useNavigate } from "react-router";
 import { DropdownMenu } from "../helpers/Dropdown";
 import { Bell } from "lucide-react";
 function Header() {
+  const navigate = useNavigate();
   const notificationDropdownRef = useRef(null);
   const profileDropdownRef = useRef(null);
 
@@ -93,10 +95,14 @@ function Header() {
           >
             <ul>
               <li>
-                <button type="button">Settings</button>
+                <button type="button" onClick={() => navigate("/settings")}>
+                  Settings
+                </button>
               </li>
               <li>
-                <button type="button">Activity Log</button>
+                <button type="button" onClick={() => navigate("/activity-log")}>
+                  Activity Log
+                </button>
               </li>
               <li>
                 <button type="button">Log out</button>
