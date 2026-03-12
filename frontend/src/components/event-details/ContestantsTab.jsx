@@ -1,9 +1,10 @@
 import { useOutletContext } from "react-router";
-import { getContestantDelegation } from "../../lib/contestantCsv";
+import {
+  CONTESTANT_GENDER_OPTIONS,
+  getContestantDelegation,
+} from "../../lib/contestantCsv";
 import { useTemplateStore } from "../../stores/templateStore";
 import { useContestantsTabHandlers } from "../../hooks/useContestantsTabHandlers";
-
-const GENDER_OPTIONS = ["Male", "Female"];
 
 export default function ContestantsTab() {
   const outletContext = useOutletContext() ?? {};
@@ -17,11 +18,13 @@ export default function ContestantsTab() {
     fileInputRef,
     formData,
     importMessage,
+    importMessageTone,
     handleInputChange,
     handleContestantSubmit,
     handleImportClick,
     handleCsvImport,
     handleCsvExport,
+    handleCsvTemplateDownload,
   } = useContestantsTabHandlers({ contestants, setContestants });
 
   return (
@@ -46,10 +49,17 @@ export default function ContestantsTab() {
           </button>
           <button
             type="button"
-            className="btn btn-neutral btn-sm"
+            className="btn btn-outline btn-sm"
             onClick={handleCsvExport}
           >
             Export CSV
+          </button>
+          <button
+            type="button"
+            className="btn btn-neutral btn-sm"
+            onClick={handleCsvTemplateDownload}
+          >
+            Download Template
           </button>
         </div>
       </div>
@@ -97,7 +107,7 @@ export default function ContestantsTab() {
             onChange={handleInputChange}
           >
             <option value="">-- Select Gender --</option>
-            {GENDER_OPTIONS.map((option) => (
+            {CONTESTANT_GENDER_OPTIONS.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
@@ -117,7 +127,15 @@ export default function ContestantsTab() {
       </form>
 
       {importMessage ? (
-        <div className="alert border border-base-300 bg-base-200/60 text-base-content">
+        <div
+          className={`alert ${
+            importMessageTone === "error"
+              ? "alert-error"
+              : importMessageTone === "success"
+                ? "alert-success"
+                : "border border-base-300 bg-base-200/60 text-base-content"
+          }`}
+        >
           <span>{importMessage}</span>
         </div>
       ) : null}

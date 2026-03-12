@@ -14,6 +14,12 @@ export async function createEventDraftController(req: Request, res: Response) {
     const draftEvent = await createEventDraft(payload);
     res.status(201).json(draftEvent);
   } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_CONTESTANT_GENDER") {
+      return res.status(400).json({
+        message: "Contestant gender must be Male or Female",
+      });
+    }
+
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
       return res.status(400).json({
         message: "Invalid event input",
