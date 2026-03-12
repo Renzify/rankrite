@@ -13,6 +13,8 @@ export default function ContestantsTab() {
 
   const contestants = outletContext.contestants ?? storeContestants;
   const setContestants = outletContext.setContestants ?? storeSetContestants;
+  const onCreateContestant = outletContext.onCreateContestant;
+  const isSavingContestant = outletContext.isSavingContestant ?? false;
 
   const {
     fileInputRef,
@@ -25,7 +27,11 @@ export default function ContestantsTab() {
     handleCsvImport,
     handleCsvExport,
     handleCsvTemplateDownload,
-  } = useContestantsTabHandlers({ contestants, setContestants });
+  } = useContestantsTabHandlers({
+    contestants,
+    setContestants,
+    onCreateContestant,
+  });
 
   return (
     <div className="w-full space-y-5">
@@ -119,9 +125,9 @@ export default function ContestantsTab() {
           <button
             type="submit"
             className="btn btn-neutral w-full sm:w-auto"
-            disabled={!formData.fullName.trim()}
+            disabled={!formData.fullName.trim() || isSavingContestant}
           >
-            Submit
+            {isSavingContestant ? "Submitting..." : "Submit"}
           </button>
         </div>
       </form>

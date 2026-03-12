@@ -35,7 +35,11 @@ function downloadCsvFile(csv, filename) {
   URL.revokeObjectURL(url);
 }
 
-export function useContestantsTabHandlers({ contestants, setContestants }) {
+export function useContestantsTabHandlers({
+  contestants,
+  setContestants,
+  onCreateContestant,
+}) {
   const [formData, setFormData] = useState(EMPTY_FORM_DATA);
   const [importMessage, setImportMessage] = useState("");
   const [importMessageTone, setImportMessageTone] = useState("info");
@@ -49,7 +53,7 @@ export function useContestantsTabHandlers({ contestants, setContestants }) {
     }));
   };
 
-  const handleContestantSubmit = (event) => {
+  const handleContestantSubmit = async (event) => {
     event.preventDefault();
     if (!formData.fullName.trim()) return;
 
@@ -68,7 +72,16 @@ export function useContestantsTabHandlers({ contestants, setContestants }) {
       gender: normalizedGender ?? "",
     });
 
-    setContestants((prev) => [...prev, nextContestant]);
+    if (onCreateContestant) {
+      try {
+        await onCreateContestant(nextContestant);
+      } catch {
+        return;
+      }
+    } else {
+      setContestants((prev) => [...prev, nextContestant]);
+    }
+
     setFormData(EMPTY_FORM_DATA);
     setImportMessage("");
     setImportMessageTone("info");

@@ -1,12 +1,21 @@
 import type { Request, Response } from "express";
 import {
+  addEventContestant,
+  addEventJudge,
   createEventDraft,
+  type AddEventContestantInput,
+  type AddEventJudgeInput,
   type CreateEventDraftInput,
   getEventDetails,
   listEvents,
   updateEvent,
   type UpdateEventInput,
 } from "../services/eventService.ts";
+
+function getRouteParamId(req: Request) {
+  const rawId = req.params.id;
+  return Array.isArray(rawId) ? rawId[0] : rawId;
+}
 
 export async function createEventDraftController(req: Request, res: Response) {
   try {
@@ -48,8 +57,7 @@ export async function listEventsController(_req: Request, res: Response) {
 
 export async function getEventDetailsController(req: Request, res: Response) {
   try {
-    const rawId = req.params.id;
-    const eventId = Array.isArray(rawId) ? rawId[0] : rawId;
+    const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
       return res.status(400).json({
@@ -75,8 +83,7 @@ export async function getEventDetailsController(req: Request, res: Response) {
 
 export async function updateEventController(req: Request, res: Response) {
   try {
-    const rawId = req.params.id;
-    const eventId = Array.isArray(rawId) ? rawId[0] : rawId;
+    const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
       return res.status(400).json({
@@ -104,6 +111,80 @@ export async function updateEventController(req: Request, res: Response) {
     console.error(error);
     res.status(500).json({
       message: "Failed to update event",
+    });
+  }
+}
+
+export async function addEventJudgeController(req: Request, res: Response) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const payload = req.body as AddEventJudgeInput;
+    const createdJudge = await addEventJudge(eventId, payload);
+
+    if (!createdJudge) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(201).json(createdJudge);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid judge input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to add judge",
+    });
+  }
+}
+
+export async function addEventContestantController(req: Request, res: Response) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const payload = req.body as AddEventContestantInput;
+    const createdContestant = await addEventContestant(eventId, payload);
+
+    if (!createdContestant) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(201).json(createdContestant);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_CONTESTANT_GENDER") {
+      return res.status(400).json({
+        message: "Contestant gender must be Male or Female",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid contestant input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to add contestant",
     });
   }
 }

@@ -20,3 +20,13 @@ export const updateEvent = async (eventId, payload) => {
   return res.data;
 };
 
+export const addEventJudge = async (eventId, payload) => {
+  const res = await axiosInstance.post(`/events/${eventId}/judges`, payload);
+  return res.data;
+};
+
+export const addEventContestant = async (eventId, payload) => {
+  const res = await axiosInstance.post(`/events/${eventId}/contestants`, payload);
+  return res.data;
+};
+
