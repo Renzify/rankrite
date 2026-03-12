@@ -67,6 +67,10 @@ export type AddEventContestantInput = {
   entryNo?: number | null;
 };
 
+export type AddEventContestantsInput = {
+  contestants: AddEventContestantInput[];
+};
+
 function normalizeContestantGender(value?: string | null) {
   const normalizedValue = (value ?? "").trim().toLowerCase();
 
@@ -368,14 +372,31 @@ export async function addEventContestant(
   eventId: string,
   input: AddEventContestantInput,
 ): Promise<EventContestantRecord | null> {
-  const normalizedEventId = eventId?.trim();
-  const fullName = input.fullName?.trim();
-  const teamName = input.teamName?.trim() || null;
-  const gender = normalizeContestantGender(input.gender);
-  const requestedEntryNo =
-    input.entryNo && input.entryNo > 0 ? input.entryNo : null;
+  const createdContestants = await addEventContestants(eventId, {
+    contestants: [input],
+  });
 
-  if (!normalizedEventId || !fullName) {
+  return createdContestants?.[0] ?? null;
+}
+
+export async function addEventContestants(
+  eventId: string,
+  input: AddEventContestantsInput,
+): Promise<EventContestantRecord[] | null> {
+  const normalizedEventId = eventId?.trim();
+  const contestantsInput = (input.contestants ?? [])
+    .map((contestantInput) => ({
+      fullName: contestantInput.fullName?.trim(),
+      teamName: contestantInput.teamName?.trim() || null,
+      gender: normalizeContestantGender(contestantInput.gender),
+      entryNo:
+        contestantInput.entryNo && contestantInput.entryNo > 0
+          ? contestantInput.entryNo
+          : null,
+    }))
+    .filter((contestantInput) => contestantInput.fullName);
+
+  if (!normalizedEventId || !contestantsInput.length) {
     throw new Error("INVALID_EVENT_INPUT");
   }
 
@@ -395,29 +416,44 @@ export async function addEventContestant(
       .from(eventContestant)
       .where(eq(eventContestant.eventId, normalizedEventId));
 
-    const nextEntryNo =
-      requestedEntryNo ??
+    let nextEntryNo =
       existingEntries.reduce(
         (highestEntryNo, currentEntry) =>
           Math.max(highestEntryNo, currentEntry.entryNo),
         0,
-      ) +
-        1;
+      ) + 1;
 
-    const [createdContestant] = await tx
+    const contestantsToInsert = contestantsInput.map((contestantInput) => {
+      const entryNo = contestantInput.entryNo ?? nextEntryNo;
+
+      if (!contestantInput.entryNo) {
+        nextEntryNo += 1;
+      }
+
+      return {
+        ...contestantInput,
+        entryNo,
+      };
+    });
+
+    const createdContestants = await tx
       .insert(contestant)
-      .values({
-        fullName,
-        teamName,
-        gender,
-      })
+      .values(
+        contestantsToInsert.map((contestantInput) => ({
+          fullName: contestantInput.fullName,
+          teamName: contestantInput.teamName,
+          gender: contestantInput.gender,
+        })),
+      )
       .returning();
 
-    await tx.insert(eventContestant).values({
-      eventId: normalizedEventId,
-      contestantId: createdContestant.id,
-      entryNo: nextEntryNo,
-    });
+    await tx.insert(eventContestant).values(
+      createdContestants.map((createdContestant, index) => ({
+        eventId: normalizedEventId,
+        contestantId: createdContestant.id,
+        entryNo: contestantsToInsert[index].entryNo,
+      })),
+    );
 
     await tx
       .update(event)
@@ -426,13 +462,13 @@ export async function addEventContestant(
       })
       .where(eq(event.id, normalizedEventId));
 
-    return {
+    return createdContestants.map((createdContestant, index) => ({
       id: createdContestant.id,
       fullName: createdContestant.fullName,
       teamName: createdContestant.teamName,
       gender: createdContestant.gender,
-      entryNo: nextEntryNo,
-    };
+      entryNo: contestantsToInsert[index].entryNo,
+    }));
   });
 }
 

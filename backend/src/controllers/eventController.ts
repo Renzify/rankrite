@@ -1,7 +1,9 @@
 import type { Request, Response } from "express";
 import {
+  addEventContestants,
   addEventContestant,
   addEventJudge,
+  type AddEventContestantsInput,
   createEventDraft,
   type AddEventContestantInput,
   type AddEventJudgeInput,
@@ -185,6 +187,49 @@ export async function addEventContestantController(req: Request, res: Response) 
     console.error(error);
     res.status(500).json({
       message: "Failed to add contestant",
+    });
+  }
+}
+
+export async function importEventContestantsController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const payload = req.body as AddEventContestantsInput;
+    const createdContestants = await addEventContestants(eventId, payload);
+
+    if (!createdContestants) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(201).json(createdContestants);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_CONTESTANT_GENDER") {
+      return res.status(400).json({
+        message: "Contestant gender must be Male or Female",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid contestant import input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to import contestants",
     });
   }
 }
