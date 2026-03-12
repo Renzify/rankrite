@@ -74,7 +74,7 @@ function Header() {
             onClick={() => navigateTo("/dashboard")}
           >
             <img
-              src="/src/assets/images/f-logo-1.png"
+              src="/src/assets/images/f-logo-2.png"
               alt="Rankrite"
               className="h-10 w-auto"
             />
