@@ -8,6 +8,7 @@ import {
   type AddEventContestantInput,
   type AddEventJudgeInput,
   type CreateEventDraftInput,
+  deleteEvent,
   getEventDetails,
   listEvents,
   updateEvent,
@@ -113,6 +114,39 @@ export async function updateEventController(req: Request, res: Response) {
     console.error(error);
     res.status(500).json({
       message: "Failed to update event",
+    });
+  }
+}
+
+export async function deleteEventController(req: Request, res: Response) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const deleted = await deleteEvent(eventId);
+
+    if (!deleted) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid event input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to delete event",
     });
   }
 }

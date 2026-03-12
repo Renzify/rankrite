@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { createEventDraft, getEvents } from "../api/eventApi";
+import {
+  createEventDraft,
+  deleteEvent as deleteEventRequest,
+  getEvents,
+} from "../api/eventApi";
 import { buildEventPayload } from "../lib/eventPayload";
 
 export const useEventStore = create((set) => ({
@@ -39,8 +43,25 @@ export const useEventStore = create((set) => ({
       set({ events, isLoading: false });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to load events";
+        error?.response?.data?.message ??
+        (error instanceof Error ? error.message : "Failed to load events");
       set({ error: message, isLoading: false });
+    }
+  },
+
+  deleteEvent: async (eventId) => {
+    try {
+      await deleteEventRequest(eventId);
+      set((state) => ({
+        error: null,
+        events: state.events.filter((event) => event.id !== eventId),
+      }));
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ??
+        (error instanceof Error ? error.message : "Failed to delete event");
+      set({ error: message });
+      throw error;
     }
   },
 }));

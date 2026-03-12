@@ -20,6 +20,10 @@ export const updateEvent = async (eventId, payload) => {
   return res.data;
 };
 
+export const deleteEvent = async (eventId) => {
+  await axiosInstance.delete(`/events/${eventId}`);
+};
+
 export const addEventJudge = async (eventId, payload) => {
   const res = await axiosInstance.post(`/events/${eventId}/judges`, payload);
   return res.data;
