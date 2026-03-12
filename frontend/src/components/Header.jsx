@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { Bell, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { DropdownMenu } from "../helpers/Dropdown";
 
 function Header() {
   const navigate = useNavigate();
   const headerRef = useRef(null);
-  const notificationDropdownRef = useRef(null);
   const profileDropdownRef = useRef(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const closeAllDropdowns = useCallback(() => {
-    notificationDropdownRef.current?.close();
     profileDropdownRef.current?.close();
   }, []);
 
@@ -92,29 +90,6 @@ function Header() {
               Home
             </button>
 
-            <DropdownMenu
-              ref={notificationDropdownRef}
-              menuClassName="menu mt-2 w-72 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg"
-              trigger={({ toggle }) => (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-circle"
-                  onClick={() => {
-                    toggle();
-                    setIsMobileMenuOpen(false);
-                    profileDropdownRef.current?.close();
-                  }}
-                >
-                  <Bell size={22} />
-                </button>
-              )}
-            >
-              <p className="mb-1 text-sm font-semibold">Notifications</p>
-              <p className="text-xs text-base-content/60">
-                No new notifications right now.
-              </p>
-            </DropdownMenu>
-
             <div className="hidden md:block">
               <DropdownMenu
                 ref={profileDropdownRef}
@@ -126,7 +101,6 @@ function Header() {
                     onClick={() => {
                       toggle();
                       setIsMobileMenuOpen(false);
-                      notificationDropdownRef.current?.close();
                     }}
                   >
                     <div className="avatar placeholder">
