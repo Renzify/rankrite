@@ -318,64 +318,41 @@ export const scoreSheet = pgTable("score_sheet", {
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });
 
-export const judgeScore = pgTable(
-  "judge_score",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
+export const judgeScore = pgTable("judge_score", {
+  id: uuid("id").defaultRandom().primaryKey(),
 
-    scoreSheetId: uuid("score_sheet_id")
-      .notNull()
-      .references(() => scoreSheet.id, { onDelete: "cascade" }),
+  scoreSheetId: uuid("score_sheet_id")
+    .notNull()
+    .references(() => scoreSheet.id, { onDelete: "cascade" }),
 
-    judgeAssignmentId: uuid("judge_assignment_id")
-      .notNull()
-      .references(() => eventJudgeAssignment.id, { onDelete: "cascade" }),
+  judgeAssignmentId: uuid("judge_assignment_id")
+    .notNull()
+    .references(() => eventJudgeAssignment.id, { onDelete: "cascade" }),
 
-    rawScore: real("raw_score").notNull(),
-    details: jsonb("details"),
+  rawScore: real("raw_score").notNull(),
 
-    createdAt: timestamp("created_at", { mode: "date" })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => ({
-    scoreSheetJudgeUnique: uniqueIndex("judge_score_sheet_judge_unique").on(
-      table.scoreSheetId,
-      table.judgeAssignmentId,
-    ),
-  }),
-);
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+});
 
-export const penalty = pgTable(
-  "penalty",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
+export const penalty = pgTable("penalty", {
+  id: uuid("id").defaultRandom().primaryKey(),
 
-    scoreSheetId: uuid("score_sheet_id")
-      .notNull()
-      .references(() => scoreSheet.id, { onDelete: "cascade" }),
+  scoreSheetId: uuid("score_sheet_id")
+    .notNull()
+    .references(() => scoreSheet.id, { onDelete: "cascade" }),
 
-    judgeAssignmentId: uuid("judge_assignment_id").references(
-      () => eventJudgeAssignment.id,
-      { onDelete: "set null" },
-    ),
+  judgeAssignmentId: uuid("judge_assignment_id").references(
+    () => eventJudgeAssignment.id,
+    { onDelete: "set null" },
+  ),
 
-    penaltyType: text("penalty_type").notNull(),
-    // line | time | other
+  penaltyType: text("penalty_type").notNull(),
+  // line | time | other
 
-    value: real("value").notNull(),
-    details: jsonb("details"),
+  value: real("value").notNull(),
 
-    createdAt: timestamp("created_at", { mode: "date" })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => ({
-    scoreSheetJudgePenaltyUnique: uniqueIndex(
-      "penalty_score_sheet_judge_unique",
-    ).on(table.scoreSheetId, table.judgeAssignmentId),
-  }),
-);
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+});
 
 export const scoreSummary = pgTable("score_summary", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -697,4 +674,3 @@ export const eventDisplaySettingsRelations = relations(
     }),
   }),
 );
-

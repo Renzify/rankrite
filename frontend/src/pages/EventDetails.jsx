@@ -8,7 +8,6 @@ import {
   getEventDetails,
   importEventContestants,
   updateEvent,
-  updateEventScoringLock,
 } from "../api/eventApi";
 import StatusBadge from "../components/StatusBadge";
 import { buildEventPayload } from "../lib/eventPayload";
@@ -79,7 +78,7 @@ export default function EventDetails() {
 
   const [judges, setJudges] = useState([]);
   const [contestants, setContestants] = useState([]);
-  const [isScoringLockPending, setIsScoringLockPending] = useState(false);
+  const [judgeScores, setJudgeScores] = useState({});
   const [eventDetails, setEventDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -315,45 +314,6 @@ export default function EventDetails() {
     }
   };
 
-  const handleToggleScoringLock = async (nextLockedState) => {
-    if (!eventId) {
-      toast.error("Missing event id.");
-      return;
-    }
-
-    try {
-      setIsScoringLockPending(true);
-      const updatedLockState = await updateEventScoringLock(
-        eventId,
-        nextLockedState,
-      );
-
-      setEventDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              event: {
-                ...prev.event,
-                isScoringLocked: updatedLockState.isScoringLocked,
-              },
-            }
-          : prev,
-      );
-
-      toast.success(
-        nextLockedState ? "Scoring locked" : "Scoring unlocked",
-      );
-    } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        "Failed to update scoring lock.",
-      );
-      console.error("Failed to update scoring lock:", error);
-      toast.error(message);
-    } finally {
-      setIsScoringLockPending(false);
-    }
-  };
   if (isLoading) {
     return (
       <div className="app-page app-page-wide">
@@ -453,8 +413,8 @@ export default function EventDetails() {
               setJudges,
               onCreateJudge: handleCreateJudge,
               isSavingJudge,
-              isScoringLockPending,
-              onToggleScoringLock: handleToggleScoringLock,
+              judgeScores,
+              setJudgeScores,
               contestants,
               setContestants,
               onCreateContestant: handleCreateContestant,
@@ -467,5 +427,3 @@ export default function EventDetails() {
     </div>
   );
 }
-
-
