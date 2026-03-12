@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
 import StatusBadge from "../components/StatusBadge";
 import { useEventStore } from "../stores/eventStore";
 import { useShallow } from "zustand/react/shallow";
@@ -41,12 +42,15 @@ const formatDate = (value) => {
 function Dashboard() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const { events, isLoading, error, loadEvents } = useEventStore(
+  const [deletingEventId, setDeletingEventId] = useState(null);
+  const [eventPendingDelete, setEventPendingDelete] = useState(null);
+  const { events, isLoading, error, loadEvents, deleteEvent } = useEventStore(
     useShallow((state) => ({
       events: state.events,
       isLoading: state.isLoading,
       error: state.error,
       loadEvents: state.loadEvents,
+      deleteEvent: state.deleteEvent,
     })),
   );
 
@@ -82,6 +86,36 @@ function Dashboard() {
     navigate(`/events/${eventId}`);
   };
 
+  const handleOpenDeleteModal = (event) => {
+    if (!event?.id || deletingEventId) return;
+    setEventPendingDelete(event);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deletingEventId) return;
+    setEventPendingDelete(null);
+  };
+
+  const handleDeleteEvent = async () => {
+    const eventId = eventPendingDelete?.id;
+    if (!eventId || deletingEventId) return;
+
+    setDeletingEventId(eventId);
+
+    try {
+      await deleteEvent(eventId);
+      toast.success("Event deleted");
+      setEventPendingDelete(null);
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ??
+        (error instanceof Error ? error.message : "Failed to delete event.");
+      toast.error(message);
+    } finally {
+      setDeletingEventId(null);
+    }
+  };
+
   return (
     <div className="app-page space-y-6">
       <section>
@@ -105,7 +139,16 @@ function Dashboard() {
         events={filteredEvents}
         isLoading={isLoading}
         error={error}
+        deletingEventId={deletingEventId}
         onOpenEvent={handleOpenEvent}
+        onDeleteEvent={handleOpenDeleteModal}
+      />
+
+      <DeleteEventModal
+        event={eventPendingDelete}
+        isDeleting={deletingEventId === eventPendingDelete?.id}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteEvent}
       />
     </div>
   );
@@ -177,7 +220,14 @@ function AddEvent({ statusFilter, setStatusFilter, statusOptions, onAddEvent }) 
   );
 }
 
-function EventList({ events, isLoading, error, onOpenEvent }) {
+function EventList({
+  events,
+  isLoading,
+  error,
+  deletingEventId,
+  onOpenEvent,
+  onDeleteEvent,
+}) {
   return (
     <section className="app-table-wrap">
       <table className="table">
@@ -226,8 +276,10 @@ function EventList({ events, isLoading, error, onOpenEvent }) {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline w-16 justify-center hover:border-error hover:bg-error hover:text-error-content"
+                      onClick={() => onDeleteEvent(event)}
+                      disabled={deletingEventId === event.id}
                     >
-                      Delete
+                      {deletingEventId === event.id ? "..." : "Delete"}
                     </button>
                   </div>
                 </td>
@@ -243,5 +295,52 @@ function EventList({ events, isLoading, error, onOpenEvent }) {
         </tbody>
       </table>
     </section>
+  );
+}
+
+function DeleteEventModal({ event, isDeleting, onClose, onConfirm }) {
+  if (!event) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xl rounded-2xl border border-base-300 bg-base-100 p-5 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">Delete Event</h3>
+            <p className="text-sm text-base-content/70">{event.name}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2 text-sm text-base-content/80">
+          <p>This will permanently remove the event and its related records.</p>
+          <p>The action cannot be undone.</p>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={onClose}
+            disabled={isDeleting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-error btn-sm"
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete Event"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

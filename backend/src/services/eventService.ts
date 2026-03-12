@@ -9,6 +9,7 @@ import {
   eventTemplate,
   judge,
   judgeType,
+  scoreSheet,
 } from "../db/schema.ts";
 import { getTemplateById } from "./templateService.ts";
 
@@ -279,6 +280,99 @@ export async function updateEvent(
   });
 
   return getEventDetails(eventId);
+}
+
+export async function deleteEvent(eventId: string): Promise<boolean> {
+  const normalizedEventId = eventId?.trim();
+
+  if (!normalizedEventId) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await db.query.event.findFirst({
+    where: eq(event.id, normalizedEventId),
+  });
+
+  if (!existingEvent) {
+    return false;
+  }
+
+  await db.transaction(async (tx) => {
+    const assignedJudges = await tx
+      .select({
+        judgeId: eventJudgeAssignment.judgeId,
+      })
+      .from(eventJudgeAssignment)
+      .where(eq(eventJudgeAssignment.eventId, normalizedEventId));
+
+    const linkedContestants = await tx
+      .select({
+        contestantId: eventContestant.contestantId,
+      })
+      .from(eventContestant)
+      .where(eq(eventContestant.eventId, normalizedEventId));
+
+    const judgeIds = Array.from(
+      new Set(assignedJudges.map((assignment) => assignment.judgeId)),
+    );
+    const contestantIds = Array.from(
+      new Set(linkedContestants.map((link) => link.contestantId)),
+    );
+
+    await tx.delete(event).where(eq(event.id, normalizedEventId));
+
+    if (judgeIds.length) {
+      const remainingJudgeAssignments = await tx
+        .select({
+          judgeId: eventJudgeAssignment.judgeId,
+        })
+        .from(eventJudgeAssignment)
+        .where(inArray(eventJudgeAssignment.judgeId, judgeIds));
+
+      const referencedJudgeIds = new Set(
+        remainingJudgeAssignments.map((assignment) => assignment.judgeId),
+      );
+      const orphanJudgeIds = judgeIds.filter(
+        (judgeId) => !referencedJudgeIds.has(judgeId),
+      );
+
+      if (orphanJudgeIds.length) {
+        await tx.delete(judge).where(inArray(judge.id, orphanJudgeIds));
+      }
+    }
+
+    if (contestantIds.length) {
+      const remainingContestantLinks = await tx
+        .select({
+          contestantId: eventContestant.contestantId,
+        })
+        .from(eventContestant)
+        .where(inArray(eventContestant.contestantId, contestantIds));
+
+      const remainingScoreSheets = await tx
+        .select({
+          contestantId: scoreSheet.contestantId,
+        })
+        .from(scoreSheet)
+        .where(inArray(scoreSheet.contestantId, contestantIds));
+
+      const referencedContestantIds = new Set([
+        ...remainingContestantLinks.map((link) => link.contestantId),
+        ...remainingScoreSheets.map((sheet) => sheet.contestantId),
+      ]);
+      const orphanContestantIds = contestantIds.filter(
+        (contestantId) => !referencedContestantIds.has(contestantId),
+      );
+
+      if (orphanContestantIds.length) {
+        await tx
+          .delete(contestant)
+          .where(inArray(contestant.id, orphanContestantIds));
+      }
+    }
+  });
+
+  return true;
 }
 
 export async function addEventJudge(
