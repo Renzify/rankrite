@@ -37,6 +37,16 @@ export type CreateEventDraftInput = {
   }[];
 };
 
+function normalizeContestantGender(value?: string | null) {
+  const normalizedValue = (value ?? "").trim().toLowerCase();
+
+  if (!normalizedValue) return null;
+  if (normalizedValue === "male" || normalizedValue === "m") return "Male";
+  if (normalizedValue === "female" || normalizedValue === "f") return "Female";
+
+  throw new Error("INVALID_CONTESTANT_GENDER");
+}
+
 export async function createEventDraft(input: CreateEventDraftInput) {
   const templateId = input.templateId?.trim();
   const title = input.title?.trim();
@@ -59,7 +69,7 @@ export async function createEventDraft(input: CreateEventDraftInput) {
     .map((contestantInput, index) => ({
       fullName: (contestantInput.fullName ?? "").trim(),
       teamName: (contestantInput.teamName ?? "").trim() || null,
-      gender: (contestantInput.gender ?? "").trim() || null,
+      gender: normalizeContestantGender(contestantInput.gender),
       entryNo:
         contestantInput.entryNo && contestantInput.entryNo > 0
           ? contestantInput.entryNo
