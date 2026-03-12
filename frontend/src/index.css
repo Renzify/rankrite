@@ -5,6 +5,27 @@
 :root {
   font-family:
     "Plus Jakarta Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+  --color-base-100: #fffaf4;
+  --color-base-200: #f5ede3;
+  --color-base-300: #e4d3bf;
+  --color-base-content: #1f1a16;
+  --color-primary: #dd7a1f;
+  --color-primary-content: #fff8f1;
+  --color-secondary: #6a4a2f;
+  --color-secondary-content: #fff8f1;
+  --color-accent: #8b9346;
+  --color-accent-content: #fbfced;
+  --color-neutral: #1b1612;
+  --color-neutral-content: #f8f1e8;
+  --color-info: #8a6334;
+  --color-info-content: #fff7ed;
+  --color-success: #5f7d3a;
+  --color-success-content: #f7faef;
+  --color-warning: #c8891d;
+  --color-warning-content: #fff8ea;
+  --color-error: #b84a3e;
+  --color-error-content: #fff5f3;
 }
 
 html,
@@ -18,6 +39,17 @@ body {
 
 body {
   font-family: inherit;
+  color: var(--color-base-content);
+  background-color: var(--color-base-200);
+  background-image:
+    radial-gradient(circle at top, rgba(221, 122, 31, 0.16), transparent 36%),
+    linear-gradient(180deg, #fff3e3 0%, #fffaf4 24%, #f5ede3 100%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 24%, white);
+  color: var(--color-base-content);
 }
 
 button,
@@ -76,3 +108,4 @@ textarea {
     @apply card-title my-3 w-full justify-center text-center text-3xl font-bold tracking-tight;
   }
 }
+

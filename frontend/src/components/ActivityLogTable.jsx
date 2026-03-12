@@ -1,8 +1,6 @@
-import React from "react";
-
 function ActivityLogTable({ activities }) {
   return (
-    <div className="border border-base-300 bg-base-100 rounded-lg shadow-sm overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-sm">
       <div className="overflow-x-auto">
         <table className="table w-full">
           <thead>
@@ -15,21 +13,32 @@ function ActivityLogTable({ activities }) {
             </tr>
           </thead>
           <tbody>
-            {activities.map((activity) => (
-              <tr key={activity.id} className="hover:bg-base-200/50">
-                <td className="font-medium">{activity.id}</td>
-                <td>
-                  <span className="badge badge-primary badge-outline">
-                    {activity.action}
-                  </span>
-                </td>
-                <td>{activity.user}</td>
-                <td className="text-base-content/70">{activity.details}</td>
-                <td className="text-base-content/60 text-sm">
-                  {activity.timestamp}
+            {activities.length ? (
+              activities.map((activity) => (
+                <tr key={activity.id} className="hover:bg-base-200/50">
+                  <td className="font-medium">{activity.id}</td>
+                  <td>
+                    <span className="badge badge-primary badge-outline">
+                      {activity.action}
+                    </span>
+                  </td>
+                  <td>{activity.user}</td>
+                  <td className="text-base-content/70">{activity.details}</td>
+                  <td className="text-sm text-base-content/60">
+                    {activity.timestamp}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="py-10 text-center text-sm text-base-content/60"
+                >
+                  No activity matched the current search or filter.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

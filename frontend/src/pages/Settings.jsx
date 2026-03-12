@@ -1,12 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 function ProfileFieldCard({ label, value, className = "" }) {
   return (
-    <div
-      className={`rounded-xl border border-base-300 bg-base-100 p-4 ${className}`.trim()}
-    >
+    <div className={`app-muted-panel ${className}`.trim()}>
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
         {label}
       </p>
@@ -105,28 +102,26 @@ function Settings() {
   return (
     <div className="app-page app-page-wide">
       <div className="flex flex-col items-center">
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-7xl">
           <section className="app-surface mb-5">
             <div className="app-section">
-              <div className="mb-4 flex items-center justify-between"></div>
-
-              <div className="p-2">
-                <h1 className="mb-3 text-5xl font-bold tracking-tight">
-                  Settings
-                </h1>
-                <p className="mt-1 text-sm text-base-content/70">
-                  Manage your account settings and preferences
-                </p>
-              </div>
+              <h1 className="app-page-title">Settings</h1>
+              <p className="app-page-subtitle">
+                Manage your account settings and preferences.
+              </p>
             </div>
           </section>
 
-          <section className="app-surface">
+          <section className="app-surface mb-5">
             <div className="app-section space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-2xl font-semibold">
-                  {isEditing ? "Edit Account Profile" : "Account Profile"}
-                </h2>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold">Account Profile</h2>
+                  <p className="mt-1 text-sm text-base-content/60">
+                    Personal details used across the Rankrite workspace.
+                  </p>
+                </div>
+
                 {isEditing ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -156,11 +151,20 @@ function Settings() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-                <div className="flex flex-col items-center gap-3">
+              <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+                <div className="app-muted-panel flex flex-col items-center justify-center gap-4 text-center">
                   <div className="avatar placeholder">
                     <div className="w-24 rounded-full bg-neutral text-neutral-content" />
                   </div>
+                  <div>
+                    <h3 className="text-2xl font-semibold tracking-tight">
+                      {settings.username}
+                    </h3>
+                    <p className="mt-1 text-sm text-base-content/60">
+                      {settings.email}
+                    </p>
+                  </div>
+                  <div className="badge badge-outline">Administrator</div>
                   {isEditing ? (
                     <button type="button" className="btn btn-outline btn-sm">
                       Change Photo
@@ -168,80 +172,75 @@ function Settings() {
                   ) : null}
                 </div>
 
-                <div className="flex-1">
-                  <h3 className="text-4xl font-semibold tracking-tight">
-                    {settings.username}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+                    Account Details
                   </h3>
-                  <p className="mt-2 text-lg text-base-content/60">
-                    {settings.email}
-                  </p>
-                </div>
-              </div>
 
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
-                  Account Details
-                </h3>
-
-                {!isEditing ? (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <ProfileFieldCard
-                      label="Full Name"
-                      value={settings.username}
-                    />
-                    <ProfileFieldCard
-                      label="Email Address"
-                      value={settings.email}
-                    />
-                    <ProfileFieldCard label="Role" value="Administrator" />
-                  </div>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <label className="form-control w-full">
-                      <div className="label pb-1">
-                        <span className="label-text font-semibold">
-                          Full Name
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        className="input input-bordered w-full"
+                  {!isEditing ? (
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <ProfileFieldCard
+                        label="Full Name"
                         value={settings.username}
-                        onChange={(event) =>
-                          handleChange("username", event.target.value)
-                        }
                       />
-                    </label>
-
-                    <label className="form-control w-full">
-                      <div className="label pb-1">
-                        <span className="label-text font-semibold">
-                          Email Address
-                        </span>
-                      </div>
-                      <input
-                        type="email"
-                        className="input input-bordered w-full"
+                      <ProfileFieldCard
+                        label="Email Address"
                         value={settings.email}
-                        onChange={(event) =>
-                          handleChange("email", event.target.value)
-                        }
                       />
-                    </label>
+                      <ProfileFieldCard label="Role" value="Administrator" />
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <label className="form-control app-muted-panel w-full">
+                        <div className="label px-0 pt-0 pb-1">
+                          <span className="label-text font-semibold">
+                            Full Name
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          className="input input-bordered w-full"
+                          value={settings.username}
+                          onChange={(event) =>
+                            handleChange("username", event.target.value)
+                          }
+                        />
+                      </label>
 
-                    <ProfileFieldCard label="Role" value="Administrator" />
-                  </div>
-                )}
+                      <label className="form-control app-muted-panel w-full">
+                        <div className="label px-0 pt-0 pb-1">
+                          <span className="label-text font-semibold">
+                            Email Address
+                          </span>
+                        </div>
+                        <input
+                          type="email"
+                          className="input input-bordered w-full"
+                          value={settings.email}
+                          onChange={(event) =>
+                            handleChange("email", event.target.value)
+                          }
+                        />
+                      </label>
+
+                      <ProfileFieldCard label="Role" value="Administrator" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </section>
 
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <div className="mb-5 grid gap-5 xl:grid-cols-2">
             <section className="app-surface">
               <div className="app-section">
-                <h2 className="mb-4 text-xl font-semibold">Change Password</h2>
+                <h2 className="text-xl font-semibold">Change Password</h2>
+                <p className="mt-1 text-sm text-base-content/60">
+                  Update your credentials and review when the password was last
+                  changed.
+                </p>
 
-                <div className="space-y-4">
+                <div className="mt-6 space-y-4">
                   <label className="form-control w-full">
                     <span className="label">
                       <span className="label-text">Current Password</span>
@@ -367,9 +366,13 @@ function Settings() {
 
             <section className="app-surface">
               <div className="app-section">
-                <h2 className="mb-4 text-xl font-semibold">Preferences</h2>
+                <h2 className="text-xl font-semibold">Preferences</h2>
+                <p className="mt-1 text-sm text-base-content/60">
+                  Adjust the interface theme and notification behavior for this
+                  account.
+                </p>
 
-                <div className="space-y-6">
+                <div className="mt-6 space-y-6">
                   <label className="form-control w-full">
                     <span className="label">
                       <span className="label-text">System Appearance</span>
@@ -418,14 +421,25 @@ function Settings() {
             </section>
           </div>
 
-          <div className="mt-5 flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <button type="button" className="btn btn-error btn-outline">
-              Delete Account
-            </button>
-            <button type="button" className="btn btn-neutral">
-              Sign Out
-            </button>
-          </div>
+          <section className="app-surface">
+            <div className="app-section flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Account Actions</h2>
+                <p className="mt-1 text-sm text-base-content/60">
+                  Sign out of this session or permanently remove the account.
+                </p>
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                <button type="button" className="btn btn-error btn-outline">
+                  Delete Account
+                </button>
+                <button type="button" className="btn btn-neutral">
+                  Log Out
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
