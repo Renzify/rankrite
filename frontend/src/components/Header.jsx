@@ -73,12 +73,11 @@ function Header() {
             className="flex items-center gap-3 text-left"
             onClick={() => navigateTo("/dashboard")}
           >
-            <div className="avatar placeholder">
-              <div className="w-10 rounded-full bg-primary text-primary-content" />
-            </div>
-            <div className="self-center">
-              <p className="text-lg font-bold">Rankrite</p>
-            </div>
+            <img
+              src="/src/assets/images/f-logo-1.png"
+              alt="Rankrite"
+              className="h-10 w-auto"
+            />
           </button>
 
           <div className="flex items-center gap-1 sm:gap-2">
