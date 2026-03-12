@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { MoveLeft } from "lucide-react";
 import toast from "react-hot-toast";
@@ -36,9 +36,16 @@ function DynamicTemplateForm() {
   const setCurrentTab = useTemplateStore((state) => state.setCurrentTab);
   const judges = useTemplateStore((state) => state.judges);
   const contestants = useTemplateStore((state) => state.contestants);
+  const resetEventDraftState = useTemplateStore(
+    (state) => state.resetEventDraftState,
+  );
   const saveDraft = useEventStore((state) => state.saveDraft);
 
   const eventTitle = formValues.eventTitle || "";
+
+  useLayoutEffect(() => {
+    resetEventDraftState();
+  }, [resetEventDraftState]);
 
   const handleEventTitleChange = (event) => {
     updateFieldValue("eventTitle", event.target.value);

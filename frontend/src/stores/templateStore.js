@@ -1,44 +1,42 @@
 import { create } from "zustand";
 
+const getEmptyEventDraftState = () => ({
+  selectedEventType: "",
+  selectedSport: "",
+  template: null,
+  formValues: {},
+  isTemplateLoading: false,
+  templateError: null,
+  currentTab: "details",
+  judges: [],
+  contestants: [],
+});
+
 export const useTemplateStore = create((set) => ({
   catalog: [],
   isCatalogLoading: false,
   catalogError: null,
 
-  selectedEventType: "",
-  selectedSport: "",
-
-  template: null,
-  formValues: {},
-  isTemplateLoading: false,
-  templateError: null,
-
-  // Tab and participant management
-  currentTab: "details", // details | judges | contestants
-  judges: [],
-  contestants: [],
+  ...getEmptyEventDraftState(),
 
   setCatalog: (catalog) => set({ catalog }),
   setCatalogLoading: (isCatalogLoading) => set({ isCatalogLoading }),
   setCatalogError: (catalogError) => set({ catalogError }),
 
+  resetEventDraftState: () => set(getEmptyEventDraftState()),
+
   setSelectedEventType: (selectedEventType) =>
     set({
+      ...getEmptyEventDraftState(),
       selectedEventType,
-      selectedSport: "",
-      template: null,
-      formValues: {},
-      templateError: null,
-      currentTab: "details",
-      judges: [],
-      contestants: [],
     }),
 
   setSelectedSport: (selectedSport) =>
     set({
-      selectedSport,
       template: null,
       formValues: {},
+      selectedSport,
+      isTemplateLoading: false,
       templateError: null,
       currentTab: "details",
       judges: [],
@@ -54,6 +52,7 @@ export const useTemplateStore = create((set) => ({
     set({
       template: null,
       formValues: {},
+      isTemplateLoading: false,
       currentTab: "details",
       judges: [],
       contestants: [],
