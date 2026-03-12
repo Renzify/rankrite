@@ -45,6 +45,18 @@ export function createContestantRecord({ fullName, delegation, gender }) {
   };
 }
 
+export function validateContestantCsvFile(file) {
+  const normalizedFileName = String(file?.name ?? "").trim().toLowerCase();
+
+  if (!normalizedFileName.endsWith(".csv")) {
+    throw new Error("CSV_INVALID_FILE_TYPE");
+  }
+
+  if (Number(file?.size ?? 0) <= 0) {
+    throw new Error("CSV_EMPTY_FILE");
+  }
+}
+
 export async function parseContestantCsv(file) {
   const parseResult = await new Promise((resolve, reject) => {
     Papa.parse(file, {

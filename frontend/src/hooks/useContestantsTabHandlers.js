@@ -6,6 +6,7 @@ import {
   createContestantRecord,
   normalizeContestantGender,
   parseContestantCsv,
+  validateContestantCsvFile,
 } from "../lib/contestantCsv";
 
 const EMPTY_FORM_DATA = {
@@ -15,6 +16,8 @@ const EMPTY_FORM_DATA = {
 };
 
 const CSV_ERROR_MESSAGES = {
+  CSV_INVALID_FILE_TYPE: "Only CSV files are allowed.",
+  CSV_EMPTY_FILE: "The selected CSV file is empty.",
   CSV_MISSING_ROWS: "CSV must include headers and at least one row.",
   CSV_MISSING_NAME_COLUMN: "CSV headers must include a name column.",
   CSV_NO_VALID_CONTESTANTS: "No valid contestants found in the CSV file.",
@@ -80,6 +83,7 @@ export function useContestantsTabHandlers({ contestants, setContestants }) {
     if (!file) return;
 
     try {
+      validateContestantCsvFile(file);
       const importedRows = await parseContestantCsv(file);
       setContestants(importedRows);
       setImportMessage(`Imported ${importedRows.length} contestant(s).`);
