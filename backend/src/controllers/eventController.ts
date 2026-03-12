@@ -4,12 +4,17 @@ import {
   addEventContestant,
   addEventJudge,
   type AddEventContestantsInput,
-  createEventDraft,
   type AddEventContestantInput,
   type AddEventJudgeInput,
+  createEventDraft,
   type CreateEventDraftInput,
   getEventDetails,
+  getEventScoringOverview,
+  getJudgeScoringContext,
   listEvents,
+  setEventScoringLock,
+  submitJudgeScore,
+  type SubmitJudgeScoreInput,
   updateEvent,
   type UpdateEventInput,
 } from "../services/eventService.ts";
@@ -17,6 +22,11 @@ import {
 function getRouteParamId(req: Request) {
   const rawId = req.params.id;
   return Array.isArray(rawId) ? rawId[0] : rawId;
+}
+
+function getQueryString(req: Request, key: string) {
+  const value = req.query[key];
+  return Array.isArray(value) ? value[0] : value;
 }
 
 export async function createEventDraftController(req: Request, res: Response) {
@@ -83,6 +93,84 @@ export async function getEventDetailsController(req: Request, res: Response) {
   }
 }
 
+export async function getEventScoringOverviewController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const details = await getEventScoringOverview(eventId);
+
+    if (!details) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(200).json(details);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid event scoring overview request",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch event scoring overview",
+    });
+  }
+}
+
+export async function getJudgeScoringContextController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const eventId = getRouteParamId(req);
+    const judgeId = getQueryString(req, "judgeId");
+    const judgeName = getQueryString(req, "judgeName");
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const details = await getJudgeScoringContext(
+      eventId,
+      typeof judgeId === "string" ? judgeId : null,
+      typeof judgeName === "string" ? judgeName : null,
+    );
+
+    if (!details) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(200).json(details);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid judge scoring request",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch judge scoring context",
+    });
+  }
+}
+
 export async function updateEventController(req: Request, res: Response) {
   try {
     const eventId = getRouteParamId(req);
@@ -113,6 +201,106 @@ export async function updateEventController(req: Request, res: Response) {
     console.error(error);
     res.status(500).json({
       message: "Failed to update event",
+    });
+  }
+}
+
+export async function submitJudgeScoreController(req: Request, res: Response) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const payload = req.body as SubmitJudgeScoreInput;
+    const submission = await submitJudgeScore(eventId, payload);
+
+    if (!submission) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(200).json(submission);
+  } catch (error) {
+    if (error instanceof Error && error.message === "SCORING_LOCKED") {
+      return res.status(423).json({
+        message: "Scoring is locked for this event",
+      });
+    }
+
+    if (
+      error instanceof Error &&
+      (error.message === "INVALID_SCORE_INPUT" ||
+        error.message === "INVALID_EVENT_INPUT")
+    ) {
+      return res.status(400).json({
+        message: "Invalid score input",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_JUDGE_ASSIGNMENT") {
+      return res.status(404).json({
+        message: "Judge assignment not found",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_CONTESTANT") {
+      return res.status(404).json({
+        message: "Contestant not found for this event",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to submit judge score",
+    });
+  }
+}
+
+export async function setEventScoringLockController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const { isScoringLocked } = req.body as { isScoringLocked?: boolean };
+
+    if (typeof isScoringLocked !== "boolean") {
+      return res.status(400).json({
+        message: "isScoringLocked must be a boolean",
+      });
+    }
+
+    const updatedLockState = await setEventScoringLock(eventId, isScoringLocked);
+
+    if (!updatedLockState) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(200).json(updatedLockState);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid scoring lock input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to update scoring lock",
     });
   }
 }
