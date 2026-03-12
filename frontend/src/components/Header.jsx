@@ -1,122 +1,229 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { Bell, Menu, X } from "lucide-react";
 import { DropdownMenu } from "../helpers/Dropdown";
-import { Bell } from "lucide-react";
+
 function Header() {
   const navigate = useNavigate();
+  const headerRef = useRef(null);
   const notificationDropdownRef = useRef(null);
   const profileDropdownRef = useRef(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const closeAllDropdowns = useCallback(() => {
     notificationDropdownRef.current?.close();
     profileDropdownRef.current?.close();
   }, []);
 
+  const closeAllMenus = useCallback(() => {
+    closeAllDropdowns();
+    setIsMobileMenuOpen(false);
+  }, [closeAllDropdowns]);
+
+  const navigateTo = useCallback(
+    (path) => {
+      closeAllMenus();
+      navigate(path);
+    },
+    [closeAllMenus, navigate],
+  );
+
+  const handleToggleMobileMenu = useCallback(() => {
+    closeAllDropdowns();
+    setIsMobileMenuOpen((prev) => !prev);
+  }, [closeAllDropdowns]);
+
   useEffect(() => {
     const handleOutsideClick = (event) => {
-      const clickedInsideNotification =
-        notificationDropdownRef.current?.containsTarget(event.target) ?? false;
-      const clickedInsideProfile =
-        profileDropdownRef.current?.containsTarget(event.target) ?? false;
-
-      if (!clickedInsideNotification && !clickedInsideProfile) {
-        closeAllDropdowns();
+      if (!headerRef.current?.contains(event.target)) {
+        closeAllMenus();
       }
     };
 
     const handleEscape = (event) => {
       if (event.key === "Escape") {
-        closeAllDropdowns();
+        closeAllMenus();
+      }
+    };
+
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleOutsideClick);
     document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleResize);
 
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
       document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleResize);
     };
-  }, [closeAllDropdowns]);
+  }, [closeAllMenus]);
 
   return (
-    <header className="navbar rounded-2xl border border-base-300 bg-base-100/95 px-4 shadow-sm flex justify-center">
-      <div className="w-full max-w-6/7 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex gap-3">
-          <div className="avatar placeholder">
-            <div className="w-10 rounded-full bg-primary text-primary-content"></div>
-          </div>
-          <div className="self-center">
-            <p className="text-lg font-bold">Rankrite</p>
-          </div>
-        </div>
-
-        <div className="flex gap-4">
+    <header
+      ref={headerRef}
+      className="navbar flex justify-center border border-base-300 bg-base-100/95 px-4 shadow-sm"
+    >
+      <div className="flex w-full max-w-7xl flex-col py-3">
+        <div className="flex items-center justify-between gap-4">
           <button
-            className="cursor-pointer"
-            onClick={() => navigate("/dashboard")}
+            type="button"
+            className="flex items-center gap-3 text-left"
+            onClick={() => navigateTo("/dashboard")}
           >
-            {" "}
-            Home{" "}
+            <div className="avatar placeholder">
+              <div className="w-10 rounded-full bg-primary text-primary-content" />
+            </div>
+            <div className="self-center">
+              <p className="text-lg font-bold">Rankrite</p>
+            </div>
           </button>
-          <DropdownMenu
-            ref={notificationDropdownRef}
-            menuClassName="menu mt-2 w-72 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg"
-            trigger={({ toggle }) => (
-              <button
-                type="button"
-                className="btn btn-ghost btn-circle"
-                onClick={() => {
-                  toggle();
-                  profileDropdownRef.current?.close();
-                }}
-              >
-                <Bell size={22} />
-              </button>
-            )}
-          >
-            <p className="mb-1 text-sm font-semibold">Notifications</p>
-            <p className="text-xs text-base-content/60">
-              No new notifications right now.
-            </p>
-          </DropdownMenu>
 
-          <DropdownMenu
-            ref={profileDropdownRef}
-            menuClassName="menu mt-2 w-44 rounded-box border border-base-300 bg-base-100 shadow-lg"
-            trigger={({ toggle }) => (
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              className="btn btn-ghost hidden md:inline-flex"
+              onClick={() => navigateTo("/dashboard")}
+            >
+              Home
+            </button>
+
+            <DropdownMenu
+              ref={notificationDropdownRef}
+              menuClassName="menu mt-2 w-72 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg"
+              trigger={({ toggle }) => (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-circle"
+                  onClick={() => {
+                    toggle();
+                    setIsMobileMenuOpen(false);
+                    profileDropdownRef.current?.close();
+                  }}
+                >
+                  <Bell size={22} />
+                </button>
+              )}
+            >
+              <p className="mb-1 text-sm font-semibold">Notifications</p>
+              <p className="text-xs text-base-content/60">
+                No new notifications right now.
+              </p>
+            </DropdownMenu>
+
+            <div className="hidden md:block">
+              <DropdownMenu
+                ref={profileDropdownRef}
+                menuClassName="menu mt-2 w-44 rounded-box border border-base-300 bg-base-100 shadow-lg"
+                trigger={({ toggle }) => (
+                  <button
+                    type="button"
+                    className="btn btn-ghost gap-2 px-2"
+                    onClick={() => {
+                      toggle();
+                      setIsMobileMenuOpen(false);
+                      notificationDropdownRef.current?.close();
+                    }}
+                  >
+                    <div className="avatar placeholder">
+                      <div className="w-8 rounded-full bg-neutral text-neutral-content" />
+                    </div>
+                    <span className="text-sm font-medium">Admin</span>
+                  </button>
+                )}
+              >
+                <ul>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigateTo("/settings")}
+                    >
+                      Settings
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => navigateTo("/activity-log")}
+                    >
+                      Activity Log
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      className="text-error hover:bg-error hover:text-error-content"
+                    >
+                      Log out
+                    </button>
+                  </li>
+                </ul>
+              </DropdownMenu>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-ghost btn-circle md:hidden"
+              aria-expanded={isMobileMenuOpen}
+              aria-label={
+                isMobileMenuOpen
+                  ? "Close navigation menu"
+                  : "Open navigation menu"
+              }
+              onClick={handleToggleMobileMenu}
+            >
+              {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
+        </div>
+
+        {isMobileMenuOpen ? (
+          <div className="mt-4 border-t border-base-300 pt-4 md:hidden">
+            <div className="flex flex-col gap-2">
               <button
                 type="button"
-                className="btn btn-ghost gap-2 px-2"
-                onClick={() => {
-                  toggle();
-                  notificationDropdownRef.current?.close();
-                }}
+                className="btn btn-ghost justify-start"
+                onClick={() => navigateTo("/dashboard")}
               >
-                <div className="avatar placeholder">
-                  <div className="w-8 rounded-full bg-neutral text-neutral-content"></div>
-                </div>
-                <span className="text-sm font-medium">Admin</span>
+                Home
               </button>
-            )}
-          >
-            <ul>
-              <li>
-                <button type="button" onClick={() => navigate("/settings")}>
-                  Settings
-                </button>
-              </li>
-              <li>
-                <button type="button" onClick={() => navigate("/activity-log")}>
-                  Activity Log
-                </button>
-              </li>
-              <li>
-                <button type="button">Log out</button>
-              </li>
-            </ul>
-          </DropdownMenu>
-        </div>
+              <button
+                type="button"
+                className="btn btn-ghost justify-start"
+                onClick={() => navigateTo("/settings")}
+              >
+                Settings
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost justify-start"
+                onClick={() => navigateTo("/activity-log")}
+              >
+                Activity Log
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost justify-start text-error hover:bg-error hover:text-error-content"
+              >
+                Log out
+              </button>
+            </div>
+
+            <div className="mt-4 flex items-center gap-3 rounded-xl border border-base-300 bg-base-200/40 px-4 py-3">
+              <div className="avatar placeholder">
+                <div className="w-10 rounded-full bg-neutral text-neutral-content" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Admin</p>
+                <p className="text-xs text-base-content/60">Administrator</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </header>
   );
