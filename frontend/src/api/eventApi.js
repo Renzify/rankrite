@@ -30,3 +30,11 @@ export const addEventContestant = async (eventId, payload) => {
   return res.data;
 };
 
+export const importEventContestants = async (eventId, payload) => {
+  const res = await axiosInstance.post(
+    `/events/${eventId}/contestants/import`,
+    payload,
+  );
+  return res.data;
+};
+

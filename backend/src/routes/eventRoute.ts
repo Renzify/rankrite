@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  importEventContestantsController,
   addEventContestantController,
   addEventJudgeController,
   createEventDraftController,
@@ -16,6 +17,7 @@ router.get("/events/:id", getEventDetailsController);
 router.put("/events/:id", updateEventController);
 router.post("/events/:id/judges", addEventJudgeController);
 router.post("/events/:id/contestants", addEventContestantController);
+router.post("/events/:id/contestants/import", importEventContestantsController);
 
 export default router;
 

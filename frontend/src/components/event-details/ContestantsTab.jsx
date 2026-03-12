@@ -14,6 +14,7 @@ export default function ContestantsTab() {
   const contestants = outletContext.contestants ?? storeContestants;
   const setContestants = outletContext.setContestants ?? storeSetContestants;
   const onCreateContestant = outletContext.onCreateContestant;
+  const onImportContestants = outletContext.onImportContestants;
   const isSavingContestant = outletContext.isSavingContestant ?? false;
 
   const {
@@ -21,6 +22,7 @@ export default function ContestantsTab() {
     formData,
     importMessage,
     importMessageTone,
+    isImportingCsv,
     handleInputChange,
     handleContestantSubmit,
     handleImportClick,
@@ -31,6 +33,7 @@ export default function ContestantsTab() {
     contestants,
     setContestants,
     onCreateContestant,
+    onImportContestants,
   });
 
   return (
@@ -50,8 +53,9 @@ export default function ContestantsTab() {
             type="button"
             className="btn btn-outline btn-sm"
             onClick={handleImportClick}
+            disabled={isSavingContestant || isImportingCsv}
           >
-            Import CSV
+            {isImportingCsv ? "Importing..." : "Import CSV"}
           </button>
           <button
             type="button"

@@ -39,10 +39,12 @@ export function useContestantsTabHandlers({
   contestants,
   setContestants,
   onCreateContestant,
+  onImportContestants,
 }) {
   const [formData, setFormData] = useState(EMPTY_FORM_DATA);
   const [importMessage, setImportMessage] = useState("");
   const [importMessageTone, setImportMessageTone] = useState("info");
+  const [isImportingCsv, setIsImportingCsv] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleInputChange = (event) => {
@@ -96,10 +98,18 @@ export function useContestantsTabHandlers({
     if (!file) return;
 
     try {
+      setIsImportingCsv(true);
       validateContestantCsvFile(file);
       const importedRows = await parseContestantCsv(file);
-      setContestants(importedRows);
-      setImportMessage(`Imported ${importedRows.length} contestant(s).`);
+
+      if (onImportContestants) {
+        const createdContestants = await onImportContestants(importedRows);
+        setImportMessage(`Imported ${createdContestants.length} contestant(s).`);
+      } else {
+        setContestants(importedRows);
+        setImportMessage(`Imported ${importedRows.length} contestant(s).`);
+      }
+
       setImportMessageTone("success");
     } catch (error) {
       if (error instanceof Error && error.message === "CSV_INVALID_GENDER_VALUES") {
@@ -120,9 +130,15 @@ export function useContestantsTabHandlers({
         return;
       }
 
-      setImportMessage("Failed to read CSV file.");
+      const responseMessage = error?.response?.data?.message;
+      setImportMessage(
+        typeof responseMessage === "string" && responseMessage.trim()
+          ? responseMessage
+          : "Failed to import contestants from CSV.",
+      );
       setImportMessageTone("error");
     } finally {
+      setIsImportingCsv(false);
       event.target.value = "";
     }
   };
@@ -152,6 +168,7 @@ export function useContestantsTabHandlers({
     formData,
     importMessage,
     importMessageTone,
+    isImportingCsv,
     handleInputChange,
     handleContestantSubmit,
     handleImportClick,

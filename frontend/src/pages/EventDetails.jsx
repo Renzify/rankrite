@@ -6,6 +6,7 @@ import {
   addEventContestant,
   addEventJudge,
   getEventDetails,
+  importEventContestants,
   updateEvent,
 } from "../api/eventApi";
 import StatusBadge from "../components/StatusBadge";
@@ -25,18 +26,20 @@ function applyLoadedEventDetails(data, actions) {
   actions.setSelectedEventType(data.template?.eventType ?? "");
   actions.setSelectedSport(data.formValues?.sport ?? "");
   actions.setJudges(data.judges ?? []);
-  actions.setContestants(
-    (data.contestants ?? []).map((contestant) => ({
-      ...contestant,
-      teamName: contestant.teamName ?? contestant.delegation ?? "",
-      delegation: contestant.teamName ?? contestant.delegation ?? "",
-    })),
-  );
+  actions.setContestants((data.contestants ?? []).map(mapContestantForForm));
   actions.setPendingFormValues({
     ...data.formValues,
     eventTitle: data.event.title,
   });
   actions.setDidHydrate(false);
+}
+
+function mapContestantForForm(contestant) {
+  return {
+    ...contestant,
+    teamName: contestant.teamName ?? contestant.delegation ?? "",
+    delegation: contestant.teamName ?? contestant.delegation ?? "",
+  };
 }
 
 function getApiErrorMessage(error, fallbackMessage) {
@@ -250,11 +253,7 @@ export default function EventDetails() {
 
       setContestants((prev) => [
         ...prev,
-        {
-          ...createdContestant,
-          teamName: createdContestant.teamName ?? "",
-          delegation: createdContestant.teamName ?? "",
-        },
+        mapContestantForForm(createdContestant),
       ]);
       setEventDetails((prev) =>
         prev
@@ -271,6 +270,44 @@ export default function EventDetails() {
       const message = getApiErrorMessage(error, "Failed to add contestant.");
       console.error("Failed to add contestant:", error);
       toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingContestant(false);
+    }
+  };
+
+  const handleImportContestants = async (contestantInputs) => {
+    if (!eventId) {
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingContestant(true);
+      const createdContestants = await importEventContestants(eventId, {
+        contestants: contestantInputs.map((contestantInput) => ({
+          fullName: contestantInput.fullName,
+          teamName: contestantInput.teamName ?? contestantInput.delegation ?? null,
+          gender: contestantInput.gender ?? null,
+          entryNo: contestantInput.entryNo ?? null,
+        })),
+      });
+
+      setContestants((prev) => [
+        ...prev,
+        ...createdContestants.map(mapContestantForForm),
+      ]);
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              contestants: [...(prev.contestants ?? []), ...createdContestants],
+            }
+          : prev,
+      );
+
+      return createdContestants;
+    } catch (error) {
+      console.error("Failed to import contestants:", error);
       throw error;
     } finally {
       setIsSavingContestant(false);
@@ -381,6 +418,7 @@ export default function EventDetails() {
               contestants,
               setContestants,
               onCreateContestant: handleCreateContestant,
+              onImportContestants: handleImportContestants,
               isSavingContestant,
             }}
           />
