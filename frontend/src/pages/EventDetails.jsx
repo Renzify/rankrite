@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useParams, useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
-import { getEventDetails, updateEvent } from "../api/eventApi";
+import {
+  addEventContestant,
+  addEventJudge,
+  getEventDetails,
+  updateEvent,
+} from "../api/eventApi";
 import StatusBadge from "../components/StatusBadge";
 import { buildEventPayload } from "../lib/eventPayload";
 import { MoveLeft } from "lucide-react";
@@ -34,6 +39,20 @@ function applyLoadedEventDetails(data, actions) {
   actions.setDidHydrate(false);
 }
 
+function getApiErrorMessage(error, fallbackMessage) {
+  const responseMessage = error?.response?.data?.message;
+
+  if (typeof responseMessage === "string" && responseMessage.trim()) {
+    return responseMessage;
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallbackMessage;
+}
+
 export default function EventDetails() {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -63,6 +82,8 @@ export default function EventDetails() {
   const [pendingFormValues, setPendingFormValues] = useState(null);
   const [didHydrate, setDidHydrate] = useState(false);
   const [isSavingEventInfo, setIsSavingEventInfo] = useState(false);
+  const [isSavingJudge, setIsSavingJudge] = useState(false);
+  const [isSavingContestant, setIsSavingContestant] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -180,6 +201,82 @@ export default function EventDetails() {
     }
   };
 
+  const handleCreateJudge = async (judgeInput) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingJudge(true);
+      const createdJudge = await addEventJudge(eventId, judgeInput);
+
+      setJudges((prev) => [...prev, createdJudge]);
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              judges: [...(prev.judges ?? []), createdJudge],
+            }
+          : prev,
+      );
+
+      toast.success("Judge added");
+      return createdJudge;
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to add judge.");
+      console.error("Failed to add judge:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingJudge(false);
+    }
+  };
+
+  const handleCreateContestant = async (contestantInput) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingContestant(true);
+      const createdContestant = await addEventContestant(eventId, {
+        fullName: contestantInput.fullName,
+        teamName: contestantInput.teamName ?? contestantInput.delegation ?? null,
+        gender: contestantInput.gender ?? null,
+        entryNo: contestantInput.entryNo ?? null,
+      });
+
+      setContestants((prev) => [
+        ...prev,
+        {
+          ...createdContestant,
+          teamName: createdContestant.teamName ?? "",
+          delegation: createdContestant.teamName ?? "",
+        },
+      ]);
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              contestants: [...(prev.contestants ?? []), createdContestant],
+            }
+          : prev,
+      );
+
+      toast.success("Contestant added");
+      return createdContestant;
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to add contestant.");
+      console.error("Failed to add contestant:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingContestant(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="app-page app-page-wide">
@@ -277,10 +374,14 @@ export default function EventDetails() {
               eventTitle,
               judges,
               setJudges,
+              onCreateJudge: handleCreateJudge,
+              isSavingJudge,
               judgeScores,
               setJudgeScores,
               contestants,
               setContestants,
+              onCreateContestant: handleCreateContestant,
+              isSavingContestant,
             }}
           />
         </div>

@@ -28,6 +28,8 @@ export default function JudgesTab({ showLinkGeneration }) {
   const eventDetails = outletContext.eventDetails;
   const eventTitle = outletContext.eventTitle ?? "";
   const selectedSport = outletContext.selectedSport ?? "";
+  const onCreateJudge = outletContext.onCreateJudge;
+  const isSavingJudge = outletContext.isSavingJudge ?? false;
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -57,18 +59,32 @@ export default function JudgesTab({ showLinkGeneration }) {
     }));
   };
 
-  const handleJudgeSubmit = (event) => {
+  const handleJudgeSubmit = async (event) => {
     event.preventDefault();
     if (!canSubmitJudge) return;
 
     const nextJudge = {
-      id: createLocalId(),
       fullName: formData.fullName.trim(),
       judgeType: formData.judgeType,
       judgeNumber: Number.parseInt(formData.judgeNumber, 10),
     };
 
-    setJudges((prev) => [...prev, nextJudge]);
+    if (onCreateJudge) {
+      try {
+        await onCreateJudge(nextJudge);
+      } catch {
+        return;
+      }
+    } else {
+      setJudges((prev) => [
+        ...prev,
+        {
+          id: createLocalId(),
+          ...nextJudge,
+        },
+      ]);
+    }
+
     setFormData({
       fullName: "",
       judgeType: "",
@@ -178,9 +194,9 @@ export default function JudgesTab({ showLinkGeneration }) {
             <button
               type="submit"
               className="btn btn-neutral w-full sm:w-auto"
-              disabled={!canSubmitJudge}
+              disabled={!canSubmitJudge || isSavingJudge}
             >
-              Submit
+              {isSavingJudge ? "Submitting..." : "Submit"}
             </button>
           </div>
         </form>

@@ -37,6 +37,36 @@ export type CreateEventDraftInput = {
   }[];
 };
 
+export type EventJudgeRecord = {
+  id: string;
+  fullName: string;
+  judgeType: string;
+  judgeNumber: number;
+  eventPhaseId: string | null;
+};
+
+export type EventContestantRecord = {
+  id: string;
+  fullName: string;
+  teamName: string | null;
+  gender: string | null;
+  entryNo: number;
+};
+
+export type AddEventJudgeInput = {
+  fullName: string;
+  judgeType: string;
+  judgeNumber: number;
+  eventPhaseId?: string | null;
+};
+
+export type AddEventContestantInput = {
+  fullName: string;
+  teamName?: string | null;
+  gender?: string | null;
+  entryNo?: number | null;
+};
+
 function normalizeContestantGender(value?: string | null) {
   const normalizedValue = (value ?? "").trim().toLowerCase();
 
@@ -247,6 +277,165 @@ export async function updateEvent(
   return getEventDetails(eventId);
 }
 
+export async function addEventJudge(
+  eventId: string,
+  input: AddEventJudgeInput,
+): Promise<EventJudgeRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const fullName = input.fullName?.trim();
+  const judgeTypeName = input.judgeType?.trim();
+  const judgeNumber = Number(input.judgeNumber);
+  const eventPhaseId = input.eventPhaseId ?? null;
+
+  if (
+    !normalizedEventId ||
+    !fullName ||
+    !judgeTypeName ||
+    !Number.isFinite(judgeNumber) ||
+    judgeNumber <= 0
+  ) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await db.query.event.findFirst({
+    where: eq(event.id, normalizedEventId),
+  });
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  return db.transaction(async (tx) => {
+    const existingTypes = await tx
+      .select()
+      .from(judgeType)
+      .where(inArray(judgeType.name, [judgeTypeName]));
+
+    const existingTypeMap = new Map(
+      existingTypes.map((type) => [type.name, type.id]),
+    );
+
+    if (!existingTypeMap.has(judgeTypeName)) {
+      const [insertedType] = await tx
+        .insert(judgeType)
+        .values({ name: judgeTypeName })
+        .returning();
+
+      if (insertedType) {
+        existingTypeMap.set(insertedType.name, insertedType.id);
+      }
+    }
+
+    const judgeTypeId = existingTypeMap.get(judgeTypeName);
+
+    if (!judgeTypeId) {
+      throw new Error("INVALID_EVENT_INPUT");
+    }
+
+    const [createdJudge] = await tx
+      .insert(judge)
+      .values({
+        fullName,
+      })
+      .returning();
+
+    await tx.insert(eventJudgeAssignment).values({
+      eventId: normalizedEventId,
+      judgeId: createdJudge.id,
+      judgeTypeId,
+      judgeNumber,
+      eventPhaseId,
+    });
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return {
+      id: createdJudge.id,
+      fullName: createdJudge.fullName,
+      judgeType: judgeTypeName,
+      judgeNumber,
+      eventPhaseId,
+    };
+  });
+}
+
+export async function addEventContestant(
+  eventId: string,
+  input: AddEventContestantInput,
+): Promise<EventContestantRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const fullName = input.fullName?.trim();
+  const teamName = input.teamName?.trim() || null;
+  const gender = normalizeContestantGender(input.gender);
+  const requestedEntryNo =
+    input.entryNo && input.entryNo > 0 ? input.entryNo : null;
+
+  if (!normalizedEventId || !fullName) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await db.query.event.findFirst({
+    where: eq(event.id, normalizedEventId),
+  });
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  return db.transaction(async (tx) => {
+    const existingEntries = await tx
+      .select({
+        entryNo: eventContestant.entryNo,
+      })
+      .from(eventContestant)
+      .where(eq(eventContestant.eventId, normalizedEventId));
+
+    const nextEntryNo =
+      requestedEntryNo ??
+      existingEntries.reduce(
+        (highestEntryNo, currentEntry) =>
+          Math.max(highestEntryNo, currentEntry.entryNo),
+        0,
+      ) +
+        1;
+
+    const [createdContestant] = await tx
+      .insert(contestant)
+      .values({
+        fullName,
+        teamName,
+        gender,
+      })
+      .returning();
+
+    await tx.insert(eventContestant).values({
+      eventId: normalizedEventId,
+      contestantId: createdContestant.id,
+      entryNo: nextEntryNo,
+    });
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return {
+      id: createdContestant.id,
+      fullName: createdContestant.fullName,
+      teamName: createdContestant.teamName,
+      gender: createdContestant.gender,
+      entryNo: nextEntryNo,
+    };
+  });
+}
+
 export type EventListItem = {
   id: string;
   title: string;
@@ -272,20 +461,8 @@ export type EventDetails = {
   event: EventListItem & { templateId: string };
   template: Awaited<ReturnType<typeof getTemplateById>>;
   formValues: Record<string, string>;
-  judges: Array<{
-    id: string;
-    fullName: string;
-    judgeType: string;
-    judgeNumber: number;
-    eventPhaseId: string | null;
-  }>;
-  contestants: Array<{
-    id: string;
-    fullName: string;
-    teamName: string | null;
-    gender: string | null;
-    entryNo: number;
-  }>;
+  judges: EventJudgeRecord[];
+  contestants: EventContestantRecord[];
 };
 
 export async function getEventDetails(eventId: string): Promise<EventDetails | null> {
