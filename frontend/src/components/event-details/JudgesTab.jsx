@@ -29,6 +29,7 @@ export default function JudgesTab({ showLinkGeneration }) {
   const eventTitle = outletContext.eventTitle ?? "";
   const selectedSport = outletContext.selectedSport ?? "";
   const onCreateJudge = outletContext.onCreateJudge;
+  const onUpdateJudge = outletContext.onUpdateJudge;
   const isSavingJudge = outletContext.isSavingJudge ?? false;
 
   const [formData, setFormData] = useState({
@@ -36,6 +37,7 @@ export default function JudgesTab({ showLinkGeneration }) {
     judgeType: "",
     judgeNumber: "",
   });
+  const [editingJudgeId, setEditingJudgeId] = useState(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [linkModalTab, setLinkModalTab] = useState("qr");
   const [activeJudgeName, setActiveJudgeName] = useState("");
@@ -50,6 +52,15 @@ export default function JudgesTab({ showLinkGeneration }) {
     formData.judgeType &&
     Number.parseInt(formData.judgeNumber, 10) > 0,
   );
+
+  const resetForm = () => {
+    setFormData({
+      fullName: "",
+      judgeType: "",
+      judgeNumber: "",
+    });
+    setEditingJudgeId(null);
+  };
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -69,7 +80,21 @@ export default function JudgesTab({ showLinkGeneration }) {
       judgeNumber: Number.parseInt(formData.judgeNumber, 10),
     };
 
-    if (onCreateJudge) {
+    if (editingJudgeId) {
+      if (onUpdateJudge) {
+        try {
+          await onUpdateJudge(editingJudgeId, nextJudge);
+        } catch {
+          return;
+        }
+      } else {
+        setJudges((prev) =>
+          prev.map((judge) =>
+            judge.id === editingJudgeId ? { ...judge, ...nextJudge } : judge,
+          ),
+        );
+      }
+    } else if (onCreateJudge) {
       try {
         await onCreateJudge(nextJudge);
       } catch {
@@ -85,27 +110,34 @@ export default function JudgesTab({ showLinkGeneration }) {
       ]);
     }
 
+    resetForm();
+  };
+
+  const handleStartEditing = (judge) => {
+    setEditingJudgeId(judge.id);
     setFormData({
-      fullName: "",
-      judgeType: "",
-      judgeNumber: "",
+      fullName: judge.fullName ?? "",
+      judgeType: judge.judgeType ?? "",
+      judgeNumber:
+        judge.judgeNumber === null || judge.judgeNumber === undefined
+          ? ""
+          : String(judge.judgeNumber),
     });
   };
 
-  const createJudgeScoringLink = (judge) => {
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const params = new URLSearchParams();
-
-    if (eventId) params.set("eventId", eventId);
-    if (eventTitle) params.set("eventTitle", eventTitle);
-    if (selectedSport) params.set("sport", selectedSport);
-    if (judge.id) params.set("judgeId", judge.id);
-    if (judge.fullName) params.set("judgeName", judge.fullName);
-    if (judge.judgeType) params.set("judgeType", judge.judgeType);
-
-    const queryString = params.toString();
-    return `${baseUrl}/judge-score${queryString ? `?${queryString}` : ""}`;
+  const handleCancelEditing = () => {
+    resetForm();
   };
+
+  const actionButtonLabel = editingJudgeId
+    ? isSavingJudge
+      ? "Saving..."
+      : "Save Changes"
+    : isSavingJudge
+      ? "Submitting..."
+      : "Submit";
+
+  const emptyJudgeColSpan = shouldShowLinkGeneration ? 6 : 5;
 
   const handleGenerateLink = (judge) => {
     if (!eventId) return;
@@ -133,10 +165,30 @@ export default function JudgesTab({ showLinkGeneration }) {
     }
   };
 
+  const createJudgeScoringLink = (judge) => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const params = new URLSearchParams();
+
+    if (eventId) params.set("eventId", eventId);
+    if (eventTitle) params.set("eventTitle", eventTitle);
+    if (selectedSport) params.set("sport", selectedSport);
+    if (judge.id) params.set("judgeId", judge.id);
+    if (judge.fullName) params.set("judgeName", judge.fullName);
+    if (judge.judgeType) params.set("judgeType", judge.judgeType);
+
+    const queryString = params.toString();
+    return `${baseUrl}/judge-score${queryString ? `?${queryString}` : ""}`;
+  };
+
   return (
     <>
       <div className="w-full space-y-5">
-        <h2 className="text-xl font-semibold tracking-tight">Manage Judges</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold tracking-tight">Manage Judges</h2>
+          {editingJudgeId ? (
+            <span className="badge badge-outline badge-lg">Editing Judge</span>
+          ) : null}
+        </div>
 
         <form
           className="grid gap-4 sm:grid-cols-[1.4fr_1fr_0.8fr_auto]"
@@ -190,13 +242,23 @@ export default function JudgesTab({ showLinkGeneration }) {
             />
           </label>
 
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
+            {editingJudgeId ? (
+              <button
+                type="button"
+                className="btn btn-outline w-full sm:w-auto"
+                onClick={handleCancelEditing}
+                disabled={isSavingJudge}
+              >
+                Cancel
+              </button>
+            ) : null}
             <button
               type="submit"
               className="btn btn-neutral w-full sm:w-auto"
               disabled={!canSubmitJudge || isSavingJudge}
             >
-              {isSavingJudge ? "Submitting..." : "Submit"}
+              {actionButtonLabel}
             </button>
           </div>
         </form>
@@ -210,12 +272,16 @@ export default function JudgesTab({ showLinkGeneration }) {
                 <th>Judge Type</th>
                 <th>Judge Seat</th>
                 {shouldShowLinkGeneration ? <th>Link Generation</th> : null}
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {judges.length ? (
                 judges.map((judge, index) => (
-                  <tr key={judge.id}>
+                  <tr
+                    key={judge.id}
+                    className={editingJudgeId === judge.id ? "bg-base-200/30" : ""}
+                  >
                     <th>{index + 1}</th>
                     <td>{judge.fullName}</td>
                     <td>{judge.judgeType}</td>
@@ -237,14 +303,21 @@ export default function JudgesTab({ showLinkGeneration }) {
                         </button>
                       </td>
                     ) : null}
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline"
+                        onClick={() => handleStartEditing(judge)}
+                        disabled={isSavingJudge}
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={shouldShowLinkGeneration ? 5 : 4}
-                    className="text-base-content/60"
-                  >
+                  <td colSpan={emptyJudgeColSpan} className="text-base-content/60">
                     No judges added for this event yet.
                   </td>
                 </tr>

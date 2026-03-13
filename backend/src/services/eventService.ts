@@ -477,6 +477,98 @@ export async function addEventJudge(
   });
 }
 
+export async function updateEventJudge(
+  eventId: string,
+  judgeId: string,
+  input: AddEventJudgeInput,
+): Promise<EventJudgeRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedJudgeId = judgeId?.trim();
+  const fullName = input.fullName?.trim();
+  const judgeTypeName = input.judgeType?.trim();
+  const judgeNumber = Number(input.judgeNumber);
+
+  if (
+    !normalizedEventId ||
+    !normalizedJudgeId ||
+    !fullName ||
+    !judgeTypeName ||
+    !Number.isFinite(judgeNumber) ||
+    judgeNumber <= 0
+  ) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingAssignment = await tx.query.eventJudgeAssignment.findFirst({
+      where: and(
+        eq(eventJudgeAssignment.eventId, normalizedEventId),
+        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+      ),
+    });
+
+    if (!existingAssignment) {
+      return null;
+    }
+
+    const existingTypes = await tx
+      .select()
+      .from(judgeType)
+      .where(inArray(judgeType.name, [judgeTypeName]));
+
+    const existingTypeMap = new Map(
+      existingTypes.map((type) => [type.name, type.id]),
+    );
+
+    if (!existingTypeMap.has(judgeTypeName)) {
+      const [insertedType] = await tx
+        .insert(judgeType)
+        .values({ name: judgeTypeName })
+        .returning();
+
+      if (insertedType) {
+        existingTypeMap.set(insertedType.name, insertedType.id);
+      }
+    }
+
+    const judgeTypeId = existingTypeMap.get(judgeTypeName);
+
+    if (!judgeTypeId) {
+      throw new Error("INVALID_EVENT_INPUT");
+    }
+
+    await tx
+      .update(judge)
+      .set({
+        fullName,
+      })
+      .where(eq(judge.id, normalizedJudgeId));
+
+    await tx
+      .update(eventJudgeAssignment)
+      .set({
+        judgeTypeId,
+        judgeNumber,
+      })
+      .where(eq(eventJudgeAssignment.id, existingAssignment.id));
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return {
+      id: normalizedJudgeId,
+      fullName,
+      judgeType: judgeTypeName,
+      judgeNumber,
+      eventPhaseId: existingAssignment.eventPhaseId ?? null,
+    };
+  });
+}
+
 export async function addEventContestant(
   eventId: string,
   input: AddEventContestantInput,

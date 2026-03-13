@@ -8,6 +8,7 @@ import {
   getEventDetails,
   importEventContestants,
   updateEvent,
+  updateEventJudge,
 } from "../api/eventApi";
 import StatusBadge from "../components/StatusBadge";
 import { buildEventPayload } from "../lib/eventPayload";
@@ -236,6 +237,42 @@ export default function EventDetails() {
     }
   };
 
+  const handleUpdateJudge = async (judgeId, judgeInput) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingJudge(true);
+      const updatedJudge = await updateEventJudge(eventId, judgeId, judgeInput);
+
+      setJudges((prev) =>
+        prev.map((judge) => (judge.id === judgeId ? updatedJudge : judge)),
+      );
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              judges: (prev.judges ?? []).map((judge) =>
+                judge.id === judgeId ? updatedJudge : judge,
+              ),
+            }
+          : prev,
+      );
+
+      toast.success("Judge updated");
+      return updatedJudge;
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to update judge.");
+      console.error("Failed to update judge:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingJudge(false);
+    }
+  };
+
   const handleCreateContestant = async (contestantInput) => {
     if (!eventId) {
       toast.error("Missing event id.");
@@ -414,6 +451,7 @@ export default function EventDetails() {
               judges,
               setJudges,
               onCreateJudge: handleCreateJudge,
+              onUpdateJudge: handleUpdateJudge,
               isSavingJudge,
               judgeScores,
               setJudgeScores,
