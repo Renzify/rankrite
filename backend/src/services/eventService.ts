@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import {
   contestant,
@@ -8,6 +8,7 @@ import {
   eventJudgeAssignment,
   eventTemplate,
   judge,
+  judgeScore,
   judgeType,
   scoreSheet,
 } from "../db/schema.ts";
@@ -70,6 +71,20 @@ export type AddEventContestantInput = {
 
 export type AddEventContestantsInput = {
   contestants: AddEventContestantInput[];
+};
+
+export type SubmitJudgeScoreInput = {
+  judgeId: string;
+  contestantId: string;
+  score: number | string;
+};
+
+export type EventJudgeScoreRecord = {
+  judgeId: string;
+  contestantId: string | null;
+  contestantName: string | null;
+  rawScore: number | null;
+  submittedAt: Date | null;
 };
 
 function normalizeContestantGender(value?: string | null) {
@@ -563,6 +578,198 @@ export async function addEventContestants(
       gender: createdContestant.gender,
       entryNo: contestantsToInsert[index].entryNo,
     }));
+  });
+}
+
+export async function submitJudgeScore(
+  eventId: string,
+  input: SubmitJudgeScoreInput,
+): Promise<EventJudgeScoreRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedJudgeId = input.judgeId?.trim();
+  const normalizedContestantId = input.contestantId?.trim();
+  const rawScore = Number(input.score);
+
+  if (
+    !normalizedEventId ||
+    !normalizedJudgeId ||
+    !normalizedContestantId ||
+    !Number.isFinite(rawScore) ||
+    rawScore < 0
+  ) {
+    throw new Error("INVALID_JUDGE_SCORE_INPUT");
+  }
+
+  const existingEvent = await db.query.event.findFirst({
+    where: eq(event.id, normalizedEventId),
+  });
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  const [judgeAssignment, contestantRecord] = await Promise.all([
+    db.query.eventJudgeAssignment.findFirst({
+      where: and(
+        eq(eventJudgeAssignment.eventId, normalizedEventId),
+        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+      ),
+    }),
+    db
+      .select({
+        contestantId: contestant.id,
+        contestantName: contestant.fullName,
+      })
+      .from(eventContestant)
+      .innerJoin(contestant, eq(eventContestant.contestantId, contestant.id))
+      .where(
+        and(
+          eq(eventContestant.eventId, normalizedEventId),
+          eq(eventContestant.contestantId, normalizedContestantId),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+  ]);
+
+  if (!judgeAssignment || !contestantRecord) {
+    throw new Error("INVALID_JUDGE_SCORE_CONTEXT");
+  }
+
+  const submittedAt = new Date();
+
+  return db.transaction(async (tx) => {
+    const existingScoreSheet = await tx.query.scoreSheet.findFirst({
+      where: and(
+        eq(scoreSheet.eventId, normalizedEventId),
+        eq(scoreSheet.contestantId, normalizedContestantId),
+        judgeAssignment.eventPhaseId
+          ? eq(scoreSheet.eventPhaseId, judgeAssignment.eventPhaseId)
+          : isNull(scoreSheet.eventPhaseId),
+      ),
+    });
+
+    const activeScoreSheet =
+      existingScoreSheet ??
+      (
+        await tx
+          .insert(scoreSheet)
+          .values({
+            eventId: normalizedEventId,
+            contestantId: normalizedContestantId,
+            eventPhaseId: judgeAssignment.eventPhaseId,
+            status: "in_progress",
+            updatedAt: submittedAt,
+          })
+          .returning()
+      )[0];
+
+    if (existingScoreSheet) {
+      await tx
+        .update(scoreSheet)
+        .set({
+          status: "in_progress",
+          updatedAt: submittedAt,
+        })
+        .where(eq(scoreSheet.id, existingScoreSheet.id));
+    }
+
+    const existingJudgeScore = await tx.query.judgeScore.findFirst({
+      where: and(
+        eq(judgeScore.scoreSheetId, activeScoreSheet.id),
+        eq(judgeScore.judgeAssignmentId, judgeAssignment.id),
+      ),
+      orderBy: [desc(judgeScore.createdAt)],
+    });
+
+    if (existingJudgeScore) {
+      await tx
+        .update(judgeScore)
+        .set({
+          rawScore,
+          createdAt: submittedAt,
+        })
+        .where(eq(judgeScore.id, existingJudgeScore.id));
+    } else {
+      await tx.insert(judgeScore).values({
+        scoreSheetId: activeScoreSheet.id,
+        judgeAssignmentId: judgeAssignment.id,
+        rawScore,
+        createdAt: submittedAt,
+      });
+    }
+
+    return {
+      judgeId: normalizedJudgeId,
+      contestantId: contestantRecord.contestantId,
+      contestantName: contestantRecord.contestantName,
+      rawScore,
+      submittedAt,
+    };
+  });
+}
+
+export async function getEventJudgeScores(
+  eventId: string,
+): Promise<EventJudgeScoreRecord[] | null> {
+  const normalizedEventId = eventId?.trim();
+
+  if (!normalizedEventId) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await db.query.event.findFirst({
+    where: eq(event.id, normalizedEventId),
+  });
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  const [judgeAssignments, scoreRows] = await Promise.all([
+    db
+      .select({
+        judgeId: eventJudgeAssignment.judgeId,
+      })
+      .from(eventJudgeAssignment)
+      .where(eq(eventJudgeAssignment.eventId, normalizedEventId)),
+    db
+      .select({
+        judgeId: eventJudgeAssignment.judgeId,
+        contestantId: scoreSheet.contestantId,
+        contestantName: contestant.fullName,
+        rawScore: judgeScore.rawScore,
+        submittedAt: judgeScore.createdAt,
+      })
+      .from(judgeScore)
+      .innerJoin(
+        eventJudgeAssignment,
+        eq(judgeScore.judgeAssignmentId, eventJudgeAssignment.id),
+      )
+      .innerJoin(scoreSheet, eq(judgeScore.scoreSheetId, scoreSheet.id))
+      .innerJoin(contestant, eq(scoreSheet.contestantId, contestant.id))
+      .where(eq(scoreSheet.eventId, normalizedEventId))
+      .orderBy(desc(judgeScore.createdAt)),
+  ]);
+
+  const latestScoreByJudgeId = new Map<string, (typeof scoreRows)[number]>();
+
+  for (const scoreRow of scoreRows) {
+    if (!latestScoreByJudgeId.has(scoreRow.judgeId)) {
+      latestScoreByJudgeId.set(scoreRow.judgeId, scoreRow);
+    }
+  }
+
+  return judgeAssignments.map((assignment) => {
+    const latestScore = latestScoreByJudgeId.get(assignment.judgeId);
+
+    return {
+      judgeId: assignment.judgeId,
+      contestantId: latestScore?.contestantId ?? null,
+      contestantName: latestScore?.contestantName ?? null,
+      rawScore: latestScore?.rawScore ?? null,
+      submittedAt: latestScore?.submittedAt ?? null,
+    };
   });
 }
 

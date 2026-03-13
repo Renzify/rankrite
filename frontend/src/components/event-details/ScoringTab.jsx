@@ -1,9 +1,30 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router";
+import { getEventJudgeScores } from "../../api/eventApi";
+
+function createEmptyScoreEntry(locked = false) {
+  return {
+    value: "",
+    locked,
+    contestantId: "",
+    contestantName: "",
+    submittedAt: "",
+  };
+}
+
+function formatEnteredValue(value) {
+  const parsedValue = Number.parseFloat(String(value ?? ""));
+  return Number.isFinite(parsedValue) ? parsedValue.toFixed(2) : "";
+}
 
 export default function ScoringTab() {
-  const { judges, judgeScores, setJudgeScores, contestants } =
+  const { eventDetails, judges, judgeScores, setJudgeScores, contestants } =
     useOutletContext();
+  const eventId = eventDetails?.event?.id ?? "";
+  const [isLoadingSubmittedScores, setIsLoadingSubmittedScores] = useState(
+    Boolean(eventId),
+  );
+  const [submittedScoresError, setSubmittedScoresError] = useState("");
 
   useEffect(() => {
     setJudgeScores((prev) => {
@@ -12,7 +33,7 @@ export default function ScoringTab() {
 
       for (const judge of judges) {
         if (!next[judge.id]) {
-          next[judge.id] = { value: "", locked: false };
+          next[judge.id] = createEmptyScoreEntry();
           changed = true;
         }
       }
@@ -28,6 +49,91 @@ export default function ScoringTab() {
     });
   }, [judges, setJudgeScores]);
 
+  useEffect(() => {
+    if (!eventId) {
+      setIsLoadingSubmittedScores(false);
+      setSubmittedScoresError("");
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const syncSubmittedScores = async ({ showLoading } = { showLoading: false }) => {
+      if (showLoading) {
+        setIsLoadingSubmittedScores(true);
+      }
+
+      try {
+        const submittedScores = await getEventJudgeScores(eventId);
+        if (!isMounted) return;
+
+        const latestScoreByJudgeId = new Map(
+          submittedScores.map((entry) => [entry.judgeId, entry]),
+        );
+
+        setJudgeScores((prev) => {
+          const next = { ...prev };
+          let changed = false;
+
+          for (const judge of judges) {
+            const current = next[judge.id] ?? createEmptyScoreEntry();
+            const latestEntry = latestScoreByJudgeId.get(judge.id);
+            const nextValue = formatEnteredValue(latestEntry?.rawScore ?? "");
+            const nextContestantId = latestEntry?.contestantId ?? "";
+            const nextContestantName = latestEntry?.contestantName ?? "";
+            const nextSubmittedAt = latestEntry?.submittedAt ?? "";
+
+            if (
+              current.value !== nextValue ||
+              current.contestantId !== nextContestantId ||
+              current.contestantName !== nextContestantName ||
+              current.submittedAt !== nextSubmittedAt
+            ) {
+              next[judge.id] = {
+                ...current,
+                value: nextValue,
+                contestantId: nextContestantId,
+                contestantName: nextContestantName,
+                submittedAt: nextSubmittedAt,
+              };
+              changed = true;
+            }
+          }
+
+          return changed ? next : prev;
+        });
+
+        setSubmittedScoresError("");
+      } catch (error) {
+        console.error("Failed to refresh judge scores:", error);
+        if (!isMounted) return;
+        setSubmittedScoresError("Failed to refresh submitted judge scores.");
+      } finally {
+        if (isMounted) {
+          setIsLoadingSubmittedScores(false);
+        }
+      }
+    };
+
+    syncSubmittedScores({ showLoading: true });
+
+    const pollId = window.setInterval(() => {
+      syncSubmittedScores();
+    }, 3000);
+
+    const handleWindowFocus = () => {
+      syncSubmittedScores();
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(pollId);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [eventId, judges, setJudgeScores]);
+
   const scoringLocked =
     judges.length > 0 && judges.every((judge) => judgeScores[judge.id]?.locked);
 
@@ -35,7 +141,7 @@ export default function ScoringTab() {
     if (scoringLocked) return;
 
     setJudgeScores((prev) => {
-      const current = prev[judgeId] ?? { value: "", locked: false };
+      const current = prev[judgeId] ?? createEmptyScoreEntry();
       const scoreNumber = Number.parseFloat(current.value);
       if (!Number.isFinite(scoreNumber) || current.locked) return prev;
 
@@ -51,7 +157,20 @@ export default function ScoringTab() {
 
   return (
     <div className="w-full space-y-5">
-      <h2 className="text-xl font-semibold tracking-tight">Scoring Monitor</h2>
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold tracking-tight">Scoring Monitor</h2>
+        {isLoadingSubmittedScores ? (
+          <p className="text-sm text-base-content/60">
+            Loading submitted judge scores...
+          </p>
+        ) : null}
+      </div>
+
+      {submittedScoresError ? (
+        <div className="alert alert-error">
+          <span>{submittedScoresError}</span>
+        </div>
+      ) : null}
 
       {scoringLocked ? (
         <div className="alert alert-success">
@@ -73,10 +192,7 @@ export default function ScoringTab() {
           <tbody>
             {judges.length ? (
               judges.map((judge, index) => {
-                const scoreEntry = judgeScores[judge.id] ?? {
-                  value: "",
-                  locked: false,
-                };
+                const scoreEntry = judgeScores[judge.id] ?? createEmptyScoreEntry();
                 const parsedValue = Number.parseFloat(scoreEntry.value);
                 const hasValidScore = Number.isFinite(parsedValue);
                 const status = scoreEntry.locked ? "Locked" : "Pending";

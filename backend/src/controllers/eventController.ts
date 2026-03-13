@@ -10,7 +10,10 @@ import {
   type CreateEventDraftInput,
   deleteEvent,
   getEventDetails,
+  getEventJudgeScores,
   listEvents,
+  submitJudgeScore,
+  type SubmitJudgeScoreInput,
   updateEvent,
   type UpdateEventInput,
 } from "../services/eventService.ts";
@@ -80,6 +83,83 @@ export async function getEventDetailsController(req: Request, res: Response) {
     console.error(error);
     res.status(500).json({
       message: "Failed to fetch event details",
+    });
+  }
+}
+
+export async function getEventJudgeScoresController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const judgeScores = await getEventJudgeScores(eventId);
+
+    if (!judgeScores) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(200).json(judgeScores);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid event input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch judge scores",
+    });
+  }
+}
+
+export async function submitJudgeScoreController(req: Request, res: Response) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const payload = req.body as SubmitJudgeScoreInput;
+    const submittedScore = await submitJudgeScore(eventId, payload);
+
+    if (!submittedScore) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(201).json(submittedScore);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_JUDGE_SCORE_INPUT") {
+      return res.status(400).json({
+        message:
+          "Judge score must include an assigned judge, contestant, and valid numeric score",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_JUDGE_SCORE_CONTEXT") {
+      return res.status(400).json({
+        message: "Judge or contestant is not assigned to this event",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to submit judge score",
     });
   }
 }
@@ -267,4 +347,3 @@ export async function importEventContestantsController(
     });
   }
 }
-

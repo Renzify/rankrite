@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-    "dev": "node --watch src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "start": "node src/server.ts",
     "db:push": "drizzle-kit push",
     "db:seed:gymnastics": "tsx scripts/seed.ts gymnastics",
@@ -33,3 +33,4 @@
     "typescript": "^5.9.3"
   }
 }
+
