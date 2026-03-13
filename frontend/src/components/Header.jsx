@@ -66,7 +66,7 @@ function Header() {
       ref={headerRef}
       className="navbar flex justify-center border border-base-300 bg-base-100/95 px-4 shadow-sm"
     >
-      <div className="flex w-full max-w-7xl flex-col py-3">
+      <div className="flex w-full max-w-6/7 flex-col py-3">
         <div className="flex items-center justify-between gap-4">
           <button
             type="button"

@@ -115,12 +115,18 @@ function Settings() {
           <section className="app-surface mb-5">
             <div className="app-section space-y-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
+                <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-semibold">Account Profile</h2>
-                  <p className="mt-1 text-sm text-base-content/60">
-                    Personal details used across the Rankrite workspace.
-                  </p>
+                  <div
+                    className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
+                    data-tip="Account Profile: View and manage your account information. It lets you update your personal details and profile settings."
+                  >
+                    ?
+                  </div>
                 </div>
+                <p className="mt-1 text-sm text-base-content/60">
+                  Personal details used across the Rankrite workspace.
+                </p>
 
                 {isEditing ? (
                   <div className="flex flex-wrap items-center gap-2">
@@ -234,7 +240,15 @@ function Settings() {
           <div className="mb-5 grid gap-5 xl:grid-cols-2">
             <section className="app-surface">
               <div className="app-section">
-                <h2 className="text-xl font-semibold">Change Password</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold">Change Password</h2>
+                  {/* <div
+                    className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
+                    data-tip="Change Password: Update your account password to keep your account secure. It lets you change your current password and set a new one."
+                  >
+                    ?
+                  </div> */}
+                </div>
                 <p className="mt-1 text-sm text-base-content/60">
                   Update your credentials and review when the password was last
                   changed.
@@ -366,7 +380,15 @@ function Settings() {
 
             <section className="app-surface">
               <div className="app-section">
-                <h2 className="text-xl font-semibold">Preferences</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold">Preferences</h2>
+                  {/* <div
+                    className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
+                    data-tip="Preferences: Manage how the system looks and how alerts work. It lets you adjust your viewing and notification settings."
+                  >
+                    ?
+                  </div> */}
+                </div>
                 <p className="mt-1 text-sm text-base-content/60">
                   Adjust the interface theme and notification behavior for this
                   account.

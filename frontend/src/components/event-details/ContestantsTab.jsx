@@ -82,6 +82,18 @@ export default function ContestantsTab() {
   return (
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
+
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Manage Contestants
+          </h2>
+          <div
+            className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200 mt-1"
+            data-tip="Contestants Tab: Manage the list of event contestants. It supports contestant entry, bulk import, and list export."
+          >
+            ?
+          </div>
+
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold tracking-tight">Contestants</h2>
           {editingContestantId ? (
@@ -89,6 +101,7 @@ export default function ContestantsTab() {
               Editing Contestant
             </span>
           ) : null}
+
         </div>
 
         <div className="flex flex-wrap gap-2">

@@ -220,7 +220,15 @@ function ActivityLog() {
         <div className="w-full max-w-7xl">
           <section className="app-surface mb-5">
             <div className="app-section">
-              <h1 className="app-page-title">Activity Log</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="app-page-title">Activity Log</h1>
+                <div
+                  className="ml-1 tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
+                  data-tip="Activity Log: View the record of actions made in the system. It helps you track recent activity and review important changes."
+                >
+                  ?
+                </div>
+              </div>
               <p className="app-page-subtitle">
                 Review actions across sign-ins, event management, scoring, and
                 exports.

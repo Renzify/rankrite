@@ -122,7 +122,15 @@ function Dashboard() {
   return (
     <div className="app-page space-y-6">
       <section>
-        <h1 className="app-page-title">Manage Events</h1>
+        <div className="flex items-center justify-start mb-2">
+          <h1 className="app-page-title">Manage Events</h1>
+          <div
+            className="t3 tooltip tooltip-warning tooltip-right z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200 ml-2"
+            data-tip="Page Overview: This page helps you manage events and access their main functions. It is the starting point for creating, opening, and managing event records."
+          >
+            ?
+          </div>
+        </div>
         <p className="app-page-subtitle">
           Review event lifecycle, monitor status, and manage actions in one
           place.
@@ -137,6 +145,15 @@ function Dashboard() {
         statusOptions={STATUS_OPTIONS}
         onAddEvent={handleCreateEvent}
       />
+
+      {/* <div className="w-full flex justify-end mb-1">
+        <div
+          className=" t2 tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200 mr-5"
+          data-tip="View Button: Open event details and manage contestants, judges, scoring, and display settings. Delete Button: Permanently remove the event and all related data."
+        >
+          ?
+        </div>
+      </div> */}
 
       <EventList
         events={filteredEvents}
@@ -225,34 +242,44 @@ function AddEvent({
           Add Event
         </button>
 
-        <DropdownMenu
-          ref={filterDropdownRef}
-          menuClassName="menu mt-2 w-48 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg"
-          trigger={({ toggle, isOpen }) => (
-            <button
-              type="button"
-              className={`btn btn-outline w-full justify-between gap-2 sm:w-auto ${isOpen ? "btn-active" : ""}`}
-              onClick={toggle}
-            >
-              <Filter size={18} className="text-base-content/60" />
-              <span className="whitespace-nowrap font-medium text-xs">
-                {currentLabel}
-              </span>
-            </button>
-          )}
-        >
-          {statusOptions.map((status) => (
-            <li key={status}>
+        <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+          <DropdownMenu
+            ref={filterDropdownRef}
+            menuClassName="menu mt-2 w-48 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg"
+            trigger={({ toggle, isOpen }) => (
               <button
                 type="button"
-                onClick={() => handleFilterChange(status)}
-                className={`rounded-md w-full text-left ${statusFilter === status ? "bg-primary text-primary-content" : ""}`}
+                className={`btn btn-outline w-full justify-between gap-2 sm:w-auto ${isOpen ? "btn-active" : ""}`}
+                onClick={toggle}
               >
-                {status}
+                <Filter size={18} className="text-base-content/60" />
+                <span className="whitespace-nowrap font-medium text-xs">
+                  {currentLabel}
+                </span>
               </button>
-            </li>
-          ))}
-        </DropdownMenu>
+            )}
+          >
+            {statusOptions.map((status) => (
+              <li key={status}>
+                <button
+                  type="button"
+                  onClick={() => handleFilterChange(status)}
+                  className={`rounded-md w-full text-left ${statusFilter === status ? "bg-primary text-primary-content" : ""}`}
+                >
+                  {status}
+                </button>
+              </li>
+            ))}
+          </DropdownMenu>
+          <div className="w-full flex justify-end mb-1">
+            {/* <div
+              className="t1 tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200 ml-2"
+              data-tip="Click 'Add Event' to create new events. Use the filter dropdown to view events by status (Draft, Live, Finished, etc.)."
+            >
+              ?
+            </div> */}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -267,15 +294,17 @@ function EventList({
   onDeleteEvent,
 }) {
   return (
-    <section className="app-table-wrap">
-      <table className="table">
+    <section className="app-table-wrap relative">
+      <table className="table table-zebra">
         <thead>
           <tr>
             <th>#</th>
             <th>Event Name</th>
             <th className="w-36 px-6">Status</th>
             <th className="w-40 px-6">Created</th>
-            <th className="w-44 text-center">Actions</th>
+            <th className="flex items-center gap-1 justify-center w-44 text-center">
+              Actions
+            </th>
           </tr>
         </thead>
 
