@@ -236,7 +236,9 @@ export default function ScoringTab() {
           ...prev,
           [judgeId]: {
             ...previousEntry,
-            value: formatEnteredValue(lockedEntry?.rawScore ?? previousEntry.value),
+            value: formatEnteredValue(
+              lockedEntry?.rawScore ?? previousEntry.value,
+            ),
             locked: true,
             contestantId: lockedEntry?.contestantId ?? selectedContestantId,
             contestantName:
@@ -310,8 +312,8 @@ export default function ScoringTab() {
         <table className="table">
           <thead>
             <tr>
-              <th>#</th>
               <th>Judge Name</th>
+              <th>Judge Type</th>
               <th>Entered Value</th>
               <th>Status</th>
               <th>Lock</th>
@@ -332,8 +334,11 @@ export default function ScoringTab() {
 
                 return (
                   <tr key={judge.id}>
-                    <th>{index + 1}</th>
-                    <td>{judge.fullName}</td>
+                    <td>
+                      {" "}
+                      {index + 1 + "."} {judge.fullName}
+                    </td>
+                    <td> {judge.judgeType}</td>
                     <td>
                       <input
                         type="number"
@@ -396,7 +401,6 @@ export default function ScoringTab() {
           <table className="table">
             <thead>
               <tr>
-                <th>#</th>
                 <th>Contestant</th>
                 <th>Delegation</th>
                 <th>D</th>
@@ -427,8 +431,11 @@ export default function ScoringTab() {
                           : "hover:bg-base-200/60"
                       }`}
                     >
-                      <th>{index + 1}</th>
-                      <td className="font-medium">{contestant.fullName}</td>
+                      <td className="font-medium">
+                        {" "}
+                        {index + 1 + ". "}
+                        {contestant.fullName}
+                      </td>
                       <td>{contestant.delegation}</td>
                       <td>--</td>
                       <td>--</td>

@@ -307,7 +307,6 @@ export default function JudgesTab({ showLinkGeneration }) {
           <table className="table">
             <thead>
               <tr>
-                <th>#</th>
                 <th>Full Name</th>
                 <th>Judge Type</th>
                 <th>Judge Seat</th>
@@ -320,10 +319,14 @@ export default function JudgesTab({ showLinkGeneration }) {
                 judges.map((judge, index) => (
                   <tr
                     key={judge.id}
-                    className={editingJudgeId === judge.id ? "bg-base-200/30" : ""}
+                    className={
+                      editingJudgeId === judge.id ? "bg-base-200/30" : ""
+                    }
                   >
-                    <th>{index + 1}</th>
-                    <td>{judge.fullName}</td>
+                    <td>
+                      {" "}
+                      {index + 1 + "."} {judge.fullName}
+                    </td>
                     <td>{judge.judgeType}</td>
                     <td>{judge.judgeNumber ?? "-"}</td>
                     {shouldShowLinkGeneration ? (
@@ -367,7 +370,10 @@ export default function JudgesTab({ showLinkGeneration }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={emptyJudgeColSpan} className="text-base-content/60">
+                  <td
+                    colSpan={emptyJudgeColSpan}
+                    className="text-base-content/60"
+                  >
                     No judges added for this event yet.
                   </td>
                 </tr>
@@ -508,4 +514,3 @@ export default function JudgesTab({ showLinkGeneration }) {
     </>
   );
 }
-
