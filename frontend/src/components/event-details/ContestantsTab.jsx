@@ -218,7 +218,6 @@ export default function ContestantsTab() {
         <table className="table">
           <thead>
             <tr>
-              <th>#</th>
               <th>Contestant Name</th>
               <th>Delegation</th>
               <th>Gender</th>
@@ -231,11 +230,14 @@ export default function ContestantsTab() {
                 <tr
                   key={contestant.id}
                   className={
-                    editingContestantId === contestant.id ? "bg-base-200/30" : ""
+                    editingContestantId === contestant.id
+                      ? "bg-base-200/30"
+                      : ""
                   }
                 >
-                  <th>{index + 1}</th>
-                  <td>{contestant.fullName}</td>
+                  <td>
+                    {index + 1 + "."} {contestant.fullName}
+                  </td>
                   <td>{getContestantDelegation(contestant) || "-"}</td>
                   <td>{contestant.gender || "-"}</td>
                   <td>
