@@ -10,7 +10,7 @@ import SignupCard from "./auth/components/SignupCard";
 import LoginCard from "./auth/components/LoginCard";
 import ForgotPasswordCard from "./auth/components/ForgotPasswordCard";
 import EventDetails from "./pages/event-details/EventDetails";
-import JudgeScore from "./pages/JudgeScore";
+import JudgeScore from "./pages/judge-view/JudgeScore";
 import ActivityLog from "./pages/activity-log/ActivityLog";
 import EventInfoTab from "./components/event-details/EventInfoTab";
 import ScoringTab from "./components/event-details/ScoringTab";

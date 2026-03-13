@@ -1,4 +1,4 @@
-import ConfirmDeleteModal from "../ConfirmDeleteModal";
+import ConfirmDeleteModal from "../../shared/components/ConfirmDeleteModal";
 import JudgeLinkModal from "./JudgeLinkModal";
 import { useJudgeForm } from "../../hooks/useJudgeForm";
 import { useJudgeLinkModal } from "../../hooks/useJudgeLinkModal";
@@ -147,7 +147,9 @@ export default function JudgesTab({ showLinkGeneration }) {
               judges.map((judge, index) => (
                 <tr
                   key={judge.id}
-                  className={editingJudgeId === judge.id ? "bg-base-200/30" : ""}
+                  className={
+                    editingJudgeId === judge.id ? "bg-base-200/30" : ""
+                  }
                 >
                   <td>
                     {index + 1}. {judge.fullName}
@@ -195,7 +197,10 @@ export default function JudgesTab({ showLinkGeneration }) {
               ))
             ) : (
               <tr>
-                <td colSpan={emptyJudgeColSpan} className="text-base-content/60">
+                <td
+                  colSpan={emptyJudgeColSpan}
+                  className="text-base-content/60"
+                >
                   No judges added for this event yet.
                 </td>
               </tr>
