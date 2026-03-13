@@ -3,8 +3,8 @@ import { Filter } from "lucide-react";
 import { DropdownMenu } from "../layouts/helpers/Dropdown";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
-import StatusBadge from "./event-details/utils/StatusBadge";
-import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import StatusBadge from "../shared/utils/StatusBadge";
+import ConfirmDeleteModal from "../shared/components/ConfirmDeleteModal";
 import { useEventStore } from "../stores/eventStore";
 import { useShallow } from "zustand/react/shallow";
 

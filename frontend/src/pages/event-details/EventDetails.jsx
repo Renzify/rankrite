@@ -13,7 +13,7 @@ import {
   updateEventJudge,
   updateEventContestant,
 } from "../../api/eventApi";
-import StatusBadge from "./utils/StatusBadge";
+import StatusBadge from "../../shared/utils/StatusBadge";
 import { buildEventPayload } from "../../lib/eventPayload";
 import { MoveLeft } from "lucide-react";
 

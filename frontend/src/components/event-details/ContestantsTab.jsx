@@ -4,7 +4,7 @@ import {
   CONTESTANT_GENDER_OPTIONS,
   getContestantDelegation,
 } from "../../lib/contestantCsv";
-import ConfirmDeleteModal from "../ConfirmDeleteModal";
+import ConfirmDeleteModal from "../../shared/components/ConfirmDeleteModal";
 import { useContestantsTabHandlers } from "../../hooks/useContestantsTabHandlers";
 import { useTemplateStore } from "../../stores/templateStore";
 
@@ -240,7 +240,9 @@ export default function ContestantsTab() {
                 <tr
                   key={contestant.id}
                   className={
-                    editingContestantId === contestant.id ? "bg-base-200/30" : ""
+                    editingContestantId === contestant.id
+                      ? "bg-base-200/30"
+                      : ""
                   }
                 >
                   <td>
