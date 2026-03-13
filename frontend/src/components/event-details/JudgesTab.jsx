@@ -184,10 +184,16 @@ export default function JudgesTab({ showLinkGeneration }) {
     <>
       <div className="w-full space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold tracking-tight">Manage Judges</h2>
-          {editingJudgeId ? (
-            <span className="badge badge-outline badge-lg">Editing Judge</span>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold tracking-tight">
+              Manage Judges
+            </h2>
+            {editingJudgeId ? (
+              <span className="badge badge-outline badge-lg">
+                Editing Judge
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <form
