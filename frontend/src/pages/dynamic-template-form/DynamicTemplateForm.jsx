@@ -2,14 +2,14 @@ import { useLayoutEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { MoveLeft, MoveRight } from "lucide-react";
 import toast from "react-hot-toast";
-import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
-import { useTemplateStore } from "../stores/templateStore";
-import { useEventStore } from "../stores/eventStore";
-import EventTypeSportSelect from "../components/EventTypeSportSelect";
-import TemplateFields from "../components/TemplateFields";
-import TabNavigation from "../components/TabNavigation";
-import JudgesTab from "../components/event-details/JudgesTab";
-import ContestantsTab from "../components/event-details/ContestantsTab";
+import { useDynamicTemplate } from "../../hooks/useDynamicTemplate";
+import { useTemplateStore } from "../../stores/templateStore";
+import { useEventStore } from "../../stores/eventStore";
+import EventTypeSportSelect from "./components/EventTypeSportSelect";
+import TemplateFields from "./components/TemplateFields";
+import TabNavigation from "./components/TabNavigation";
+import JudgesTab from "../../components/event-details/JudgesTab";
+import ContestantsTab from "../../components/event-details/ContestantsTab";
 
 function DynamicTemplateForm() {
   const navigate = useNavigate();
