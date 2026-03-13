@@ -358,7 +358,7 @@ export default function DisplayControlTab() {
                 </div>
               </div>
             ) : (
-              <div className="mt-4 space-y-3 h-48 flex flex-col items-start">
+              <div className="mt-4 flex h-48 flex-col items-stretch space-y-3">
                 <label className="form-control w-full">
                   <div className="label pb-1">
                     <span className="label-text">Auto swap interval:</span>
@@ -377,10 +377,10 @@ export default function DisplayControlTab() {
                   </select>
                 </label>
 
-                <div className="pt-2">
+                <div className="w-full pt-2">
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline flex items-center gap-2 w-full"
+                    className="btn btn-sm btn-outline flex w-full items-center gap-2"
                     onClick={() => setIsAutoRunning((prev) => !prev)}
                     disabled={!hasContestants || isFrozen || isBlackout}
                   >

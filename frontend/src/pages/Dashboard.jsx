@@ -122,10 +122,10 @@ function Dashboard() {
   return (
     <div className="app-page space-y-6">
       <section>
-        <div className="flex items-center justify-start mb-2">
+        <div className="mb-2 flex items-center justify-start">
           <h1 className="app-page-title">Manage Events</h1>
           <div
-            className="t3 tooltip tooltip-warning tooltip-right z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200 ml-2"
+            className="t3 tooltip tooltip-warning tooltip-right z-[100] ml-2 flex h-[25px] w-[25px] cursor-help items-center justify-center rounded-full border-2 border-warning bg-transparent text-sm font-medium text-warning transition-all duration-200 hover:bg-warning hover:text-warning-content"
             data-tip="Page Overview: This page helps you manage events and access their main functions. It is the starting point for creating, opening, and managing event records."
           >
             ?
@@ -145,15 +145,6 @@ function Dashboard() {
         statusOptions={STATUS_OPTIONS}
         onAddEvent={handleCreateEvent}
       />
-
-      {/* <div className="w-full flex justify-end mb-1">
-        <div
-          className=" t2 tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200 mr-5"
-          data-tip="View Button: Open event details and manage contestants, judges, scoring, and display settings. Delete Button: Permanently remove the event and all related data."
-        >
-          ?
-        </div>
-      </div> */}
 
       <EventList
         events={filteredEvents}
@@ -239,10 +230,24 @@ function AddEvent({
           className="btn btn-primary w-full sm:w-auto"
           onClick={onAddEvent}
         >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="h-4 w-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
           Add Event
         </button>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
           <DropdownMenu
             ref={filterDropdownRef}
             menuClassName="menu mt-2 w-48 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg"
@@ -264,16 +269,17 @@ function AddEvent({
                 <button
                   type="button"
                   onClick={() => handleFilterChange(status)}
-                  className={`rounded-md w-full text-left ${statusFilter === status ? "bg-primary text-primary-content" : ""}`}
+                  className={`w-full rounded-md text-left ${statusFilter === status ? "bg-primary text-primary-content" : ""}`}
                 >
                   {status}
                 </button>
               </li>
             ))}
           </DropdownMenu>
-          <div className="w-full flex justify-end mb-1">
+
+          <div className="mb-1 flex w-full justify-end">
             {/* <div
-              className="t1 tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200 ml-2"
+              className="t1 tooltip tooltip-warning tooltip-bottom z-[100] ml-2 flex h-[25px] w-[25px] cursor-help items-center justify-center rounded-full border-2 border-warning bg-transparent text-sm font-medium text-warning transition-all duration-200 hover:bg-warning hover:text-warning-content"
               data-tip="Click 'Add Event' to create new events. Use the filter dropdown to view events by status (Draft, Live, Finished, etc.)."
             >
               ?
@@ -302,7 +308,7 @@ function EventList({
             <th>Event Name</th>
             <th className="w-36 px-6">Status</th>
             <th className="w-40 px-6">Created</th>
-            <th className="flex items-center gap-1 justify-center w-44 text-center">
+            <th className="flex w-44 items-center justify-center gap-1 text-center">
               Actions
             </th>
           </tr>
@@ -367,4 +373,3 @@ function EventList({
     </section>
   );
 }
-
