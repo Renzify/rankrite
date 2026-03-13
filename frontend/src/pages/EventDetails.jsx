@@ -246,7 +246,8 @@ export default function EventDetails() {
       setIsSavingContestant(true);
       const createdContestant = await addEventContestant(eventId, {
         fullName: contestantInput.fullName,
-        teamName: contestantInput.teamName ?? contestantInput.delegation ?? null,
+        teamName:
+          contestantInput.teamName ?? contestantInput.delegation ?? null,
         gender: contestantInput.gender ?? null,
         entryNo: contestantInput.entryNo ?? null,
       });
@@ -286,7 +287,8 @@ export default function EventDetails() {
       const createdContestants = await importEventContestants(eventId, {
         contestants: contestantInputs.map((contestantInput) => ({
           fullName: contestantInput.fullName,
-          teamName: contestantInput.teamName ?? contestantInput.delegation ?? null,
+          teamName:
+            contestantInput.teamName ?? contestantInput.delegation ?? null,
           gender: contestantInput.gender ?? null,
           entryNo: contestantInput.entryNo ?? null,
         })),
@@ -344,7 +346,7 @@ export default function EventDetails() {
       <div>
         <button
           className="btn btn-neutral btn-soft text-sm hover:bg-neutral/80"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
         >
           <MoveLeft /> Back to Events
         </button>

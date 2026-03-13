@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router";
 import { getEventJudgeScores } from "../../api/eventApi";
 
-function createEmptyScoreEntry(locked = false) {
+function createEmptyScoreEntry() {
   return {
     value: "",
-    locked,
+    locked: false,
     contestantId: "",
     contestantName: "",
     submittedAt: "",
@@ -21,10 +21,30 @@ export default function ScoringTab() {
   const { eventDetails, judges, judgeScores, setJudgeScores, contestants } =
     useOutletContext();
   const eventId = eventDetails?.event?.id ?? "";
+  const [selectedContestantId, setSelectedContestantId] = useState("");
   const [isLoadingSubmittedScores, setIsLoadingSubmittedScores] = useState(
     Boolean(eventId),
   );
   const [submittedScoresError, setSubmittedScoresError] = useState("");
+
+  const selectedContestant =
+    contestants.find((contestant) => contestant.id === selectedContestantId) ??
+    null;
+
+  useEffect(() => {
+    if (!contestants.length) {
+      setSelectedContestantId("");
+      return;
+    }
+
+    setSelectedContestantId((currentId) => {
+      if (contestants.some((contestant) => contestant.id === currentId)) {
+        return currentId;
+      }
+
+      return contestants[0].id;
+    });
+  }, [contestants]);
 
   useEffect(() => {
     setJudgeScores((prev) => {
@@ -50,7 +70,45 @@ export default function ScoringTab() {
   }, [judges, setJudgeScores]);
 
   useEffect(() => {
+    setJudgeScores((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      for (const judge of judges) {
+        const current = next[judge.id] ?? createEmptyScoreEntry();
+        const clearedEntry = {
+          ...current,
+          value: "",
+          locked: false,
+          contestantId: "",
+          contestantName: "",
+          submittedAt: "",
+        };
+
+        if (
+          current.value !== clearedEntry.value ||
+          current.locked !== clearedEntry.locked ||
+          current.contestantId !== clearedEntry.contestantId ||
+          current.contestantName !== clearedEntry.contestantName ||
+          current.submittedAt !== clearedEntry.submittedAt
+        ) {
+          next[judge.id] = clearedEntry;
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [selectedContestantId, judges, setJudgeScores]);
+
+  useEffect(() => {
     if (!eventId) {
+      setIsLoadingSubmittedScores(false);
+      setSubmittedScoresError("");
+      return undefined;
+    }
+
+    if (!selectedContestantId) {
       setIsLoadingSubmittedScores(false);
       setSubmittedScoresError("");
       return undefined;
@@ -58,13 +116,17 @@ export default function ScoringTab() {
 
     let isMounted = true;
 
-    const syncSubmittedScores = async ({ showLoading } = { showLoading: false }) => {
+    const syncSubmittedScores = async (
+      { showLoading } = { showLoading: false },
+    ) => {
       if (showLoading) {
         setIsLoadingSubmittedScores(true);
       }
 
       try {
-        const submittedScores = await getEventJudgeScores(eventId);
+        const submittedScores = await getEventJudgeScores(eventId, {
+          contestantId: selectedContestantId,
+        });
         if (!isMounted) return;
 
         const latestScoreByJudgeId = new Map(
@@ -79,8 +141,10 @@ export default function ScoringTab() {
             const current = next[judge.id] ?? createEmptyScoreEntry();
             const latestEntry = latestScoreByJudgeId.get(judge.id);
             const nextValue = formatEnteredValue(latestEntry?.rawScore ?? "");
-            const nextContestantId = latestEntry?.contestantId ?? "";
-            const nextContestantName = latestEntry?.contestantName ?? "";
+            const nextContestantId =
+              latestEntry?.contestantId ?? selectedContestantId;
+            const nextContestantName =
+              latestEntry?.contestantName ?? selectedContestant?.fullName ?? "";
             const nextSubmittedAt = latestEntry?.submittedAt ?? "";
 
             if (
@@ -107,7 +171,9 @@ export default function ScoringTab() {
       } catch (error) {
         console.error("Failed to refresh judge scores:", error);
         if (!isMounted) return;
-        setSubmittedScoresError("Failed to refresh submitted judge scores.");
+        setSubmittedScoresError(
+          "Failed to refresh submitted judge scores for the selected contestant.",
+        );
       } finally {
         if (isMounted) {
           setIsLoadingSubmittedScores(false);
@@ -132,7 +198,13 @@ export default function ScoringTab() {
       window.clearInterval(pollId);
       window.removeEventListener("focus", handleWindowFocus);
     };
-  }, [eventId, judges, setJudgeScores]);
+  }, [
+    eventId,
+    judges,
+    selectedContestant?.fullName,
+    selectedContestantId,
+    setJudgeScores,
+  ]);
 
   const scoringLocked =
     judges.length > 0 && judges.every((judge) => judgeScores[judge.id]?.locked);
@@ -155,10 +227,32 @@ export default function ScoringTab() {
     });
   };
 
+  const handleContestantSelect = (contestantId) => {
+    setSelectedContestantId(contestantId);
+  };
+
+  const handleContestantRowKeyDown = (event, contestantId) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    handleContestantSelect(contestantId);
+  };
+
   return (
     <div className="w-full space-y-5">
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight">Scoring Monitor</h2>
+        <h2 className="text-xl font-semibold tracking-tight">
+          Scoring Monitor
+        </h2>
+        <p className="text-sm text-base-content/70">
+          Click a contestant in the computation table to view that entry&apos;s
+          judge submissions.
+        </p>
+        {selectedContestant ? (
+          <p className="text-sm font-medium text-base-content/80">
+            Viewing Contestant #{selectedContestant.entryNo}:{" "}
+            {selectedContestant.fullName}
+          </p>
+        ) : null}
         {isLoadingSubmittedScores ? (
           <p className="text-sm text-base-content/60">
             Loading submitted judge scores...
@@ -174,7 +268,7 @@ export default function ScoringTab() {
 
       {scoringLocked ? (
         <div className="alert alert-success">
-          <span>Scoring is locked.</span>
+          <span>Scoring is locked for the selected contestant.</span>
         </div>
       ) : null}
 
@@ -192,10 +286,15 @@ export default function ScoringTab() {
           <tbody>
             {judges.length ? (
               judges.map((judge, index) => {
-                const scoreEntry = judgeScores[judge.id] ?? createEmptyScoreEntry();
+                const scoreEntry =
+                  judgeScores[judge.id] ?? createEmptyScoreEntry();
                 const parsedValue = Number.parseFloat(scoreEntry.value);
                 const hasValidScore = Number.isFinite(parsedValue);
-                const status = scoreEntry.locked ? "Locked" : "Pending";
+                const status = scoreEntry.locked
+                  ? "Locked"
+                  : hasValidScore
+                    ? "Submitted"
+                    : "Pending";
 
                 return (
                   <tr key={judge.id}>
@@ -214,7 +313,11 @@ export default function ScoringTab() {
                     <td>
                       <span
                         className={`badge ${
-                          status === "Locked" ? "badge-success" : "badge-ghost"
+                          status === "Locked"
+                            ? "badge-success"
+                            : status === "Submitted"
+                              ? "badge-info"
+                              : "badge-ghost"
                         }`}
                       >
                         {status}
@@ -226,7 +329,10 @@ export default function ScoringTab() {
                         className="btn btn-sm btn-neutral"
                         onClick={() => handleJudgeLock(judge.id)}
                         disabled={
-                          !hasValidScore || scoreEntry.locked || scoringLocked
+                          !selectedContestantId ||
+                          !hasValidScore ||
+                          scoreEntry.locked ||
+                          scoringLocked
                         }
                       >
                         Confirm
@@ -252,7 +358,7 @@ export default function ScoringTab() {
         </h3>
 
         <div className="app-table-wrap">
-          <table className="table table-zebra">
+          <table className="table">
             <thead>
               <tr>
                 <th>#</th>
@@ -264,25 +370,40 @@ export default function ScoringTab() {
                 <th>Penalties</th>
                 <th>Total</th>
                 <th>Final</th>
-                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {contestants.length ? (
-                contestants.map((contestant, index) => (
-                  <tr key={contestant.id}>
-                    <th>{index + 1}</th>
-                    <td>{contestant.fullName}</td>
-                    <td>{contestant.delegation}</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>--</td>
-                    <td>Pending integration</td>
-                  </tr>
-                ))
+                contestants.map((contestant, index) => {
+                  const isSelected = contestant.id === selectedContestantId;
+
+                  return (
+                    <tr
+                      key={contestant.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleContestantSelect(contestant.id)}
+                      onKeyDown={(event) =>
+                        handleContestantRowKeyDown(event, contestant.id)
+                      }
+                      className={`cursor-pointer transition-colors ${
+                        isSelected
+                          ? "bg-base-200/90 outline outline-1 outline-base-300"
+                          : "hover:bg-base-200/60"
+                      }`}
+                    >
+                      <th>{index + 1}</th>
+                      <td className="font-medium">{contestant.fullName}</td>
+                      <td>{contestant.delegation}</td>
+                      <td>--</td>
+                      <td>--</td>
+                      <td>--</td>
+                      <td>--</td>
+                      <td>--</td>
+                      <td>--</td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={10} className="text-base-content/60">

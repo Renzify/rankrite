@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useSearchParams } from "react-router";
 import { User } from "lucide-react";
-import { getEventDetails, submitJudgeScore } from "../api/eventApi";
+import {
+  getEventDetails,
+  getEventJudgeScores,
+  submitJudgeScore,
+} from "../api/eventApi";
 
 const SCORE_RANGE = Array.from({ length: 10 }, (_, index) => index + 1);
 const DEFAULT_SCORE_VALUE = "5.00";
@@ -57,6 +61,36 @@ function formatScore(value) {
   return value.toFixed(2);
 }
 
+function resetScoreInputs({
+  setScoreValue,
+  setDecimalValue,
+  setDeductionValues,
+  setPenaltyValue,
+}) {
+  setScoreValue(DEFAULT_SCORE_VALUE);
+  setDecimalValue("");
+  setDeductionValues(["", "", ""]);
+  setPenaltyValue("");
+}
+
+function applyStoredScoreToInputs(rawScore, judgeType, actions) {
+  const formattedScore = formatScore(rawScore);
+  const normalizedJudgeType = (judgeType ?? "").trim().toLowerCase();
+
+  if (normalizedJudgeType === "line judge" || normalizedJudgeType === "time judge") {
+    actions.setPenaltyValue(formattedScore);
+    return;
+  }
+
+  if (normalizedJudgeType === "artistry" || normalizedJudgeType === "execution") {
+    actions.setDeductionValues([formatScore(Math.max(0, 10 - rawScore))]);
+    return;
+  }
+
+  actions.setScoreValue(formattedScore);
+  actions.setDecimalValue(formattedScore.split(".")[1] || "");
+}
+
 function JudgeScore() {
   const [searchParams] = useSearchParams();
 
@@ -88,6 +122,9 @@ function JudgeScore() {
   const [deductionValues, setDeductionValues] = useState(["", "", ""]);
   const [penaltyValue, setPenaltyValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionsByContestantId, setSubmissionsByContestantId] = useState({});
+  const [submittedEntry, setSubmittedEntry] = useState(null);
+  const [isEditingSubmission, setIsEditingSubmission] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -96,6 +133,15 @@ function JudgeScore() {
       setCurrentJudge(fallbackJudge);
       setContestants([]);
       setSelectedContestant("");
+      setSubmissionsByContestantId({});
+      setSubmittedEntry(null);
+      setIsEditingSubmission(true);
+      resetScoreInputs({
+        setScoreValue,
+        setDecimalValue,
+        setDeductionValues,
+        setPenaltyValue,
+      });
       setEventTitle(eventTitleParam || "Judge Scoring");
       setSportLabel(sportParam);
       setLoadError("");
@@ -124,12 +170,48 @@ function JudgeScore() {
         setContestants(nextContestants);
 
         if (matchedJudge) {
-          setCurrentJudge({
+          const nextJudge = {
             id: matchedJudge.id,
             name: matchedJudge.fullName || fallbackJudge.name,
             specialization:
               matchedJudge.judgeType || fallbackJudge.specialization,
+          };
+
+          setCurrentJudge(nextJudge);
+
+          const judgeScores = await getEventJudgeScores(eventId, {
+            judgeId: nextJudge.id,
           });
+          if (!isMounted) return;
+
+          const nextSubmissionsByContestantId = Object.fromEntries(
+            judgeScores
+              .filter(
+                (entry) =>
+                  entry.rawScore !== null &&
+                  entry.contestantId &&
+                  entry.judgeId === nextJudge.id,
+              )
+              .map((entry) => [
+                entry.contestantId,
+                {
+                  contestantId: entry.contestantId,
+                  contestantName: entry.contestantName || "Saved contestant",
+                  rawScore: Number(entry.rawScore),
+                },
+              ]),
+          );
+
+          setSubmissionsByContestantId(nextSubmissionsByContestantId);
+
+          const nextDefaultContestant =
+            nextContestants.find(
+              (contestant) => !nextSubmissionsByContestantId[contestant.id],
+            ) ?? nextContestants[0] ?? null;
+
+          if (nextDefaultContestant) {
+            setSelectedContestant(nextDefaultContestant.id);
+          }
         } else {
           setCurrentJudge(fallbackJudge);
           setPageNotice(
@@ -171,6 +253,43 @@ function JudgeScore() {
     judgeNameParam,
     sportParam,
   ]);
+
+  useEffect(() => {
+    if (!selectedContestant) {
+      setSubmittedEntry(null);
+      setIsEditingSubmission(true);
+      resetScoreInputs({
+        setScoreValue,
+        setDecimalValue,
+        setDeductionValues,
+        setPenaltyValue,
+      });
+      return;
+    }
+
+    const nextSubmittedEntry = submissionsByContestantId[selectedContestant] ?? null;
+
+    setSubmittedEntry(nextSubmittedEntry);
+
+    if (!nextSubmittedEntry) {
+      setIsEditingSubmission(true);
+      resetScoreInputs({
+        setScoreValue,
+        setDecimalValue,
+        setDeductionValues,
+        setPenaltyValue,
+      });
+      return;
+    }
+
+    applyStoredScoreToInputs(nextSubmittedEntry.rawScore, currentJudge.specialization, {
+      setScoreValue,
+      setDecimalValue,
+      setDeductionValues,
+      setPenaltyValue,
+    });
+    setIsEditingSubmission(false);
+  }, [selectedContestant, submissionsByContestantId, currentJudge.specialization]);
 
   const selectedContestantData =
     contestants.find((contestant) => contestant.id === selectedContestant) ??
@@ -312,6 +431,8 @@ function JudgeScore() {
       : isPenaltyJudge
         ? parsedPenaltyValue !== null
         : true;
+  const hasSavedSubmission = Boolean(submittedEntry);
+  const isEntryLocked = hasSavedSubmission && !isEditingSubmission;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -343,6 +464,18 @@ function JudgeScore() {
         score: activeScoreValue,
       });
 
+      const nextSubmittedEntry = {
+        contestantId: selectedContestantData.id,
+        contestantName: selectedContestantData.name,
+        rawScore: Number.parseFloat(activeScoreValue),
+      };
+
+      setSubmissionsByContestantId((prev) => ({
+        ...prev,
+        [selectedContestantData.id]: nextSubmittedEntry,
+      }));
+      setSubmittedEntry(nextSubmittedEntry);
+      setIsEditingSubmission(false);
       toast.success(isPenaltyJudge ? "Penalty submitted." : "Score submitted.");
     } catch (error) {
       console.error(error);
@@ -352,6 +485,27 @@ function JudgeScore() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditSubmission = (event) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (!submittedEntry) return;
+    setIsEditingSubmission(true);
+  };
+
+  const handleCancelEdit = () => {
+    const savedEntry = submissionsByContestantId[selectedContestant];
+    if (!savedEntry) return;
+
+    applyStoredScoreToInputs(savedEntry.rawScore, currentJudge.specialization, {
+      setScoreValue,
+      setDecimalValue,
+      setDeductionValues,
+      setPenaltyValue,
+    });
+    setSubmittedEntry(savedEntry);
+    setIsEditingSubmission(false);
   };
 
   const difficultyScorePanel = (
@@ -365,6 +519,7 @@ function JudgeScore() {
           type="button"
           onClick={handleDecrease}
           className="btn btn-circle btn-lg btn-outline"
+          disabled={isEntryLocked || isSubmitting}
         >
           -
         </button>
@@ -382,6 +537,7 @@ function JudgeScore() {
                   type="button"
                   onClick={() => handleScoreClick(num)}
                   className="absolute transition-all duration-300 ease-out"
+                  disabled={isEntryLocked || isSubmitting}
                   style={{
                     left: "50%",
                     marginLeft: `${offset}px`,
@@ -408,6 +564,7 @@ function JudgeScore() {
           type="button"
           onClick={handleIncrease}
           className="btn btn-circle btn-lg btn-outline"
+          disabled={isEntryLocked || isSubmitting}
         >
           +
         </button>
@@ -420,6 +577,7 @@ function JudgeScore() {
             placeholder={getFinalScore()}
             className="input input-bordered input-lg w-40 text-center text-3xl font-bold"
             value={scoreValue}
+            disabled={isEntryLocked || isSubmitting}
             onChange={handleScoreInputChange}
           />
         </div>
@@ -458,6 +616,7 @@ function JudgeScore() {
                 placeholder="0.00"
                 className="input input-bordered w-full"
                 value={value}
+                disabled={isEntryLocked || isSubmitting}
                 onChange={(event) =>
                   handleDeductionInputChange(index, event.target.value)
                 }
@@ -467,7 +626,7 @@ function JudgeScore() {
               type="button"
               className="btn btn-outline btn-sm"
               onClick={() => handleRemoveDeductionInput(index)}
-              disabled={deductionValues.length === 1}
+              disabled={isEntryLocked || isSubmitting || deductionValues.length === 1}
             >
               Remove
             </button>
@@ -480,6 +639,7 @@ function JudgeScore() {
           type="button"
           className="btn btn-outline btn-sm"
           onClick={handleAddDeductionInput}
+          disabled={isEntryLocked || isSubmitting}
         >
           Add Deduction
         </button>
@@ -525,6 +685,7 @@ function JudgeScore() {
           placeholder="0.00"
           className="input input-bordered input-lg w-full text-center text-3xl font-bold"
           value={penaltyValue}
+          disabled={isEntryLocked || isSubmitting}
           onChange={(event) => setPenaltyValue(event.target.value)}
         />
       </div>
@@ -632,7 +793,12 @@ function JudgeScore() {
               className="select select-bordered w-full"
               value={selectedContestant}
               onChange={(e) => setSelectedContestant(e.target.value)}
-              disabled={isLoading || Boolean(loadError) || !contestants.length}
+              disabled={
+                isLoading ||
+                Boolean(loadError) ||
+                !contestants.length ||
+                isSubmitting
+              }
             >
               <option value="">-- Select a Contestant --</option>
               {contestants.map((contestant) => (
@@ -708,22 +874,50 @@ function JudgeScore() {
 
           <div className="mb-6">{scoreInputContent}</div>
 
-          <div className="flex justify-center mt-4">
-            <button
-              type="submit"
-              form="scoreForm"
-              className="btn btn-primary w-full max-w-xl text-lg"
-              disabled={
-                isLoading ||
-                Boolean(loadError) ||
-                isSubmitting ||
-                !currentJudge.id ||
-                !selectedContestant ||
-                !canSubmitCurrentEntry
-              }
-            >
-              {isSubmitting ? "Submitting..." : "Submit Result"}
-            </button>
+          <div className="mt-4 flex justify-center">
+            <div className="flex w-full max-w-xl flex-col gap-3 sm:flex-row">
+              {isEntryLocked ? (
+                <button
+                  type="button"
+                  className="btn btn-primary w-full flex-1 text-lg"
+                  onClick={handleEditSubmission}
+                  disabled={isLoading || Boolean(loadError) || isSubmitting}
+                >
+                  Edit Submission
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  form="scoreForm"
+                  className="btn btn-primary w-full flex-1 text-lg"
+                  disabled={
+                    isLoading ||
+                    Boolean(loadError) ||
+                    isSubmitting ||
+                    !currentJudge.id ||
+                    !selectedContestant ||
+                    !canSubmitCurrentEntry
+                  }
+                >
+                  {isSubmitting
+                    ? "Submitting..."
+                    : hasSavedSubmission
+                      ? "Save Changes"
+                      : "Submit Result"}
+                </button>
+              )}
+
+              {hasSavedSubmission && isEditingSubmission ? (
+                <button
+                  type="button"
+                  className="btn btn-ghost w-full sm:w-auto"
+                  onClick={handleCancelEdit}
+                  disabled={isSubmitting}
+                >
+                  Cancel Edit
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <form id="scoreForm" onSubmit={handleSubmit} className="hidden">
