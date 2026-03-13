@@ -4,6 +4,7 @@ import {
   addEventContestantController,
   addEventJudgeController,
   createEventDraftController,
+  deleteEventContestantController,
   deleteEventJudgeController,
   deleteEventController,
   getEventDetailsController,
@@ -33,6 +34,10 @@ router.post("/events/:id/contestants", addEventContestantController);
 router.put(
   "/events/:id/contestants/:contestantId",
   updateEventContestantController,
+);
+router.delete(
+  "/events/:id/contestants/:contestantId",
+  deleteEventContestantController,
 );
 router.post("/events/:id/contestants/import", importEventContestantsController);
 

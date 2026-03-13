@@ -89,6 +89,10 @@ export const updateEventContestant = async (
   return res.data;
 };
 
+export const deleteEventContestant = async (eventId, contestantId) => {
+  await axiosInstance.delete(`/events/${eventId}/contestants/${contestantId}`);
+};
+
 export const importEventContestants = async (eventId, payload) => {
   const res = await axiosInstance.post(
     `/events/${eventId}/contestants/import`,

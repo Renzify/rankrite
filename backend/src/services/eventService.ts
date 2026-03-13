@@ -624,6 +624,73 @@ export async function deleteEventJudge(
   });
 }
 
+export async function deleteEventContestant(
+  eventId: string,
+  contestantId: string,
+): Promise<boolean> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedContestantId = contestantId?.trim();
+
+  if (!normalizedEventId || !normalizedContestantId) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingContestantLink = await tx.query.eventContestant.findFirst({
+      where: and(
+        eq(eventContestant.eventId, normalizedEventId),
+        eq(eventContestant.contestantId, normalizedContestantId),
+      ),
+    });
+
+    if (!existingContestantLink) {
+      return false;
+    }
+
+    await tx
+      .delete(scoreSheet)
+      .where(
+        and(
+          eq(scoreSheet.eventId, normalizedEventId),
+          eq(scoreSheet.contestantId, normalizedContestantId),
+        ),
+      );
+
+    await tx
+      .delete(eventContestant)
+      .where(eq(eventContestant.id, existingContestantLink.id));
+
+    const remainingContestantLinks = await tx
+      .select({
+        contestantId: eventContestant.contestantId,
+      })
+      .from(eventContestant)
+      .where(eq(eventContestant.contestantId, normalizedContestantId));
+
+    const remainingScoreSheets = await tx
+      .select({
+        contestantId: scoreSheet.contestantId,
+      })
+      .from(scoreSheet)
+      .where(eq(scoreSheet.contestantId, normalizedContestantId));
+
+    if (!remainingContestantLinks.length && !remainingScoreSheets.length) {
+      await tx
+        .delete(contestant)
+        .where(eq(contestant.id, normalizedContestantId));
+    }
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return true;
+  });
+}
+
 export async function addEventContestant(
   eventId: string,
   input: AddEventContestantInput,

@@ -8,6 +8,7 @@ import {
   type AddEventContestantInput,
   type AddEventJudgeInput,
   type CreateEventDraftInput,
+  deleteEventContestant,
   deleteEventJudge,
   deleteEvent,
   getEventDetails,
@@ -508,6 +509,52 @@ export async function updateEventContestantController(
     console.error(error);
     res.status(500).json({
       message: "Failed to update contestant",
+    });
+  }
+}
+
+export async function deleteEventContestantController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const eventId = getRouteParamId(req);
+    const rawContestantId = req.params.contestantId;
+    const contestantId = Array.isArray(rawContestantId)
+      ? rawContestantId[0]
+      : rawContestantId;
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    if (typeof contestantId !== "string" || contestantId.trim() === "") {
+      return res.status(400).json({
+        message: "Contestant id is required",
+      });
+    }
+
+    const deletedContestant = await deleteEventContestant(eventId, contestantId);
+
+    if (!deletedContestant) {
+      return res.status(404).json({
+        message: "Contestant not found",
+      });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid contestant input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to delete contestant",
     });
   }
 }
