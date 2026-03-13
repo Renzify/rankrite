@@ -3,8 +3,10 @@ import {
   CONTESTANT_GENDER_OPTIONS,
   getContestantDelegation,
 } from "../../lib/contestantCsv";
+import ConfirmDeleteModal from "../ConfirmDeleteModal";
 import { useTemplateStore } from "../../stores/templateStore";
 import { useContestantsTabHandlers } from "../../hooks/useContestantsTabHandlers";
+import { useState } from "react";
 
 export default function ContestantsTab() {
   const outletContext = useOutletContext() ?? {};
@@ -15,8 +17,10 @@ export default function ContestantsTab() {
   const setContestants = outletContext.setContestants ?? storeSetContestants;
   const onCreateContestant = outletContext.onCreateContestant;
   const onUpdateContestant = outletContext.onUpdateContestant;
+  const onDeleteContestant = outletContext.onDeleteContestant;
   const onImportContestants = outletContext.onImportContestants;
   const isSavingContestant = outletContext.isSavingContestant ?? false;
+  const [contestantPendingDelete, setContestantPendingDelete] = useState(null);
 
   const {
     fileInputRef,
@@ -41,6 +45,39 @@ export default function ContestantsTab() {
     onUpdateContestant,
     onImportContestants,
   });
+
+  const handleOpenDeleteModal = (contestant) => {
+    if (!contestant?.id || isSavingContestant) return;
+    setContestantPendingDelete(contestant);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isSavingContestant) return;
+    setContestantPendingDelete(null);
+  };
+
+  const handleDeleteContestant = async () => {
+    const contestantId = contestantPendingDelete?.id;
+    if (!contestantId) return;
+
+    if (editingContestantId === contestantId) {
+      handleCancelEditing();
+    }
+
+    if (onDeleteContestant) {
+      try {
+        await onDeleteContestant(contestantId);
+        setContestantPendingDelete(null);
+      } catch {
+        return;
+      }
+    } else {
+      setContestants((prev) =>
+        prev.filter((contestant) => contestant.id !== contestantId),
+      );
+      setContestantPendingDelete(null);
+    }
+  };
 
   return (
     <div className="w-full space-y-5">
@@ -202,14 +239,24 @@ export default function ContestantsTab() {
                   <td>{getContestantDelegation(contestant) || "-"}</td>
                   <td>{contestant.gender || "-"}</td>
                   <td>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline"
-                      onClick={() => handleStartEditing(contestant)}
-                      disabled={isSavingContestant}
-                    >
-                      Edit
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline"
+                        onClick={() => handleStartEditing(contestant)}
+                        disabled={isSavingContestant}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline btn-error"
+                        onClick={() => handleOpenDeleteModal(contestant)}
+                        disabled={isSavingContestant}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -223,6 +270,20 @@ export default function ContestantsTab() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={Boolean(contestantPendingDelete)}
+        title="Delete Contestant"
+        name={contestantPendingDelete?.fullName ?? ""}
+        descriptionLines={[
+          "This will permanently remove the contestant from this event.",
+          "The action cannot be undone.",
+        ]}
+        confirmLabel="Delete Contestant"
+        isDeleting={isSavingContestant}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteContestant}
+      />
     </div>
   );
 }

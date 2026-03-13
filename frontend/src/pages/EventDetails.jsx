@@ -5,6 +5,7 @@ import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import {
   addEventContestant,
   addEventJudge,
+  deleteEventContestant,
   deleteEventJudge,
   getEventDetails,
   importEventContestants,
@@ -402,6 +403,41 @@ export default function EventDetails() {
     }
   };
 
+  const handleDeleteContestant = async (contestantId) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingContestant(true);
+      await deleteEventContestant(eventId, contestantId);
+
+      setContestants((prev) =>
+        prev.filter((contestant) => contestant.id !== contestantId),
+      );
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              contestants: (prev.contestants ?? []).filter(
+                (contestant) => contestant.id !== contestantId,
+              ),
+            }
+          : prev,
+      );
+
+      toast.success("Contestant deleted");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to delete contestant.");
+      console.error("Failed to delete contestant:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingContestant(false);
+    }
+  };
+
   const handleImportContestants = async (contestantInputs) => {
     if (!eventId) {
       throw new Error("MISSING_EVENT_ID");
@@ -548,6 +584,7 @@ export default function EventDetails() {
               setContestants,
               onCreateContestant: handleCreateContestant,
               onUpdateContestant: handleUpdateContestant,
+              onDeleteContestant: handleDeleteContestant,
               onImportContestants: handleImportContestants,
               isSavingContestant,
             }}
