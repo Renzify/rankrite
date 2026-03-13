@@ -5,7 +5,7 @@ import {
   LIVE_DISPLAY_MESSAGE_TYPE,
   formatLiveLabel,
   writeLiveDisplayState,
-} from "../../lib/liveDisplaySync";
+} from "../../../lib/liveDisplaySync";
 
 const VIEW_MODE_OPTIONS = [
   {

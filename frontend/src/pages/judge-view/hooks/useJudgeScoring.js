@@ -5,7 +5,7 @@ import {
   getEventDetails,
   getEventJudgeScores,
   submitJudgeScore,
-} from "../api/eventApi";
+} from "../../../api/eventApi";
 
 const DEFAULT_SCORE_VALUE = "5.00";
 

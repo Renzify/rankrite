@@ -3,10 +3,10 @@ import { useOutletContext } from "react-router";
 import {
   CONTESTANT_GENDER_OPTIONS,
   getContestantDelegation,
-} from "../../lib/contestantCsv";
-import ConfirmDeleteModal from "../../shared/components/ConfirmDeleteModal";
-import { useContestantsTabHandlers } from "../../hooks/useContestantsTabHandlers";
-import { useTemplateStore } from "../../stores/templateStore";
+} from "../../../../lib/contestantCsv";
+import ConfirmDeleteModal from "../../../../shared/components/ConfirmDeleteModal";
+import { useContestantsTabHandlers } from "./hooks/useContestantsTabHandlers";
+import { useTemplateStore } from "../../../../stores/templateStore";
 
 export default function ContestantsTab() {
   const outletContext = useOutletContext() ?? {};

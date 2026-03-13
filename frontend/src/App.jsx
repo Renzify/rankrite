@@ -12,12 +12,12 @@ import ForgotPasswordCard from "./auth/components/ForgotPasswordCard";
 import EventDetails from "./pages/event-details/EventDetails";
 import JudgeScore from "./pages/judge-view/JudgeScore";
 import ActivityLog from "./pages/activity-log/ActivityLog";
-import EventInfoTab from "./components/event-details/EventInfoTab";
-import ScoringTab from "./components/event-details/ScoringTab";
-import DisplayControlTab from "./components/event-details/DisplayControlTab";
+import EventInfoTab from "./pages/event-details/components/EventInfoTab";
+import ScoringTab from "./pages/event-details/components/ScoringTab";
+import DisplayControlTab from "./pages/event-details/components/DisplayControlTab";
 import DisplayView from "./pages/DisplayView";
-import JudgesTab from "./components/event-details/JudgesTab";
-import ContestantsTab from "./components/event-details/ContestantsTab";
+import JudgesTab from "./pages/event-details/components/judge-tab/JudgesTab";
+import ContestantsTab from "./pages/event-details/components/contestant-tab/ContestantsTab";
 import Settings from "./pages/Settings";
 
 function AppLayout() {
