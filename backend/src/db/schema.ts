@@ -330,6 +330,7 @@ export const judgeScore = pgTable("judge_score", {
     .references(() => eventJudgeAssignment.id, { onDelete: "cascade" }),
 
   rawScore: real("raw_score").notNull(),
+  isLocked: boolean("is_locked").notNull().default(false),
 
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
