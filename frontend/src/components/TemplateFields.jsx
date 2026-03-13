@@ -13,7 +13,7 @@ function TemplateFields({
 
   return (
     <form className="space-y-4">
-      <div className="rounded-xl border border-base-300 bg-base-200/40 p-4">
+      <div className="rounded-xl border border-base-300 bg-base-200/40 p-4 mt-4">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
           Template
         </p>
