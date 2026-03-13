@@ -47,6 +47,14 @@ export const addEventJudge = async (eventId, payload) => {
   return res.data;
 };
 
+export const updateEventJudge = async (eventId, judgeId, payload) => {
+  const res = await axiosInstance.put(
+    `/events/${eventId}/judges/${judgeId}`,
+    payload,
+  );
+  return res.data;
+};
+
 export const submitJudgeScore = async (eventId, payload) => {
   const res = await axiosInstance.post(`/events/${eventId}/judge-scores`, payload);
   return res.data;

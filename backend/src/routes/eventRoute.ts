@@ -10,6 +10,7 @@ import {
   listEventsController,
   submitJudgeScoreController,
   updateEventController,
+  updateEventJudgeController,
 } from "../controllers/eventController.ts";
 
 const router = Router();
@@ -22,6 +23,7 @@ router.post("/events/:id/judge-scores", submitJudgeScoreController);
 router.put("/events/:id", updateEventController);
 router.delete("/events/:id", deleteEventController);
 router.post("/events/:id/judges", addEventJudgeController);
+router.put("/events/:id/judges/:judgeId", updateEventJudgeController);
 router.post("/events/:id/contestants", addEventContestantController);
 router.post("/events/:id/contestants/import", importEventContestantsController);
 
