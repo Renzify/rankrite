@@ -71,7 +71,7 @@ function Header() {
           <button
             type="button"
             className="flex items-center gap-3 text-left"
-            onClick={() => navigateTo("/dashboard")}
+            onClick={() => navigateTo("/")}
           >
             <img
               src="/src/assets/images/f-logo-2.png"
