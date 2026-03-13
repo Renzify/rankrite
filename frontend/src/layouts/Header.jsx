@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Menu, X } from "lucide-react";
-import { DropdownMenu } from "../helpers/Dropdown";
+import { DropdownMenu } from "./helpers/Dropdown";
 
 function Header() {
   const navigate = useNavigate();
@@ -71,7 +71,7 @@ function Header() {
           <button
             type="button"
             className="flex items-center gap-3 text-left"
-            onClick={() => navigateTo("/dashboard")}
+            onClick={() => navigateTo("/")}
           >
             <img
               src="/src/assets/images/f-logo-2.png"

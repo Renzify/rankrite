@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useParams, useNavigate } from "react-router";
 import toast from "react-hot-toast";
-import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
+import { useDynamicTemplate } from "../dynamic-template-form/hooks/useDynamicTemplate";
 import {
   addEventContestant,
   addEventJudge,
@@ -12,9 +12,9 @@ import {
   updateEvent,
   updateEventJudge,
   updateEventContestant,
-} from "../api/eventApi";
-import StatusBadge from "../components/StatusBadge";
-import { buildEventPayload } from "../lib/eventPayload";
+} from "../../api/eventApi";
+import StatusBadge from "../dashboard/utils/StatusBadge";
+import { buildEventPayload } from "../../lib/eventPayload";
 import { MoveLeft } from "lucide-react";
 
 const TAB_LINKS = [
@@ -291,7 +291,9 @@ export default function EventDetails() {
         prev
           ? {
               ...prev,
-              judges: (prev.judges ?? []).filter((judge) => judge.id !== judgeId),
+              judges: (prev.judges ?? []).filter(
+                (judge) => judge.id !== judgeId,
+              ),
             }
           : prev,
       );

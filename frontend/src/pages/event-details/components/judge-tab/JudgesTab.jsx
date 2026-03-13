@@ -1,7 +1,7 @@
-import ConfirmDeleteModal from "../ConfirmDeleteModal";
-import JudgeLinkModal from "./JudgeLinkModal";
-import { useJudgeForm } from "../../hooks/useJudgeForm";
-import { useJudgeLinkModal } from "../../hooks/useJudgeLinkModal";
+import ConfirmDeleteModal from "../../../../shared/components/ConfirmDeleteModal";
+import JudgeLinkModal from "./components/JudgeLinkModal";
+import { useJudgeForm } from "./hooks/useJudgeForm";
+import { useJudgeLinkModal } from "./hooks/useJudgeLinkModal";
 
 export default function JudgesTab({ showLinkGeneration }) {
   const {

@@ -22,7 +22,9 @@ function ConfirmDeleteModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold">{title}</h3>
-            {name ? <p className="text-sm text-base-content/70">{name}</p> : null}
+            {name ? (
+              <p className="text-sm text-base-content/70">{name}</p>
+            ) : null}
           </div>
         </div>
 

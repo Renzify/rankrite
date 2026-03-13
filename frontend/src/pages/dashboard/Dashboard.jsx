@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Filter } from "lucide-react";
-import { DropdownMenu } from "../helpers/Dropdown";
+import { DropdownMenu } from "../../layouts/helpers/Dropdown";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
-import StatusBadge from "../components/StatusBadge";
-import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-import { useEventStore } from "../stores/eventStore";
+import StatusBadge from "./utils/StatusBadge";
+import ConfirmDeleteModal from "../../shared/components/ConfirmDeleteModal";
+import { useEventStore } from "../../stores/eventStore";
 import { useShallow } from "zustand/react/shallow";
 
 const STATUS_OPTIONS = [
@@ -338,4 +338,3 @@ function EventList({
     </section>
   );
 }
-

@@ -36,8 +36,8 @@ export function useJudgeForm() {
 
   const canSubmitJudge = Boolean(
     formData.fullName.trim() &&
-      formData.judgeType &&
-      Number.parseInt(formData.judgeNumber, 10) > 0,
+    formData.judgeType &&
+    Number.parseInt(formData.judgeNumber, 10) > 0,
   );
 
   const resetForm = () => {
