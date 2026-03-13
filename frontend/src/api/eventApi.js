@@ -1,4 +1,4 @@
-import { axiosInstance } from "../lib/axios";
+import { axiosInstance } from "../shared/lib/axios";
 
 export const createEventDraft = async (payload) => {
   const res = await axiosInstance.post("/events/draft", payload);
@@ -60,7 +60,10 @@ export const deleteEventJudge = async (eventId, judgeId) => {
 };
 
 export const submitJudgeScore = async (eventId, payload) => {
-  const res = await axiosInstance.post(`/events/${eventId}/judge-scores`, payload);
+  const res = await axiosInstance.post(
+    `/events/${eventId}/judge-scores`,
+    payload,
+  );
   return res.data;
 };
 
@@ -73,15 +76,14 @@ export const lockJudgeScore = async (eventId, payload) => {
 };
 
 export const addEventContestant = async (eventId, payload) => {
-  const res = await axiosInstance.post(`/events/${eventId}/contestants`, payload);
+  const res = await axiosInstance.post(
+    `/events/${eventId}/contestants`,
+    payload,
+  );
   return res.data;
 };
 
-export const updateEventContestant = async (
-  eventId,
-  contestantId,
-  payload,
-) => {
+export const updateEventContestant = async (eventId, contestantId, payload) => {
   const res = await axiosInstance.put(
     `/events/${eventId}/contestants/${contestantId}`,
     payload,

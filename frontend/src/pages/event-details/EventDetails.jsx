@@ -14,7 +14,7 @@ import {
   updateEventContestant,
 } from "../../api/eventApi";
 import StatusBadge from "../../shared/utils/StatusBadge";
-import { buildEventPayload } from "../../lib/eventPayload";
+import { buildEventPayload } from "../../shared/lib/eventPayload";
 import { MoveLeft } from "lucide-react";
 
 const TAB_LINKS = [
