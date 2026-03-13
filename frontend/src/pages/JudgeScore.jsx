@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useSearchParams } from "react-router";
 import { User } from "lucide-react";
-import { getEventDetails } from "../api/eventApi";
+import { getEventDetails, submitJudgeScore } from "../api/eventApi";
 
 const SCORE_RANGE = Array.from({ length: 10 }, (_, index) => index + 1);
 const DEFAULT_SCORE_VALUE = "5.00";
@@ -78,15 +78,16 @@ function JudgeScore() {
   const [decimalValue, setDecimalValue] = useState("");
   const [currentJudge, setCurrentJudge] = useState(fallbackJudge);
   const [contestants, setContestants] = useState([]);
-  const [eventTitle, setEventTitle] = useState(
+  const [_eventTitle, setEventTitle] = useState(
     eventTitleParam || "Judge Scoring",
   );
-  const [sportLabel, setSportLabel] = useState(sportParam);
+  const [_sportLabel, setSportLabel] = useState(sportParam);
   const [isLoading, setIsLoading] = useState(Boolean(eventId));
   const [loadError, setLoadError] = useState("");
   const [pageNotice, setPageNotice] = useState("");
   const [deductionValues, setDeductionValues] = useState(["", "", ""]);
   const [penaltyValue, setPenaltyValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -312,10 +313,15 @@ function JudgeScore() {
         ? parsedPenaltyValue !== null
         : true;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedContestantData) {
       toast.error("Select a contestant first.");
+      return;
+    }
+
+    if (!currentJudge.id) {
+      toast.error("This judge link is not assigned to a saved judge.");
       return;
     }
 
@@ -329,33 +335,23 @@ function JudgeScore() {
       return;
     }
 
-    const payload = {
-      eventId,
-      judgeId: currentJudge.id,
-      judgeName: currentJudge.name,
-      judgeType: currentJudge.specialization,
-      contestantId: selectedContestantData.id,
-      contestantName: selectedContestantData.name,
-      score: activeScoreValue,
-      eventTitle,
-      sport: sportLabel,
-      ...(isMedianDeductionJudge
-        ? {
-            deductions: parsedDeductionValues.map((value) => formatScore(value)),
-            medianDeduction: formatScore(medianDeduction),
-          }
-        : {}),
-      ...(isPenaltyJudge
-        ? {
-            penalty: formatScore(parsedPenaltyValue),
-          }
-        : {}),
-    };
+    try {
+      setIsSubmitting(true);
+      await submitJudgeScore(eventId, {
+        judgeId: currentJudge.id,
+        contestantId: selectedContestantData.id,
+        score: activeScoreValue,
+      });
 
-    console.log(payload);
-    toast.success(
-      isPenaltyJudge ? "Penalty captured locally." : "Score captured locally.",
-    );
+      toast.success(isPenaltyJudge ? "Penalty submitted." : "Score submitted.");
+    } catch (error) {
+      console.error(error);
+      const message =
+        error?.response?.data?.message || "Failed to submit result.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const difficultyScorePanel = (
@@ -720,11 +716,13 @@ function JudgeScore() {
               disabled={
                 isLoading ||
                 Boolean(loadError) ||
+                isSubmitting ||
+                !currentJudge.id ||
                 !selectedContestant ||
                 !canSubmitCurrentEntry
               }
             >
-              Submit Result
+              {isSubmitting ? "Submitting..." : "Submit Result"}
             </button>
           </div>
 

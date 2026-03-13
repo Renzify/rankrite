@@ -315,6 +315,14 @@ export default function JudgesTab({ showLinkGeneration }) {
                   <p className="text-center text-xs text-base-content/60">
                     Scan this QR to open the judge scoring page.
                   </p>
+                  <a
+                    href={activeJudgeLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-neutral btn-sm"
+                  >
+                    Open Link
+                  </a>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -332,10 +340,18 @@ export default function JudgesTab({ showLinkGeneration }) {
                     />
                   </label>
 
-                  <div className="mt-4 flex items-center gap-3">
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <a
+                      href={activeJudgeLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-neutral btn-sm"
+                    >
+                      Open Link
+                    </a>
                     <button
                       type="button"
-                      className="btn btn-neutral btn-sm"
+                      className="btn btn-outline btn-sm"
                       onClick={handleCopyLink}
                     >
                       Copy Link
@@ -355,3 +371,4 @@ export default function JudgesTab({ showLinkGeneration }) {
     </>
   );
 }
+
