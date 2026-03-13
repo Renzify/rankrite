@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useParams, useNavigate } from "react-router";
 import toast from "react-hot-toast";
-import { useDynamicTemplate } from "../../hooks/useDynamicTemplate";
+import { useDynamicTemplate } from "../dynamic-template-form/hooks/useDynamicTemplate";
 import {
   addEventContestant,
   addEventJudge,

@@ -2,7 +2,7 @@ import { User } from "lucide-react";
 import DeductionScorePanel from "./components/DeductionScorePanel.jsx";
 import DifficultyScorePanel from "./components/DifficultyScorePanel.jsx";
 import PenaltyScorePanel from "./components/PenaltyScorePanel.jsx";
-import { useJudgeScoring } from "../../hooks/useJudgeScoring.js";
+import { useJudgeScoring } from "./hooks/useJudgeScoring.js";
 
 function JudgeScore() {
   const {

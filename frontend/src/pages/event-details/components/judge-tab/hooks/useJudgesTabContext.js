@@ -1,5 +1,5 @@
 import { useOutletContext } from "react-router";
-import { useTemplateStore } from "../stores/templateStore";
+import { useTemplateStore } from "../../../../../stores/templateStore";
 
 export function useJudgesTabContext() {
   const outletContext = useOutletContext() ?? {};

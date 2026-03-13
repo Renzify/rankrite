@@ -8,7 +8,7 @@ import {
   normalizeContestantGender,
   parseContestantCsv,
   validateContestantCsvFile,
-} from "../lib/contestantCsv";
+} from "../../../../../lib/contestantCsv";
 
 const EMPTY_FORM_DATA = {
   fullName: "",
@@ -165,7 +165,9 @@ export function useContestantsTabHandlers({
       if (onImportContestants) {
         const createdContestants = await onImportContestants(importedRows);
         resetFormData();
-        setImportMessage(`Imported ${createdContestants.length} contestant(s).`);
+        setImportMessage(
+          `Imported ${createdContestants.length} contestant(s).`,
+        );
       } else {
         resetFormData();
         setContestants(importedRows);
@@ -174,7 +176,10 @@ export function useContestantsTabHandlers({
 
       setImportMessageTone("success");
     } catch (error) {
-      if (error instanceof Error && error.message === "CSV_INVALID_GENDER_VALUES") {
+      if (
+        error instanceof Error &&
+        error.message === "CSV_INVALID_GENDER_VALUES"
+      ) {
         const rowNumbers = Array.isArray(error.rowNumbers)
           ? error.rowNumbers.join(", ")
           : "";
@@ -225,9 +230,7 @@ export function useContestantsTabHandlers({
     setImportMessageTone("info");
   };
 
-  const submitButtonLabel = editingContestantId
-    ? "Save Changes"
-    : "Submit";
+  const submitButtonLabel = editingContestantId ? "Save Changes" : "Submit";
 
   return {
     fileInputRef,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useOutletContext } from "react-router";
-import { getEventJudgeScores, lockJudgeScore } from "../../api/eventApi";
+import { getEventJudgeScores, lockJudgeScore } from "../../../api/eventApi";
 
 function createEmptyScoreEntry() {
   return {

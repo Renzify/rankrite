@@ -1,6 +1,9 @@
 import { useEffect, useMemo } from "react";
-import { getTemplateByName, getTemplateCatalog } from "../api/templateApi";
-import { useTemplateStore } from "../stores/templateStore";
+import {
+  getTemplateByName,
+  getTemplateCatalog,
+} from "../../../api/templateApi";
+import { useTemplateStore } from "../../../stores/templateStore";
 
 function normalizeEventTypeLabel(value) {
   if (!value) return "";
