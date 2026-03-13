@@ -1,4 +1,4 @@
-import { useTemplateStore } from "../stores/templateStore";
+import { useTemplateStore } from "../../../stores/templateStore";
 
 const TABS = [
   { key: "details", label: "Event Details" },

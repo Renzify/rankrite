@@ -3,15 +3,15 @@ import { Toaster } from "react-hot-toast";
 
 import Header from "./layouts/Header";
 import Footer from "./layouts/Footer";
-import DynamicTemplateForm from "./pages/DynamicTemplateForm";
+import DynamicTemplateForm from "./pages/dynamic-template-form/DynamicTemplateForm";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./auth/Auth";
 import SignupCard from "./auth/components/SignupCard";
 import LoginCard from "./auth/components/LoginCard";
 import ForgotPasswordCard from "./auth/components/ForgotPasswordCard";
-import EventDetails from "./pages/EventDetails";
+import EventDetails from "./pages/event-details/EventDetails";
 import JudgeScore from "./pages/JudgeScore";
-import ActivityLog from "./pages/ActivityLog";
+import ActivityLog from "./pages/activity-log/ActivityLog";
 import EventInfoTab from "./components/event-details/EventInfoTab";
 import ScoringTab from "./components/event-details/ScoringTab";
 import DisplayControlTab from "./components/event-details/DisplayControlTab";
