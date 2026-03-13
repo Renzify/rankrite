@@ -7,7 +7,6 @@ import { useTemplateStore } from "../stores/templateStore";
 import { useEventStore } from "../stores/eventStore";
 import EventTypeSportSelect from "../components/EventTypeSportSelect";
 import TemplateFields from "../components/TemplateFields";
-import CurrentValuesSidebar from "../components/CurrentValuesSidebar";
 import TabNavigation from "../components/TabNavigation";
 import JudgesTab from "../components/event-details/JudgesTab";
 import ContestantsTab from "../components/event-details/ContestantsTab";
@@ -71,6 +70,7 @@ function DynamicTemplateForm() {
   };
 
   const canCreateEvent = judges.length > 0 && contestants.length > 0;
+  const isSetupDetailsTab = currentTab === "details";
 
   const handleSaveDraft = async () => {
     try {
@@ -129,12 +129,10 @@ function DynamicTemplateForm() {
 
       <TabNavigation isFormComplete={isFormComplete} />
 
-      <div
-        className={`grid gap-5 ${currentTab === "details" ? "" : "lg:grid-cols-[1.7fr_1fr]"}`}
-      >
-        <section className="app-surface-soft">
+      <div>
+        <section className={isSetupDetailsTab ? "app-surface-soft" : "app-surface"}>
           <div className="app-section space-y-5">
-            {currentTab === "details" && (
+            {isSetupDetailsTab && (
               <h2 className="text-xl font-semibold tracking-tight">
                 Template Selection
               </h2>
@@ -146,7 +144,7 @@ function DynamicTemplateForm() {
               </div>
             ) : null}
 
-            {currentTab === "details" && (
+            {isSetupDetailsTab && (
               <>
                 <EventTypeSportSelect
                   selectedEventType={selectedEventType}
@@ -217,24 +215,10 @@ function DynamicTemplateForm() {
               </>
             )}
 
-            {currentTab === "judges" && <JudgesTab />}
+            {currentTab === "judges" && <JudgesTab showLinkGeneration={false} />}
             {currentTab === "contestants" && <ContestantsTab />}
           </div>
         </section>
-
-        {currentTab !== "details" && (
-          <CurrentValuesSidebar
-            selectedEventType={selectedEventType}
-            selectedSport={selectedSport}
-            eventTitle={eventTitle}
-            template={template}
-            visibleFields={visibleFields}
-            formValues={formValues}
-            currentTab={currentTab}
-            judges={judges}
-            contestants={contestants}
-          />
-        )}
       </div>
 
       {(currentTab === "judges" || currentTab === "contestants") && (
