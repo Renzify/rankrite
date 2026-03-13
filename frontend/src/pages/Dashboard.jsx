@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Filter } from "lucide-react";
+import { DropdownMenu } from "../helpers/Dropdown";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import StatusBadge from "../components/StatusBadge";
@@ -189,7 +191,21 @@ function Statistics({ events }) {
   );
 }
 
-function AddEvent({ statusFilter, setStatusFilter, statusOptions, onAddEvent }) {
+function AddEvent({
+  statusFilter,
+  setStatusFilter,
+  statusOptions,
+  onAddEvent,
+}) {
+  const filterDropdownRef = useRef(null);
+
+  const handleFilterChange = (status) => {
+    setStatusFilter(status);
+    filterDropdownRef.current?.close();
+  };
+
+  const currentLabel = statusFilter;
+
   return (
     <section className="app-surface app-section">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -201,20 +217,34 @@ function AddEvent({ statusFilter, setStatusFilter, statusOptions, onAddEvent }) 
           Add Event
         </button>
 
-        <label className="form-control w-full sm:w-56">
-          <span className="sr-only">Filter by status</span>
-          <select
-            className="select select-bordered w-full"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>
+        <DropdownMenu
+          ref={filterDropdownRef}
+          menuClassName="menu mt-2 w-48 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg"
+          trigger={({ toggle, isOpen }) => (
+            <button
+              type="button"
+              className={`btn btn-outline w-full justify-between gap-2 sm:w-auto ${isOpen ? "btn-active" : ""}`}
+              onClick={toggle}
+            >
+              <Filter size={18} className="text-base-content/60" />
+              <span className="whitespace-nowrap font-medium text-xs">
+                {currentLabel}
+              </span>
+            </button>
+          )}
+        >
+          {statusOptions.map((status) => (
+            <li key={status}>
+              <button
+                type="button"
+                onClick={() => handleFilterChange(status)}
+                className={`rounded-md w-full text-left ${statusFilter === status ? "bg-primary text-primary-content" : ""}`}
+              >
                 {status}
-              </option>
-            ))}
-          </select>
-        </label>
+              </button>
+            </li>
+          ))}
+        </DropdownMenu>
       </div>
     </section>
   );
@@ -256,7 +286,10 @@ function EventList({
             </tr>
           ) : events.length ? (
             events.map((event, index) => (
-              <tr key={event.id} className="transition-colors hover:bg-base-200">
+              <tr
+                key={event.id}
+                className="transition-colors hover:bg-base-200"
+              >
                 <th>{index + 1}</th>
                 <td>{event.name}</td>
                 <td className="px-6">
