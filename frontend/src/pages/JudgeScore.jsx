@@ -61,6 +61,67 @@ function formatScore(value) {
   return value.toFixed(2);
 }
 
+function buildSubmissionsByContestantId(judgeScores, judgeId) {
+  return Object.fromEntries(
+    judgeScores
+      .filter(
+        (entry) =>
+          entry.rawScore !== null &&
+          entry.contestantId &&
+          entry.judgeId === judgeId,
+      )
+      .map((entry) => [
+        entry.contestantId,
+        {
+          contestantId: entry.contestantId,
+          contestantName: entry.contestantName || "Saved contestant",
+          rawScore: Number(entry.rawScore),
+          locked: Boolean(entry.locked),
+        },
+      ]),
+  );
+}
+
+function hasSameSubmissionEntry(leftEntry, rightEntry) {
+  if (!leftEntry || !rightEntry) {
+    return leftEntry === rightEntry;
+  }
+
+  return (
+    leftEntry.contestantId === rightEntry.contestantId &&
+    leftEntry.contestantName === rightEntry.contestantName &&
+    leftEntry.rawScore === rightEntry.rawScore &&
+    Boolean(leftEntry.locked) === Boolean(rightEntry.locked)
+  );
+}
+
+function mergeSubmissionMaps(currentMap, nextMap) {
+  const currentKeys = Object.keys(currentMap);
+  const nextKeys = Object.keys(nextMap);
+
+  if (!currentKeys.length && !nextKeys.length) {
+    return currentMap;
+  }
+
+  let changed = currentKeys.length !== nextKeys.length;
+  const mergedMap = {};
+
+  for (const contestantId of nextKeys) {
+    const currentEntry = currentMap[contestantId];
+    const nextEntry = nextMap[contestantId];
+
+    if (hasSameSubmissionEntry(currentEntry, nextEntry)) {
+      mergedMap[contestantId] = currentEntry;
+      continue;
+    }
+
+    mergedMap[contestantId] = nextEntry;
+    changed = true;
+  }
+
+  return changed ? mergedMap : currentMap;
+}
+
 function resetScoreInputs({
   setScoreValue,
   setDecimalValue,
@@ -184,22 +245,9 @@ function JudgeScore() {
           });
           if (!isMounted) return;
 
-          const nextSubmissionsByContestantId = Object.fromEntries(
-            judgeScores
-              .filter(
-                (entry) =>
-                  entry.rawScore !== null &&
-                  entry.contestantId &&
-                  entry.judgeId === nextJudge.id,
-              )
-              .map((entry) => [
-                entry.contestantId,
-                {
-                  contestantId: entry.contestantId,
-                  contestantName: entry.contestantName || "Saved contestant",
-                  rawScore: Number(entry.rawScore),
-                },
-              ]),
+          const nextSubmissionsByContestantId = buildSubmissionsByContestantId(
+            judgeScores,
+            nextJudge.id,
           );
 
           setSubmissionsByContestantId(nextSubmissionsByContestantId);
@@ -255,7 +303,56 @@ function JudgeScore() {
   ]);
 
   useEffect(() => {
-    if (!selectedContestant) {
+    if (isLoading || loadError || !eventId || !currentJudge.id) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const syncLockedSubmissions = async () => {
+      try {
+        const judgeScores = await getEventJudgeScores(eventId, {
+          judgeId: currentJudge.id,
+        });
+        if (!isMounted) return;
+
+        const nextSubmissionMap = buildSubmissionsByContestantId(
+          judgeScores,
+          currentJudge.id,
+        );
+
+        setSubmissionsByContestantId((prev) =>
+          mergeSubmissionMaps(prev, nextSubmissionMap),
+        );
+      } catch (error) {
+        console.error("Failed to refresh judge submissions:", error);
+      }
+    };
+
+    syncLockedSubmissions();
+
+    const pollId = window.setInterval(() => {
+      syncLockedSubmissions();
+    }, 3000);
+
+    const handleWindowFocus = () => {
+      syncLockedSubmissions();
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(pollId);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [currentJudge.id, eventId, isLoading, loadError]);
+
+  const syncContestantSubmissionState = (
+    contestantId,
+    submissionMap = submissionsByContestantId,
+  ) => {
+    if (!contestantId) {
       setSubmittedEntry(null);
       setIsEditingSubmission(true);
       resetScoreInputs({
@@ -267,7 +364,7 @@ function JudgeScore() {
       return;
     }
 
-    const nextSubmittedEntry = submissionsByContestantId[selectedContestant] ?? null;
+    const nextSubmittedEntry = submissionMap[contestantId] ?? null;
 
     setSubmittedEntry(nextSubmittedEntry);
 
@@ -289,7 +386,48 @@ function JudgeScore() {
       setPenaltyValue,
     });
     setIsEditingSubmission(false);
-  }, [selectedContestant, submissionsByContestantId, currentJudge.specialization]);
+  };
+
+  const selectedContestantSubmission = selectedContestant
+    ? submissionsByContestantId[selectedContestant] ?? null
+    : null;
+
+  useEffect(() => {
+    if (!selectedContestant) {
+      setSubmittedEntry(null);
+      setIsEditingSubmission(true);
+      resetScoreInputs({
+        setScoreValue,
+        setDecimalValue,
+        setDeductionValues,
+        setPenaltyValue,
+      });
+      return;
+    }
+
+    const nextSubmittedEntry = selectedContestantSubmission;
+
+    setSubmittedEntry(nextSubmittedEntry);
+
+    if (!nextSubmittedEntry) {
+      setIsEditingSubmission(true);
+      resetScoreInputs({
+        setScoreValue,
+        setDecimalValue,
+        setDeductionValues,
+        setPenaltyValue,
+      });
+      return;
+    }
+
+    applyStoredScoreToInputs(nextSubmittedEntry.rawScore, currentJudge.specialization, {
+      setScoreValue,
+      setDecimalValue,
+      setDeductionValues,
+      setPenaltyValue,
+    });
+    setIsEditingSubmission(false);
+  }, [selectedContestant, selectedContestantSubmission, currentJudge.specialization]);
 
   const selectedContestantData =
     contestants.find((contestant) => contestant.id === selectedContestant) ??
@@ -432,7 +570,9 @@ function JudgeScore() {
         ? parsedPenaltyValue !== null
         : true;
   const hasSavedSubmission = Boolean(submittedEntry);
-  const isEntryLocked = hasSavedSubmission && !isEditingSubmission;
+  const isSubmissionLocked = Boolean(submittedEntry?.locked);
+  const isViewingSavedSubmission = hasSavedSubmission && !isEditingSubmission;
+  const isEntryLocked = isSubmissionLocked || isViewingSavedSubmission;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -443,6 +583,11 @@ function JudgeScore() {
 
     if (!currentJudge.id) {
       toast.error("This judge link is not assigned to a saved judge.");
+      return;
+    }
+
+    if (isSubmissionLocked) {
+      toast.error("This submission is locked and can no longer be edited.");
       return;
     }
 
@@ -458,16 +603,18 @@ function JudgeScore() {
 
     try {
       setIsSubmitting(true);
-      await submitJudgeScore(eventId, {
+      const submittedScore = await submitJudgeScore(eventId, {
         judgeId: currentJudge.id,
         contestantId: selectedContestantData.id,
         score: activeScoreValue,
       });
 
       const nextSubmittedEntry = {
-        contestantId: selectedContestantData.id,
-        contestantName: selectedContestantData.name,
-        rawScore: Number.parseFloat(activeScoreValue),
+        contestantId: submittedScore?.contestantId ?? selectedContestantData.id,
+        contestantName:
+          submittedScore?.contestantName ?? selectedContestantData.name,
+        rawScore: Number(submittedScore?.rawScore ?? activeScoreValue),
+        locked: Boolean(submittedScore?.locked),
       };
 
       setSubmissionsByContestantId((prev) => ({
@@ -479,6 +626,31 @@ function JudgeScore() {
       toast.success(isPenaltyJudge ? "Penalty submitted." : "Score submitted.");
     } catch (error) {
       console.error(error);
+
+      if (error?.response?.status === 409) {
+        setSubmissionsByContestantId((prev) => {
+          const savedEntry = prev[selectedContestantData.id];
+          if (!savedEntry) return prev;
+
+          return {
+            ...prev,
+            [selectedContestantData.id]: {
+              ...savedEntry,
+              locked: true,
+            },
+          };
+        });
+        setSubmittedEntry((prev) =>
+          prev
+            ? {
+                ...prev,
+                locked: true,
+              }
+            : prev,
+        );
+        setIsEditingSubmission(false);
+      }
+
       const message =
         error?.response?.data?.message || "Failed to submit result.";
       toast.error(message);
@@ -490,7 +662,7 @@ function JudgeScore() {
   const handleEditSubmission = (event) => {
     event?.preventDefault();
     event?.stopPropagation();
-    if (!submittedEntry) return;
+    if (!submittedEntry || submittedEntry.locked) return;
     setIsEditingSubmission(true);
   };
 
@@ -506,6 +678,12 @@ function JudgeScore() {
     });
     setSubmittedEntry(savedEntry);
     setIsEditingSubmission(false);
+  };
+
+  const handleContestantChange = (event) => {
+    const nextContestantId = event.target.value;
+    setSelectedContestant(nextContestantId);
+    syncContestantSubmissionState(nextContestantId);
   };
 
   const difficultyScorePanel = (
@@ -792,7 +970,7 @@ function JudgeScore() {
             <select
               className="select select-bordered w-full"
               value={selectedContestant}
-              onChange={(e) => setSelectedContestant(e.target.value)}
+              onChange={handleContestantChange}
               disabled={
                 isLoading ||
                 Boolean(loadError) ||
@@ -876,7 +1054,15 @@ function JudgeScore() {
 
           <div className="mt-4 flex justify-center">
             <div className="flex w-full max-w-xl flex-col gap-3 sm:flex-row">
-              {isEntryLocked ? (
+              {isSubmissionLocked ? (
+                <button
+                  type="button"
+                  className="btn btn-primary w-full flex-1 text-lg"
+                  disabled
+                >
+                  Submission Locked
+                </button>
+              ) : hasSavedSubmission && !isEditingSubmission ? (
                 <button
                   type="button"
                   className="btn btn-primary w-full flex-1 text-lg"
@@ -907,7 +1093,7 @@ function JudgeScore() {
                 </button>
               )}
 
-              {hasSavedSubmission && isEditingSubmission ? (
+              {hasSavedSubmission && isEditingSubmission && !isSubmissionLocked ? (
                 <button
                   type="button"
                   className="btn btn-ghost w-full sm:w-auto"

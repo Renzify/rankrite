@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useOutletContext } from "react-router";
-import { getEventJudgeScores } from "../../api/eventApi";
+import { getEventJudgeScores, lockJudgeScore } from "../../api/eventApi";
 
 function createEmptyScoreEntry() {
   return {
@@ -26,6 +27,7 @@ export default function ScoringTab() {
     Boolean(eventId),
   );
   const [submittedScoresError, setSubmittedScoresError] = useState("");
+  const [lockingJudgeId, setLockingJudgeId] = useState("");
 
   const selectedContestant =
     contestants.find((contestant) => contestant.id === selectedContestantId) ??
@@ -146,9 +148,11 @@ export default function ScoringTab() {
             const nextContestantName =
               latestEntry?.contestantName ?? selectedContestant?.fullName ?? "";
             const nextSubmittedAt = latestEntry?.submittedAt ?? "";
+            const nextLocked = Boolean(latestEntry?.locked);
 
             if (
               current.value !== nextValue ||
+              current.locked !== nextLocked ||
               current.contestantId !== nextContestantId ||
               current.contestantName !== nextContestantName ||
               current.submittedAt !== nextSubmittedAt
@@ -156,6 +160,7 @@ export default function ScoringTab() {
               next[judge.id] = {
                 ...current,
                 value: nextValue,
+                locked: nextLocked,
                 contestantId: nextContestantId,
                 contestantName: nextContestantName,
                 submittedAt: nextSubmittedAt,
@@ -209,22 +214,51 @@ export default function ScoringTab() {
   const scoringLocked =
     judges.length > 0 && judges.every((judge) => judgeScores[judge.id]?.locked);
 
-  const handleJudgeLock = (judgeId) => {
-    if (scoringLocked) return;
+  const handleJudgeLock = async (judgeId) => {
+    if (scoringLocked || !eventId || !selectedContestantId) return;
 
-    setJudgeScores((prev) => {
-      const current = prev[judgeId] ?? createEmptyScoreEntry();
-      const scoreNumber = Number.parseFloat(current.value);
-      if (!Number.isFinite(scoreNumber) || current.locked) return prev;
+    const current = judgeScores[judgeId] ?? createEmptyScoreEntry();
+    const scoreNumber = Number.parseFloat(current.value);
+    if (!Number.isFinite(scoreNumber) || current.locked) return;
 
-      return {
-        ...prev,
-        [judgeId]: {
-          ...current,
-          locked: true,
-        },
-      };
-    });
+    try {
+      setLockingJudgeId(judgeId);
+
+      const lockedEntry = await lockJudgeScore(eventId, {
+        judgeId,
+        contestantId: selectedContestantId,
+      });
+
+      setJudgeScores((prev) => {
+        const previousEntry = prev[judgeId] ?? createEmptyScoreEntry();
+
+        return {
+          ...prev,
+          [judgeId]: {
+            ...previousEntry,
+            value: formatEnteredValue(lockedEntry?.rawScore ?? previousEntry.value),
+            locked: true,
+            contestantId: lockedEntry?.contestantId ?? selectedContestantId,
+            contestantName:
+              lockedEntry?.contestantName ??
+              selectedContestant?.fullName ??
+              previousEntry.contestantName,
+            submittedAt: lockedEntry?.submittedAt ?? previousEntry.submittedAt,
+          },
+        };
+      });
+
+      setSubmittedScoresError("");
+      toast.success("Judge submission locked.");
+    } catch (error) {
+      console.error("Failed to lock judge score:", error);
+      const message =
+        error?.response?.data?.message || "Failed to lock judge submission.";
+      setSubmittedScoresError(message);
+      toast.error(message);
+    } finally {
+      setLockingJudgeId("");
+    }
   };
 
   const handleContestantSelect = (contestantId) => {
@@ -280,7 +314,7 @@ export default function ScoringTab() {
               <th>Judge Name</th>
               <th>Entered Value</th>
               <th>Status</th>
-              <th>Confirm</th>
+              <th>Lock</th>
             </tr>
           </thead>
           <tbody>
@@ -332,10 +366,11 @@ export default function ScoringTab() {
                           !selectedContestantId ||
                           !hasValidScore ||
                           scoreEntry.locked ||
-                          scoringLocked
+                          scoringLocked ||
+                          lockingJudgeId === judge.id
                         }
                       >
-                        Confirm
+                        {lockingJudgeId === judge.id ? "Locking..." : "Lock"}
                       </button>
                     </td>
                   </tr>

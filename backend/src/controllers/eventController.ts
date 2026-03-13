@@ -12,6 +12,8 @@ import {
   getEventDetails,
   getEventJudgeScores,
   listEvents,
+  lockJudgeScore,
+  type LockJudgeScoreInput,
   submitJudgeScore,
   type SubmitJudgeScoreInput,
   updateEvent,
@@ -168,9 +170,61 @@ export async function submitJudgeScoreController(req: Request, res: Response) {
       });
     }
 
+    if (error instanceof Error && error.message === "JUDGE_SCORE_LOCKED") {
+      return res.status(409).json({
+        message: "This judge submission is locked and can no longer be edited",
+      });
+    }
+
     console.error(error);
     res.status(500).json({
       message: "Failed to submit judge score",
+    });
+  }
+}
+
+export async function lockJudgeScoreController(req: Request, res: Response) {
+  try {
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const payload = req.body as LockJudgeScoreInput;
+    const lockedScore = await lockJudgeScore(eventId, payload);
+
+    if (!lockedScore) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(200).json(lockedScore);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_JUDGE_SCORE_LOCK_INPUT") {
+      return res.status(400).json({
+        message: "Judge score lock requires an assigned judge and contestant",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_JUDGE_SCORE_CONTEXT") {
+      return res.status(400).json({
+        message: "Judge or contestant is not assigned to this event",
+      });
+    }
+
+    if (error instanceof Error && error.message === "JUDGE_SCORE_NOT_FOUND") {
+      return res.status(404).json({
+        message: "Judge submission not found for this contestant",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to lock judge score",
     });
   }
 }

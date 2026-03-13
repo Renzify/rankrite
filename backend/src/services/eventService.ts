@@ -79,11 +79,17 @@ export type SubmitJudgeScoreInput = {
   score: number | string;
 };
 
+export type LockJudgeScoreInput = {
+  judgeId: string;
+  contestantId: string;
+};
+
 export type EventJudgeScoreRecord = {
   judgeId: string;
   contestantId: string | null;
   contestantName: string | null;
   rawScore: number | null;
+  locked: boolean;
   submittedAt: Date | null;
 };
 
@@ -774,6 +780,10 @@ export async function submitJudgeScore(
       orderBy: [desc(judgeScore.createdAt)],
     });
 
+    if (existingJudgeScore?.isLocked) {
+      throw new Error("JUDGE_SCORE_LOCKED");
+    }
+
     if (existingJudgeScore) {
       await tx
         .update(judgeScore)
@@ -787,6 +797,7 @@ export async function submitJudgeScore(
         scoreSheetId: activeScoreSheet.id,
         judgeAssignmentId: judgeAssignment.id,
         rawScore,
+        isLocked: false,
         createdAt: submittedAt,
       });
     }
@@ -796,7 +807,103 @@ export async function submitJudgeScore(
       contestantId: contestantRecord.contestantId,
       contestantName: contestantRecord.contestantName,
       rawScore,
+      locked: false,
       submittedAt,
+    };
+  });
+}
+
+export async function lockJudgeScore(
+  eventId: string,
+  input: LockJudgeScoreInput,
+): Promise<EventJudgeScoreRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedJudgeId = input.judgeId?.trim();
+  const normalizedContestantId = input.contestantId?.trim();
+
+  if (!normalizedEventId || !normalizedJudgeId || !normalizedContestantId) {
+    throw new Error("INVALID_JUDGE_SCORE_LOCK_INPUT");
+  }
+
+  const existingEvent = await db.query.event.findFirst({
+    where: eq(event.id, normalizedEventId),
+  });
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  const [judgeAssignment, contestantRecord] = await Promise.all([
+    db.query.eventJudgeAssignment.findFirst({
+      where: and(
+        eq(eventJudgeAssignment.eventId, normalizedEventId),
+        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+      ),
+    }),
+    db
+      .select({
+        contestantId: contestant.id,
+        contestantName: contestant.fullName,
+      })
+      .from(eventContestant)
+      .innerJoin(contestant, eq(eventContestant.contestantId, contestant.id))
+      .where(
+        and(
+          eq(eventContestant.eventId, normalizedEventId),
+          eq(eventContestant.contestantId, normalizedContestantId),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+  ]);
+
+  if (!judgeAssignment || !contestantRecord) {
+    throw new Error("INVALID_JUDGE_SCORE_CONTEXT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingScoreSheet = await tx.query.scoreSheet.findFirst({
+      where: and(
+        eq(scoreSheet.eventId, normalizedEventId),
+        eq(scoreSheet.contestantId, normalizedContestantId),
+        judgeAssignment.eventPhaseId
+          ? eq(scoreSheet.eventPhaseId, judgeAssignment.eventPhaseId)
+          : isNull(scoreSheet.eventPhaseId),
+      ),
+    });
+
+    if (!existingScoreSheet) {
+      throw new Error("JUDGE_SCORE_NOT_FOUND");
+    }
+
+    const existingJudgeScore = await tx.query.judgeScore.findFirst({
+      where: and(
+        eq(judgeScore.scoreSheetId, existingScoreSheet.id),
+        eq(judgeScore.judgeAssignmentId, judgeAssignment.id),
+      ),
+      orderBy: [desc(judgeScore.createdAt)],
+    });
+
+    if (!existingJudgeScore) {
+      throw new Error("JUDGE_SCORE_NOT_FOUND");
+    }
+
+    if (!existingJudgeScore.isLocked) {
+      await tx
+        .update(judgeScore)
+        .set({
+          isLocked: true,
+        })
+        .where(eq(judgeScore.id, existingJudgeScore.id));
+    }
+
+    return {
+      judgeId: normalizedJudgeId,
+      contestantId: contestantRecord.contestantId,
+      contestantName: contestantRecord.contestantName,
+      rawScore: existingJudgeScore.rawScore,
+      locked: true,
+      submittedAt: existingJudgeScore.createdAt,
     };
   });
 }
@@ -844,6 +951,7 @@ export async function getEventJudgeScores(
         contestantId: scoreSheet.contestantId,
         contestantName: contestant.fullName,
         rawScore: judgeScore.rawScore,
+        locked: judgeScore.isLocked,
         submittedAt: judgeScore.createdAt,
       })
       .from(judgeScore)
@@ -894,6 +1002,7 @@ export async function getEventJudgeScores(
       contestantId: scoreRow.contestantId,
       contestantName: scoreRow.contestantName,
       rawScore: scoreRow.rawScore,
+      locked: scoreRow.locked,
       submittedAt: scoreRow.submittedAt,
     }));
   }
@@ -914,6 +1023,7 @@ export async function getEventJudgeScores(
       contestantId: latestScore?.contestantId ?? null,
       contestantName: latestScore?.contestantName ?? null,
       rawScore: latestScore?.rawScore ?? null,
+      locked: latestScore?.locked ?? false,
       submittedAt: latestScore?.submittedAt ?? null,
     };
   });
