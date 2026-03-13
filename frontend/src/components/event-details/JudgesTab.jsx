@@ -1,6 +1,7 @@
 import { useState } from "react";
 import QRCode from "react-qr-code";
 import { useOutletContext } from "react-router";
+import ConfirmDeleteModal from "../ConfirmDeleteModal";
 import { useTemplateStore } from "../../stores/templateStore";
 
 const JUDGE_TYPE_OPTIONS = [
@@ -30,6 +31,7 @@ export default function JudgesTab({ showLinkGeneration }) {
   const selectedSport = outletContext.selectedSport ?? "";
   const onCreateJudge = outletContext.onCreateJudge;
   const onUpdateJudge = outletContext.onUpdateJudge;
+  const onDeleteJudge = outletContext.onDeleteJudge;
   const isSavingJudge = outletContext.isSavingJudge ?? false;
 
   const [formData, setFormData] = useState({
@@ -38,6 +40,7 @@ export default function JudgesTab({ showLinkGeneration }) {
     judgeNumber: "",
   });
   const [editingJudgeId, setEditingJudgeId] = useState(null);
+  const [judgePendingDelete, setJudgePendingDelete] = useState(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [linkModalTab, setLinkModalTab] = useState("qr");
   const [activeJudgeName, setActiveJudgeName] = useState("");
@@ -127,6 +130,37 @@ export default function JudgesTab({ showLinkGeneration }) {
 
   const handleCancelEditing = () => {
     resetForm();
+  };
+
+  const handleOpenDeleteModal = (judge) => {
+    if (!judge?.id || isSavingJudge) return;
+    setJudgePendingDelete(judge);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isSavingJudge) return;
+    setJudgePendingDelete(null);
+  };
+
+  const handleDeleteJudge = async () => {
+    const judgeId = judgePendingDelete?.id;
+    if (!judgeId) return;
+
+    if (editingJudgeId === judgeId) {
+      resetForm();
+    }
+
+    if (onDeleteJudge) {
+      try {
+        await onDeleteJudge(judgeId);
+        setJudgePendingDelete(null);
+      } catch {
+        return;
+      }
+    } else {
+      setJudges((prev) => prev.filter((judge) => judge.id !== judgeId));
+      setJudgePendingDelete(null);
+    }
   };
 
   const actionButtonLabel = editingJudgeId
@@ -310,14 +344,24 @@ export default function JudgesTab({ showLinkGeneration }) {
                       </td>
                     ) : null}
                     <td>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline"
-                        onClick={() => handleStartEditing(judge)}
-                        disabled={isSavingJudge}
-                      >
-                        Edit
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleStartEditing(judge)}
+                          disabled={isSavingJudge}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline btn-error"
+                          onClick={() => handleOpenDeleteModal(judge)}
+                          disabled={isSavingJudge}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -332,6 +376,20 @@ export default function JudgesTab({ showLinkGeneration }) {
           </table>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={Boolean(judgePendingDelete)}
+        title="Delete Judge"
+        name={judgePendingDelete?.fullName ?? ""}
+        descriptionLines={[
+          "This will permanently remove the judge from this event.",
+          "The action cannot be undone.",
+        ]}
+        confirmLabel="Delete Judge"
+        isDeleting={isSavingJudge}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteJudge}
+      />
 
       {shouldShowLinkGeneration && isLinkModalOpen ? (
         <div
