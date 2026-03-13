@@ -711,8 +711,14 @@ export async function submitJudgeScore(
 
 export async function getEventJudgeScores(
   eventId: string,
+  options?: {
+    contestantId?: string;
+    judgeId?: string;
+  },
 ): Promise<EventJudgeScoreRecord[] | null> {
   const normalizedEventId = eventId?.trim();
+  const normalizedContestantId = options?.contestantId?.trim() || undefined;
+  const normalizedJudgeId = options?.judgeId?.trim() || undefined;
 
   if (!normalizedEventId) {
     throw new Error("INVALID_EVENT_INPUT");
@@ -732,7 +738,14 @@ export async function getEventJudgeScores(
         judgeId: eventJudgeAssignment.judgeId,
       })
       .from(eventJudgeAssignment)
-      .where(eq(eventJudgeAssignment.eventId, normalizedEventId)),
+      .where(
+        normalizedJudgeId
+          ? and(
+              eq(eventJudgeAssignment.eventId, normalizedEventId),
+              eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+            )
+          : eq(eventJudgeAssignment.eventId, normalizedEventId),
+      ),
     db
       .select({
         judgeId: eventJudgeAssignment.judgeId,
@@ -748,9 +761,50 @@ export async function getEventJudgeScores(
       )
       .innerJoin(scoreSheet, eq(judgeScore.scoreSheetId, scoreSheet.id))
       .innerJoin(contestant, eq(scoreSheet.contestantId, contestant.id))
-      .where(eq(scoreSheet.eventId, normalizedEventId))
+      .where(
+        normalizedContestantId && normalizedJudgeId
+          ? and(
+              eq(scoreSheet.eventId, normalizedEventId),
+              eq(scoreSheet.contestantId, normalizedContestantId),
+              eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+            )
+          : normalizedContestantId
+            ? and(
+                eq(scoreSheet.eventId, normalizedEventId),
+                eq(scoreSheet.contestantId, normalizedContestantId),
+              )
+            : normalizedJudgeId
+              ? and(
+                  eq(scoreSheet.eventId, normalizedEventId),
+                  eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+                )
+              : eq(scoreSheet.eventId, normalizedEventId),
+      )
       .orderBy(desc(judgeScore.createdAt)),
   ]);
+
+  if (normalizedJudgeId && !normalizedContestantId) {
+    const latestScoreByContestantId = new Map<
+      string,
+      (typeof scoreRows)[number]
+    >();
+
+    for (const scoreRow of scoreRows) {
+      if (!scoreRow.contestantId || latestScoreByContestantId.has(scoreRow.contestantId)) {
+        continue;
+      }
+
+      latestScoreByContestantId.set(scoreRow.contestantId, scoreRow);
+    }
+
+    return Array.from(latestScoreByContestantId.values()).map((scoreRow) => ({
+      judgeId: scoreRow.judgeId,
+      contestantId: scoreRow.contestantId,
+      contestantName: scoreRow.contestantName,
+      rawScore: scoreRow.rawScore,
+      submittedAt: scoreRow.submittedAt,
+    }));
+  }
 
   const latestScoreByJudgeId = new Map<string, (typeof scoreRows)[number]>();
 

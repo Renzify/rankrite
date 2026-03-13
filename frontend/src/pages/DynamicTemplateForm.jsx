@@ -155,7 +155,7 @@ function DynamicTemplateForm() {
       <div>
         <button
           className="btn btn-neutral btn-soft text-sm hover:bg-neutral/80"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
         >
           <MoveLeft /> Back to Events
         </button>

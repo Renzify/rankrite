@@ -100,7 +100,17 @@ export async function getEventJudgeScoresController(
       });
     }
 
-    const judgeScores = await getEventJudgeScores(eventId);
+    const rawContestantId = req.query.contestantId;
+    const contestantId = Array.isArray(rawContestantId)
+      ? rawContestantId[0]
+      : rawContestantId;
+    const rawJudgeId = req.query.judgeId;
+    const judgeId = Array.isArray(rawJudgeId) ? rawJudgeId[0] : rawJudgeId;
+
+    const judgeScores = await getEventJudgeScores(eventId, {
+      contestantId: typeof contestantId === "string" ? contestantId : undefined,
+      judgeId: typeof judgeId === "string" ? judgeId : undefined,
+    });
 
     if (!judgeScores) {
       return res.status(404).json({

@@ -15,8 +15,21 @@ export const getEventDetails = async (eventId) => {
   return res.data;
 };
 
-export const getEventJudgeScores = async (eventId) => {
-  const res = await axiosInstance.get(`/events/${eventId}/judge-scores`);
+export const getEventJudgeScores = async (eventId, options = {}) => {
+  const params = new URLSearchParams();
+
+  if (options.contestantId) {
+    params.set("contestantId", options.contestantId);
+  }
+
+  if (options.judgeId) {
+    params.set("judgeId", options.judgeId);
+  }
+
+  const queryString = params.toString();
+  const res = await axiosInstance.get(
+    `/events/${eventId}/judge-scores${queryString ? `?${queryString}` : ""}`,
+  );
   return res.data;
 };
 
