@@ -4,7 +4,7 @@ import {
   LIVE_DISPLAY_MESSAGE_TYPE,
   LIVE_DISPLAY_STORAGE_KEY,
   readLiveDisplayState,
-} from "../lib/liveDisplaySync";
+} from "./event-details/components/display-control-tab/helpers/liveDisplaySync";
 
 const DEFAULT_LIVE_STATE = {
   eventName: "Gymnastics Competition",

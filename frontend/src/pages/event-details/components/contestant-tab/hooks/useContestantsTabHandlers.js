@@ -8,7 +8,7 @@ import {
   normalizeContestantGender,
   parseContestantCsv,
   validateContestantCsvFile,
-} from "../../../../../lib/contestantCsv";
+} from "../lib/contestantCsv";
 
 const EMPTY_FORM_DATA = {
   fullName: "",

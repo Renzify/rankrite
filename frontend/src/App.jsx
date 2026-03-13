@@ -14,7 +14,7 @@ import JudgeScore from "./pages/judge-view/JudgeScore";
 import ActivityLog from "./pages/activity-log/ActivityLog";
 import EventInfoTab from "./pages/event-details/components/EventInfoTab";
 import ScoringTab from "./pages/event-details/components/ScoringTab";
-import DisplayControlTab from "./pages/event-details/components/DisplayControlTab";
+import DisplayControlTab from "./pages/event-details/components/display-control-tab/DisplayControlTab";
 import DisplayView from "./pages/DisplayView";
 import JudgesTab from "./pages/event-details/components/judge-tab/JudgesTab";
 import ContestantsTab from "./pages/event-details/components/contestant-tab/ContestantsTab";

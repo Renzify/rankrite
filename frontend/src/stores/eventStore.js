@@ -4,7 +4,7 @@ import {
   deleteEvent as deleteEventRequest,
   getEvents,
 } from "../api/eventApi";
-import { buildEventPayload } from "../lib/eventPayload";
+import { buildEventPayload } from "../shared/lib/eventPayload";
 
 function buildPersistedEventPayload({
   template,
@@ -70,7 +70,10 @@ export const useEventStore = create((set) => ({
 
     set((state) => ({
       error: null,
-      events: [createdEvent, ...state.events.filter((event) => event.id !== createdEvent.id)],
+      events: [
+        createdEvent,
+        ...state.events.filter((event) => event.id !== createdEvent.id),
+      ],
     }));
 
     return createdEvent;
@@ -105,4 +108,3 @@ export const useEventStore = create((set) => ({
     }
   },
 }));
-
