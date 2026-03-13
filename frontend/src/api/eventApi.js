@@ -15,8 +15,21 @@ export const getEventDetails = async (eventId) => {
   return res.data;
 };
 
-export const getEventJudgeScores = async (eventId) => {
-  const res = await axiosInstance.get(`/events/${eventId}/judge-scores`);
+export const getEventJudgeScores = async (eventId, options = {}) => {
+  const params = new URLSearchParams();
+
+  if (options.contestantId) {
+    params.set("contestantId", options.contestantId);
+  }
+
+  if (options.judgeId) {
+    params.set("judgeId", options.judgeId);
+  }
+
+  const queryString = params.toString();
+  const res = await axiosInstance.get(
+    `/events/${eventId}/judge-scores${queryString ? `?${queryString}` : ""}`,
+  );
   return res.data;
 };
 
@@ -34,14 +47,50 @@ export const addEventJudge = async (eventId, payload) => {
   return res.data;
 };
 
+export const updateEventJudge = async (eventId, judgeId, payload) => {
+  const res = await axiosInstance.put(
+    `/events/${eventId}/judges/${judgeId}`,
+    payload,
+  );
+  return res.data;
+};
+
+export const deleteEventJudge = async (eventId, judgeId) => {
+  await axiosInstance.delete(`/events/${eventId}/judges/${judgeId}`);
+};
+
 export const submitJudgeScore = async (eventId, payload) => {
   const res = await axiosInstance.post(`/events/${eventId}/judge-scores`, payload);
+  return res.data;
+};
+
+export const lockJudgeScore = async (eventId, payload) => {
+  const res = await axiosInstance.post(
+    `/events/${eventId}/judge-scores/lock`,
+    payload,
+  );
   return res.data;
 };
 
 export const addEventContestant = async (eventId, payload) => {
   const res = await axiosInstance.post(`/events/${eventId}/contestants`, payload);
   return res.data;
+};
+
+export const updateEventContestant = async (
+  eventId,
+  contestantId,
+  payload,
+) => {
+  const res = await axiosInstance.put(
+    `/events/${eventId}/contestants/${contestantId}`,
+    payload,
+  );
+  return res.data;
+};
+
+export const deleteEventContestant = async (eventId, contestantId) => {
+  await axiosInstance.delete(`/events/${eventId}/contestants/${contestantId}`);
 };
 
 export const importEventContestants = async (eventId, payload) => {

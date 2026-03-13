@@ -18,6 +18,10 @@ function isConditionMet(condition, fields, values) {
   return selectedParentValue === requiredOption.value;
 }
 
+function formatDisplayLabel(label) {
+  return String(label ?? "").replace(/^select\s+/i, "").trim();
+}
+
 export default function EventInfoTab() {
   const {
     isCatalogLoading,
@@ -210,7 +214,7 @@ export default function EventInfoTab() {
                     className="rounded-xl border border-base-300 bg-base-100 p-4"
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
-                      {field.label}
+                      {formatDisplayLabel(field.label)}
                     </p>
                     <p className="mt-2 text-sm font-semibold">{display}</p>
                   </div>

@@ -3,8 +3,10 @@ import {
   CONTESTANT_GENDER_OPTIONS,
   getContestantDelegation,
 } from "../../lib/contestantCsv";
+import ConfirmDeleteModal from "../ConfirmDeleteModal";
 import { useTemplateStore } from "../../stores/templateStore";
 import { useContestantsTabHandlers } from "../../hooks/useContestantsTabHandlers";
+import { useState } from "react";
 
 export default function ContestantsTab() {
   const outletContext = useOutletContext() ?? {};
@@ -14,17 +16,24 @@ export default function ContestantsTab() {
   const contestants = outletContext.contestants ?? storeContestants;
   const setContestants = outletContext.setContestants ?? storeSetContestants;
   const onCreateContestant = outletContext.onCreateContestant;
+  const onUpdateContestant = outletContext.onUpdateContestant;
+  const onDeleteContestant = outletContext.onDeleteContestant;
   const onImportContestants = outletContext.onImportContestants;
   const isSavingContestant = outletContext.isSavingContestant ?? false;
+  const [contestantPendingDelete, setContestantPendingDelete] = useState(null);
 
   const {
     fileInputRef,
     formData,
+    editingContestantId,
     importMessage,
     importMessageTone,
     isImportingCsv,
+    submitButtonLabel,
     handleInputChange,
     handleContestantSubmit,
+    handleStartEditing,
+    handleCancelEditing,
     handleImportClick,
     handleCsvImport,
     handleCsvExport,
@@ -33,12 +42,47 @@ export default function ContestantsTab() {
     contestants,
     setContestants,
     onCreateContestant,
+    onUpdateContestant,
     onImportContestants,
   });
+
+  const handleOpenDeleteModal = (contestant) => {
+    if (!contestant?.id || isSavingContestant) return;
+    setContestantPendingDelete(contestant);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isSavingContestant) return;
+    setContestantPendingDelete(null);
+  };
+
+  const handleDeleteContestant = async () => {
+    const contestantId = contestantPendingDelete?.id;
+    if (!contestantId) return;
+
+    if (editingContestantId === contestantId) {
+      handleCancelEditing();
+    }
+
+    if (onDeleteContestant) {
+      try {
+        await onDeleteContestant(contestantId);
+        setContestantPendingDelete(null);
+      } catch {
+        return;
+      }
+    } else {
+      setContestants((prev) =>
+        prev.filter((contestant) => contestant.id !== contestantId),
+      );
+      setContestantPendingDelete(null);
+    }
+  };
 
   return (
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
+
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold tracking-tight">
             Manage Contestants
@@ -49,6 +93,15 @@ export default function ContestantsTab() {
           >
             ?
           </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-xl font-semibold tracking-tight">Contestants</h2>
+          {editingContestantId ? (
+            <span className="badge badge-outline badge-lg">
+              Editing Contestant
+            </span>
+          ) : null}
+
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -135,13 +188,27 @@ export default function ContestantsTab() {
           </select>
         </label>
 
-        <div className="flex items-end">
+        <div className="flex items-end gap-2">
+          {editingContestantId ? (
+            <button
+              type="button"
+              className="btn btn-outline w-full sm:w-auto"
+              onClick={handleCancelEditing}
+              disabled={isSavingContestant}
+            >
+              Cancel
+            </button>
+          ) : null}
           <button
             type="submit"
             className="btn btn-neutral w-full sm:w-auto"
             disabled={!formData.fullName.trim() || isSavingContestant}
           >
-            {isSavingContestant ? "Submitting..." : "Submit"}
+            {isSavingContestant
+              ? editingContestantId
+                ? "Saving..."
+                : "Submitting..."
+              : submitButtonLabel}
           </button>
         </div>
       </form>
@@ -164,25 +231,53 @@ export default function ContestantsTab() {
         <table className="table">
           <thead>
             <tr>
-              <th>#</th>
               <th>Contestant Name</th>
               <th>Delegation</th>
               <th>Gender</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {contestants.length ? (
               contestants.map((contestant, index) => (
-                <tr key={contestant.id}>
-                  <th>{index + 1}</th>
-                  <td>{contestant.fullName}</td>
+                <tr
+                  key={contestant.id}
+                  className={
+                    editingContestantId === contestant.id
+                      ? "bg-base-200/30"
+                      : ""
+                  }
+                >
+                  <td>
+                    {index + 1 + "."} {contestant.fullName}
+                  </td>
                   <td>{getContestantDelegation(contestant) || "-"}</td>
                   <td>{contestant.gender || "-"}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline"
+                        onClick={() => handleStartEditing(contestant)}
+                        disabled={isSavingContestant}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline btn-error"
+                        onClick={() => handleOpenDeleteModal(contestant)}
+                        disabled={isSavingContestant}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="text-base-content/60">
+                <td colSpan={5} className="text-base-content/60">
                   No contestants added for this event yet.
                 </td>
               </tr>
@@ -190,6 +285,20 @@ export default function ContestantsTab() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={Boolean(contestantPendingDelete)}
+        title="Delete Contestant"
+        name={contestantPendingDelete?.fullName ?? ""}
+        descriptionLines={[
+          "This will permanently remove the contestant from this event.",
+          "The action cannot be undone.",
+        ]}
+        confirmLabel="Delete Contestant"
+        isDeleting={isSavingContestant}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteContestant}
+      />
     </div>
   );
 }

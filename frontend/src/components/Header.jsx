@@ -84,7 +84,7 @@ function Header() {
             <button
               type="button"
               className="btn btn-ghost hidden md:inline-flex"
-              onClick={() => navigateTo("/dashboard")}
+              onClick={() => navigateTo("/")}
             >
               Home
             </button>
@@ -160,7 +160,7 @@ function Header() {
               <button
                 type="button"
                 className="btn btn-ghost justify-start"
-                onClick={() => navigateTo("/dashboard")}
+                onClick={() => navigateTo("/")}
               >
                 Home
               </button>

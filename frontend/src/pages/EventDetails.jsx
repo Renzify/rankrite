@@ -5,9 +5,13 @@ import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import {
   addEventContestant,
   addEventJudge,
+  deleteEventContestant,
+  deleteEventJudge,
   getEventDetails,
   importEventContestants,
   updateEvent,
+  updateEventJudge,
+  updateEventContestant,
 } from "../api/eventApi";
 import StatusBadge from "../components/StatusBadge";
 import { buildEventPayload } from "../lib/eventPayload";
@@ -236,6 +240,78 @@ export default function EventDetails() {
     }
   };
 
+  const handleUpdateJudge = async (judgeId, judgeInput) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingJudge(true);
+      const updatedJudge = await updateEventJudge(eventId, judgeId, judgeInput);
+
+      setJudges((prev) =>
+        prev.map((judge) => (judge.id === judgeId ? updatedJudge : judge)),
+      );
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              judges: (prev.judges ?? []).map((judge) =>
+                judge.id === judgeId ? updatedJudge : judge,
+              ),
+            }
+          : prev,
+      );
+
+      toast.success("Judge updated");
+      return updatedJudge;
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to update judge.");
+      console.error("Failed to update judge:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingJudge(false);
+    }
+  };
+
+  const handleDeleteJudge = async (judgeId) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingJudge(true);
+      await deleteEventJudge(eventId, judgeId);
+
+      setJudges((prev) => prev.filter((judge) => judge.id !== judgeId));
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              judges: (prev.judges ?? []).filter((judge) => judge.id !== judgeId),
+            }
+          : prev,
+      );
+      setJudgeScores((prev) => {
+        const next = { ...prev };
+        delete next[judgeId];
+        return next;
+      });
+
+      toast.success("Judge deleted");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to delete judge.");
+      console.error("Failed to delete judge:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingJudge(false);
+    }
+  };
+
   const handleCreateContestant = async (contestantInput) => {
     if (!eventId) {
       toast.error("Missing event id.");
@@ -246,7 +322,8 @@ export default function EventDetails() {
       setIsSavingContestant(true);
       const createdContestant = await addEventContestant(eventId, {
         fullName: contestantInput.fullName,
-        teamName: contestantInput.teamName ?? contestantInput.delegation ?? null,
+        teamName:
+          contestantInput.teamName ?? contestantInput.delegation ?? null,
         gender: contestantInput.gender ?? null,
         entryNo: contestantInput.entryNo ?? null,
       });
@@ -276,6 +353,91 @@ export default function EventDetails() {
     }
   };
 
+  const handleUpdateContestant = async (contestantId, contestantInput) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingContestant(true);
+      const updatedContestant = await updateEventContestant(
+        eventId,
+        contestantId,
+        {
+          fullName: contestantInput.fullName,
+          teamName:
+            contestantInput.teamName ?? contestantInput.delegation ?? null,
+          gender: contestantInput.gender ?? null,
+          entryNo: contestantInput.entryNo ?? null,
+        },
+      );
+
+      setContestants((prev) =>
+        prev.map((contestant) =>
+          contestant.id === contestantId
+            ? mapContestantForForm(updatedContestant)
+            : contestant,
+        ),
+      );
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              contestants: (prev.contestants ?? []).map((contestant) =>
+                contestant.id === contestantId ? updatedContestant : contestant,
+              ),
+            }
+          : prev,
+      );
+
+      toast.success("Contestant updated");
+      return updatedContestant;
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to update contestant.");
+      console.error("Failed to update contestant:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingContestant(false);
+    }
+  };
+
+  const handleDeleteContestant = async (contestantId) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingContestant(true);
+      await deleteEventContestant(eventId, contestantId);
+
+      setContestants((prev) =>
+        prev.filter((contestant) => contestant.id !== contestantId),
+      );
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              contestants: (prev.contestants ?? []).filter(
+                (contestant) => contestant.id !== contestantId,
+              ),
+            }
+          : prev,
+      );
+
+      toast.success("Contestant deleted");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to delete contestant.");
+      console.error("Failed to delete contestant:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingContestant(false);
+    }
+  };
+
   const handleImportContestants = async (contestantInputs) => {
     if (!eventId) {
       throw new Error("MISSING_EVENT_ID");
@@ -286,7 +448,8 @@ export default function EventDetails() {
       const createdContestants = await importEventContestants(eventId, {
         contestants: contestantInputs.map((contestantInput) => ({
           fullName: contestantInput.fullName,
-          teamName: contestantInput.teamName ?? contestantInput.delegation ?? null,
+          teamName:
+            contestantInput.teamName ?? contestantInput.delegation ?? null,
           gender: contestantInput.gender ?? null,
           entryNo: contestantInput.entryNo ?? null,
         })),
@@ -344,7 +507,7 @@ export default function EventDetails() {
       <div>
         <button
           className="btn btn-neutral btn-soft text-sm hover:bg-neutral/80"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
         >
           <MoveLeft /> Back to Events
         </button>
@@ -412,12 +575,16 @@ export default function EventDetails() {
               judges,
               setJudges,
               onCreateJudge: handleCreateJudge,
+              onUpdateJudge: handleUpdateJudge,
+              onDeleteJudge: handleDeleteJudge,
               isSavingJudge,
               judgeScores,
               setJudgeScores,
               contestants,
               setContestants,
               onCreateContestant: handleCreateContestant,
+              onUpdateContestant: handleUpdateContestant,
+              onDeleteContestant: handleDeleteContestant,
               onImportContestants: handleImportContestants,
               isSavingContestant,
             }}

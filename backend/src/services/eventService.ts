@@ -79,11 +79,17 @@ export type SubmitJudgeScoreInput = {
   score: number | string;
 };
 
+export type LockJudgeScoreInput = {
+  judgeId: string;
+  contestantId: string;
+};
+
 export type EventJudgeScoreRecord = {
   judgeId: string;
   contestantId: string | null;
   contestantName: string | null;
   rawScore: number | null;
+  locked: boolean;
   submittedAt: Date | null;
 };
 
@@ -477,6 +483,214 @@ export async function addEventJudge(
   });
 }
 
+export async function updateEventJudge(
+  eventId: string,
+  judgeId: string,
+  input: AddEventJudgeInput,
+): Promise<EventJudgeRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedJudgeId = judgeId?.trim();
+  const fullName = input.fullName?.trim();
+  const judgeTypeName = input.judgeType?.trim();
+  const judgeNumber = Number(input.judgeNumber);
+
+  if (
+    !normalizedEventId ||
+    !normalizedJudgeId ||
+    !fullName ||
+    !judgeTypeName ||
+    !Number.isFinite(judgeNumber) ||
+    judgeNumber <= 0
+  ) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingAssignment = await tx.query.eventJudgeAssignment.findFirst({
+      where: and(
+        eq(eventJudgeAssignment.eventId, normalizedEventId),
+        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+      ),
+    });
+
+    if (!existingAssignment) {
+      return null;
+    }
+
+    const existingTypes = await tx
+      .select()
+      .from(judgeType)
+      .where(inArray(judgeType.name, [judgeTypeName]));
+
+    const existingTypeMap = new Map(
+      existingTypes.map((type) => [type.name, type.id]),
+    );
+
+    if (!existingTypeMap.has(judgeTypeName)) {
+      const [insertedType] = await tx
+        .insert(judgeType)
+        .values({ name: judgeTypeName })
+        .returning();
+
+      if (insertedType) {
+        existingTypeMap.set(insertedType.name, insertedType.id);
+      }
+    }
+
+    const judgeTypeId = existingTypeMap.get(judgeTypeName);
+
+    if (!judgeTypeId) {
+      throw new Error("INVALID_EVENT_INPUT");
+    }
+
+    await tx
+      .update(judge)
+      .set({
+        fullName,
+      })
+      .where(eq(judge.id, normalizedJudgeId));
+
+    await tx
+      .update(eventJudgeAssignment)
+      .set({
+        judgeTypeId,
+        judgeNumber,
+      })
+      .where(eq(eventJudgeAssignment.id, existingAssignment.id));
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return {
+      id: normalizedJudgeId,
+      fullName,
+      judgeType: judgeTypeName,
+      judgeNumber,
+      eventPhaseId: existingAssignment.eventPhaseId ?? null,
+    };
+  });
+}
+
+export async function deleteEventJudge(
+  eventId: string,
+  judgeId: string,
+): Promise<boolean> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedJudgeId = judgeId?.trim();
+
+  if (!normalizedEventId || !normalizedJudgeId) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingAssignment = await tx.query.eventJudgeAssignment.findFirst({
+      where: and(
+        eq(eventJudgeAssignment.eventId, normalizedEventId),
+        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+      ),
+    });
+
+    if (!existingAssignment) {
+      return false;
+    }
+
+    await tx
+      .delete(eventJudgeAssignment)
+      .where(eq(eventJudgeAssignment.id, existingAssignment.id));
+
+    const remainingAssignments = await tx
+      .select({
+        judgeId: eventJudgeAssignment.judgeId,
+      })
+      .from(eventJudgeAssignment)
+      .where(eq(eventJudgeAssignment.judgeId, normalizedJudgeId));
+
+    if (!remainingAssignments.length) {
+      await tx.delete(judge).where(eq(judge.id, normalizedJudgeId));
+    }
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return true;
+  });
+}
+
+export async function deleteEventContestant(
+  eventId: string,
+  contestantId: string,
+): Promise<boolean> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedContestantId = contestantId?.trim();
+
+  if (!normalizedEventId || !normalizedContestantId) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingContestantLink = await tx.query.eventContestant.findFirst({
+      where: and(
+        eq(eventContestant.eventId, normalizedEventId),
+        eq(eventContestant.contestantId, normalizedContestantId),
+      ),
+    });
+
+    if (!existingContestantLink) {
+      return false;
+    }
+
+    await tx
+      .delete(scoreSheet)
+      .where(
+        and(
+          eq(scoreSheet.eventId, normalizedEventId),
+          eq(scoreSheet.contestantId, normalizedContestantId),
+        ),
+      );
+
+    await tx
+      .delete(eventContestant)
+      .where(eq(eventContestant.id, existingContestantLink.id));
+
+    const remainingContestantLinks = await tx
+      .select({
+        contestantId: eventContestant.contestantId,
+      })
+      .from(eventContestant)
+      .where(eq(eventContestant.contestantId, normalizedContestantId));
+
+    const remainingScoreSheets = await tx
+      .select({
+        contestantId: scoreSheet.contestantId,
+      })
+      .from(scoreSheet)
+      .where(eq(scoreSheet.contestantId, normalizedContestantId));
+
+    if (!remainingContestantLinks.length && !remainingScoreSheets.length) {
+      await tx
+        .delete(contestant)
+        .where(eq(contestant.id, normalizedContestantId));
+    }
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return true;
+  });
+}
+
 export async function addEventContestant(
   eventId: string,
   input: AddEventContestantInput,
@@ -486,6 +700,68 @@ export async function addEventContestant(
   });
 
   return createdContestants?.[0] ?? null;
+}
+
+export async function updateEventContestant(
+  eventId: string,
+  contestantId: string,
+  input: AddEventContestantInput,
+): Promise<EventContestantRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedContestantId = contestantId?.trim();
+  const fullName = input.fullName?.trim();
+  const teamName = input.teamName?.trim() || null;
+  const gender = normalizeContestantGender(input.gender);
+  const entryNo =
+    input.entryNo && input.entryNo > 0 ? Number(input.entryNo) : null;
+
+  if (!normalizedEventId || !normalizedContestantId || !fullName) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingContestantLink = await tx.query.eventContestant.findFirst({
+      where: and(
+        eq(eventContestant.eventId, normalizedEventId),
+        eq(eventContestant.contestantId, normalizedContestantId),
+      ),
+    });
+
+    if (!existingContestantLink) {
+      return null;
+    }
+
+    await tx
+      .update(contestant)
+      .set({
+        fullName,
+        teamName,
+        gender,
+      })
+      .where(eq(contestant.id, normalizedContestantId));
+
+    await tx
+      .update(eventContestant)
+      .set({
+        entryNo: entryNo ?? existingContestantLink.entryNo,
+      })
+      .where(eq(eventContestant.id, existingContestantLink.id));
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return {
+      id: normalizedContestantId,
+      fullName,
+      teamName,
+      gender,
+      entryNo: entryNo ?? existingContestantLink.entryNo,
+    };
+  });
 }
 
 export async function addEventContestants(
@@ -682,6 +958,10 @@ export async function submitJudgeScore(
       orderBy: [desc(judgeScore.createdAt)],
     });
 
+    if (existingJudgeScore?.isLocked) {
+      throw new Error("JUDGE_SCORE_LOCKED");
+    }
+
     if (existingJudgeScore) {
       await tx
         .update(judgeScore)
@@ -695,6 +975,7 @@ export async function submitJudgeScore(
         scoreSheetId: activeScoreSheet.id,
         judgeAssignmentId: judgeAssignment.id,
         rawScore,
+        isLocked: false,
         createdAt: submittedAt,
       });
     }
@@ -704,15 +985,117 @@ export async function submitJudgeScore(
       contestantId: contestantRecord.contestantId,
       contestantName: contestantRecord.contestantName,
       rawScore,
+      locked: false,
       submittedAt,
+    };
+  });
+}
+
+export async function lockJudgeScore(
+  eventId: string,
+  input: LockJudgeScoreInput,
+): Promise<EventJudgeScoreRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedJudgeId = input.judgeId?.trim();
+  const normalizedContestantId = input.contestantId?.trim();
+
+  if (!normalizedEventId || !normalizedJudgeId || !normalizedContestantId) {
+    throw new Error("INVALID_JUDGE_SCORE_LOCK_INPUT");
+  }
+
+  const existingEvent = await db.query.event.findFirst({
+    where: eq(event.id, normalizedEventId),
+  });
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  const [judgeAssignment, contestantRecord] = await Promise.all([
+    db.query.eventJudgeAssignment.findFirst({
+      where: and(
+        eq(eventJudgeAssignment.eventId, normalizedEventId),
+        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+      ),
+    }),
+    db
+      .select({
+        contestantId: contestant.id,
+        contestantName: contestant.fullName,
+      })
+      .from(eventContestant)
+      .innerJoin(contestant, eq(eventContestant.contestantId, contestant.id))
+      .where(
+        and(
+          eq(eventContestant.eventId, normalizedEventId),
+          eq(eventContestant.contestantId, normalizedContestantId),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+  ]);
+
+  if (!judgeAssignment || !contestantRecord) {
+    throw new Error("INVALID_JUDGE_SCORE_CONTEXT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingScoreSheet = await tx.query.scoreSheet.findFirst({
+      where: and(
+        eq(scoreSheet.eventId, normalizedEventId),
+        eq(scoreSheet.contestantId, normalizedContestantId),
+        judgeAssignment.eventPhaseId
+          ? eq(scoreSheet.eventPhaseId, judgeAssignment.eventPhaseId)
+          : isNull(scoreSheet.eventPhaseId),
+      ),
+    });
+
+    if (!existingScoreSheet) {
+      throw new Error("JUDGE_SCORE_NOT_FOUND");
+    }
+
+    const existingJudgeScore = await tx.query.judgeScore.findFirst({
+      where: and(
+        eq(judgeScore.scoreSheetId, existingScoreSheet.id),
+        eq(judgeScore.judgeAssignmentId, judgeAssignment.id),
+      ),
+      orderBy: [desc(judgeScore.createdAt)],
+    });
+
+    if (!existingJudgeScore) {
+      throw new Error("JUDGE_SCORE_NOT_FOUND");
+    }
+
+    if (!existingJudgeScore.isLocked) {
+      await tx
+        .update(judgeScore)
+        .set({
+          isLocked: true,
+        })
+        .where(eq(judgeScore.id, existingJudgeScore.id));
+    }
+
+    return {
+      judgeId: normalizedJudgeId,
+      contestantId: contestantRecord.contestantId,
+      contestantName: contestantRecord.contestantName,
+      rawScore: existingJudgeScore.rawScore,
+      locked: true,
+      submittedAt: existingJudgeScore.createdAt,
     };
   });
 }
 
 export async function getEventJudgeScores(
   eventId: string,
+  options?: {
+    contestantId?: string;
+    judgeId?: string;
+  },
 ): Promise<EventJudgeScoreRecord[] | null> {
   const normalizedEventId = eventId?.trim();
+  const normalizedContestantId = options?.contestantId?.trim() || undefined;
+  const normalizedJudgeId = options?.judgeId?.trim() || undefined;
 
   if (!normalizedEventId) {
     throw new Error("INVALID_EVENT_INPUT");
@@ -732,13 +1115,21 @@ export async function getEventJudgeScores(
         judgeId: eventJudgeAssignment.judgeId,
       })
       .from(eventJudgeAssignment)
-      .where(eq(eventJudgeAssignment.eventId, normalizedEventId)),
+      .where(
+        normalizedJudgeId
+          ? and(
+              eq(eventJudgeAssignment.eventId, normalizedEventId),
+              eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+            )
+          : eq(eventJudgeAssignment.eventId, normalizedEventId),
+      ),
     db
       .select({
         judgeId: eventJudgeAssignment.judgeId,
         contestantId: scoreSheet.contestantId,
         contestantName: contestant.fullName,
         rawScore: judgeScore.rawScore,
+        locked: judgeScore.isLocked,
         submittedAt: judgeScore.createdAt,
       })
       .from(judgeScore)
@@ -748,9 +1139,51 @@ export async function getEventJudgeScores(
       )
       .innerJoin(scoreSheet, eq(judgeScore.scoreSheetId, scoreSheet.id))
       .innerJoin(contestant, eq(scoreSheet.contestantId, contestant.id))
-      .where(eq(scoreSheet.eventId, normalizedEventId))
+      .where(
+        normalizedContestantId && normalizedJudgeId
+          ? and(
+              eq(scoreSheet.eventId, normalizedEventId),
+              eq(scoreSheet.contestantId, normalizedContestantId),
+              eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+            )
+          : normalizedContestantId
+            ? and(
+                eq(scoreSheet.eventId, normalizedEventId),
+                eq(scoreSheet.contestantId, normalizedContestantId),
+              )
+            : normalizedJudgeId
+              ? and(
+                  eq(scoreSheet.eventId, normalizedEventId),
+                  eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+                )
+              : eq(scoreSheet.eventId, normalizedEventId),
+      )
       .orderBy(desc(judgeScore.createdAt)),
   ]);
+
+  if (normalizedJudgeId && !normalizedContestantId) {
+    const latestScoreByContestantId = new Map<
+      string,
+      (typeof scoreRows)[number]
+    >();
+
+    for (const scoreRow of scoreRows) {
+      if (!scoreRow.contestantId || latestScoreByContestantId.has(scoreRow.contestantId)) {
+        continue;
+      }
+
+      latestScoreByContestantId.set(scoreRow.contestantId, scoreRow);
+    }
+
+    return Array.from(latestScoreByContestantId.values()).map((scoreRow) => ({
+      judgeId: scoreRow.judgeId,
+      contestantId: scoreRow.contestantId,
+      contestantName: scoreRow.contestantName,
+      rawScore: scoreRow.rawScore,
+      locked: scoreRow.locked,
+      submittedAt: scoreRow.submittedAt,
+    }));
+  }
 
   const latestScoreByJudgeId = new Map<string, (typeof scoreRows)[number]>();
 
@@ -768,6 +1201,7 @@ export async function getEventJudgeScores(
       contestantId: latestScore?.contestantId ?? null,
       contestantName: latestScore?.contestantName ?? null,
       rawScore: latestScore?.rawScore ?? null,
+      locked: latestScore?.locked ?? false,
       submittedAt: latestScore?.submittedAt ?? null,
     };
   });
