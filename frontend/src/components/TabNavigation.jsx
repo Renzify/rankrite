@@ -1,9 +1,9 @@
 import { useTemplateStore } from "../stores/templateStore";
 
 const TABS = [
-  { key: "details", label: "Event Details", step: "01" },
-  { key: "judges", label: "Add Judges", step: "02" },
-  { key: "contestants", label: "Add Contestants", step: "03" },
+  { key: "details", label: "Event Details" },
+  { key: "judges", label: "Add Judges" },
+  { key: "contestants", label: "Add Contestants" },
 ];
 
 function TabNavigation({ isFormComplete }) {
@@ -17,32 +17,30 @@ function TabNavigation({ isFormComplete }) {
   };
 
   return (
-    <div className="app-surface-soft">
-      <div className="app-section py-3">
-        <div className="tabs tabs-boxed w-full justify-start gap-2 bg-transparent p-0">
-          {TABS.map((tab) => {
-            const isDisabled =
-              (tab.key === "judges" || tab.key === "contestants") &&
-              !isFormComplete;
+    <div
+      className="tabs tabs-boxed w-full gap-2 bg-base-200/50 p-1"
+      role="tablist"
+    >
+      {TABS.map((tab) => {
+        const isDisabled =
+          (tab.key === "judges" || tab.key === "contestants") &&
+          !isFormComplete;
 
-            return (
-              <button
-                key={tab.key}
-                onClick={() => handleTabClick(tab.key)}
-                disabled={isDisabled}
-                className={`tab h-auto px-4 py-2 ${currentTab === tab.key ? "tab-active" : ""} ${
-                  isDisabled ? "cursor-not-allowed opacity-50" : ""
-                }`}
-              >
-                <span className="mr-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/60">
-                  {tab.step}
-                </span>
-                <span className="font-medium">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            onClick={() => handleTabClick(tab.key)}
+            disabled={isDisabled}
+            className={`tab rounded-lg px-4 ${currentTab === tab.key ? "tab-active" : ""} ${
+              isDisabled ? "cursor-not-allowed opacity-50" : ""
+            }`}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
