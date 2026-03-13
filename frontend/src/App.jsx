@@ -1,8 +1,8 @@
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { Toaster } from "react-hot-toast";
 
-import Header from "./components/Header";
-import Footer from "./components/Footer";
+import Header from "./layouts/Header";
+import Footer from "./layouts/Footer";
 import DynamicTemplateForm from "./pages/DynamicTemplateForm";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./auth/Auth";

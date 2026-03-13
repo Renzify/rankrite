@@ -7,7 +7,7 @@ import {
   Search,
 } from "lucide-react";
 import ActivityLogTable from "../components/ActivityLogTable";
-import { DropdownMenu } from "../helpers/Dropdown";
+import { DropdownMenu } from "../layouts/helpers/Dropdown";
 
 const ACTIVITY_LOGS = [
   {
