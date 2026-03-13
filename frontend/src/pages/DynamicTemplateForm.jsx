@@ -76,14 +76,20 @@ function DynamicTemplateForm() {
 
   const handleSaveDraft = async () => {
     try {
-      await saveDraft({
+      const savedDraft = await saveDraft({
         template,
         formValues,
         eventTitle,
         judges,
         contestants,
       });
+
+      if (!savedDraft?.id) {
+        throw new Error("MISSING_EVENT_ID");
+      }
+
       toast.success("Saved as draft");
+      navigate(`/events/${savedDraft.id}`);
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === "NO_TEMPLATE_SELECTED") {
@@ -95,8 +101,12 @@ function DynamicTemplateForm() {
           return;
         }
       }
+
+      const message =
+        error?.response?.data?.message ??
+        (error instanceof Error ? error.message : "Failed to save draft.");
       console.error("Failed to save draft:", error);
-      toast.error("Failed to save draft. Please try again.");
+      toast.error(message);
     }
   };
 
