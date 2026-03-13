@@ -6,34 +6,74 @@ import {
 } from "../api/eventApi";
 import { buildEventPayload } from "../lib/eventPayload";
 
+function buildPersistedEventPayload({
+  template,
+  formValues,
+  eventTitle,
+  judges,
+  contestants,
+  status,
+}) {
+  const payload = buildEventPayload({
+    template,
+    formValues,
+    eventTitle,
+  });
+
+  return {
+    ...payload,
+    status,
+    judges: (judges ?? []).map((judge) => ({
+      fullName: judge.fullName,
+      judgeType: judge.judgeType,
+      judgeNumber: judge.judgeNumber,
+      eventPhaseId: judge.eventPhaseId ?? null,
+    })),
+    contestants: (contestants ?? []).map((contestant, index) => ({
+      fullName: contestant.fullName,
+      teamName: contestant.teamName ?? contestant.delegation ?? null,
+      gender: contestant.gender ?? null,
+      entryNo: contestant.entryNo ?? index + 1,
+    })),
+  };
+}
+
 export const useEventStore = create((set) => ({
   events: [],
   isLoading: false,
   error: null,
 
   async saveDraft({ template, formValues, eventTitle, judges, contestants }) {
-    const payload = buildEventPayload({
-      template,
-      formValues,
-      eventTitle,
-    });
+    return createEventDraft(
+      buildPersistedEventPayload({
+        template,
+        formValues,
+        eventTitle,
+        judges,
+        contestants,
+        status: "draft",
+      }),
+    );
+  },
 
-    return createEventDraft({
-      ...payload,
-      status: "draft",
-      judges: (judges ?? []).map((judge) => ({
-        fullName: judge.fullName,
-        judgeType: judge.judgeType,
-        judgeNumber: judge.judgeNumber,
-        eventPhaseId: judge.eventPhaseId ?? null,
-      })),
-      contestants: (contestants ?? []).map((contestant, index) => ({
-        fullName: contestant.fullName,
-        teamName: contestant.teamName ?? contestant.delegation ?? null,
-        gender: contestant.gender ?? null,
-        entryNo: contestant.entryNo ?? index + 1,
-      })),
-    });
+  async createEvent({ template, formValues, eventTitle, judges, contestants }) {
+    const createdEvent = await createEventDraft(
+      buildPersistedEventPayload({
+        template,
+        formValues,
+        eventTitle,
+        judges,
+        contestants,
+        status: "to_be_held",
+      }),
+    );
+
+    set((state) => ({
+      error: null,
+      events: [createdEvent, ...state.events.filter((event) => event.id !== createdEvent.id)],
+    }));
+
+    return createdEvent;
   },
 
   loadEvents: async () => {

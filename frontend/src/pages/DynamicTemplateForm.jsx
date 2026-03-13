@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { MoveLeft } from "lucide-react";
 import toast from "react-hot-toast";
@@ -39,6 +39,8 @@ function DynamicTemplateForm() {
     (state) => state.resetEventDraftState,
   );
   const saveDraft = useEventStore((state) => state.saveDraft);
+  const createEvent = useEventStore((state) => state.createEvent);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
   const eventTitle = formValues.eventTitle || "";
 
@@ -98,9 +100,45 @@ function DynamicTemplateForm() {
     }
   };
 
-  const handleCreateEvent = () => {
+  const handleCreateEvent = async () => {
     if (!canCreateEvent) return;
-    toast.success("Event created");
+
+    try {
+      setIsCreatingEvent(true);
+      const createdEvent = await createEvent({
+        template,
+        formValues,
+        eventTitle,
+        judges,
+        contestants,
+      });
+
+      if (!createdEvent?.id) {
+        throw new Error("MISSING_EVENT_ID");
+      }
+
+      toast.success("Event created");
+      navigate(`/events/${createdEvent.id}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "NO_TEMPLATE_SELECTED") {
+          toast.error("No template selected.");
+          return;
+        }
+        if (error.message === "NO_EVENT_TITLE") {
+          toast.error("Please enter an event title before creating.");
+          return;
+        }
+      }
+
+      const message =
+        error?.response?.data?.message ??
+        (error instanceof Error ? error.message : "Failed to create event.");
+      console.error("Failed to create event:", error);
+      toast.error(message);
+    } finally {
+      setIsCreatingEvent(false);
+    }
   };
   return (
     <div className="app-page app-page-wide space-y-5">
@@ -232,9 +270,10 @@ function DynamicTemplateForm() {
           {canCreateEvent && (
             <button
               onClick={handleCreateEvent}
+              disabled={isCreatingEvent}
               className="btn btn-success w-full sm:w-auto"
             >
-              Create Event
+              {isCreatingEvent ? "Creating..." : "Create Event"}
             </button>
           )}
         </div>
