@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { MoveLeft } from "lucide-react";
+import { MoveLeft, MoveRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import { useTemplateStore } from "../stores/templateStore";
@@ -178,7 +178,9 @@ function DynamicTemplateForm() {
       <TabNavigation isFormComplete={isFormComplete} />
 
       <div>
-        <section className={isSetupDetailsTab ? "app-surface-soft" : "app-surface"}>
+        <section
+          className={isSetupDetailsTab ? "app-surface-soft" : "app-surface"}
+        >
           <div className="app-section space-y-5">
             {isSetupDetailsTab && (
               <h2 className="text-xl font-semibold tracking-tight">
@@ -263,29 +265,65 @@ function DynamicTemplateForm() {
               </>
             )}
 
-            {currentTab === "judges" && <JudgesTab showLinkGeneration={false} />}
+            {currentTab === "judges" && (
+              <JudgesTab showLinkGeneration={false} />
+            )}
             {currentTab === "contestants" && <ContestantsTab />}
           </div>
         </section>
       </div>
 
       {(currentTab === "judges" || currentTab === "contestants") && (
-        <div className="flex w-full flex-col gap-2 pt-1 sm:flex-row sm:justify-end">
-          <button
-            onClick={handleSaveDraft}
-            className="btn btn-outline w-full sm:w-auto"
-          >
-            Save as Draft
-          </button>
-          {canCreateEvent && (
+        <div className="flex w-full flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            {currentTab === "judges" && (
+              <button
+                type="button"
+                onClick={() => setCurrentTab("details")}
+                className="btn btn-ghost w-full sm:w-auto"
+              >
+                <MoveLeft className="size-4" /> Add Details
+              </button>
+            )}
+            {currentTab === "contestants" && (
+              <button
+                type="button"
+                onClick={() => setCurrentTab("judges")}
+                className="btn btn-ghost w-full sm:w-auto"
+              >
+                <MoveLeft className="size-4" /> Add Judges
+              </button>
+            )}
+          </div>
+
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
             <button
-              onClick={handleCreateEvent}
-              disabled={isCreatingEvent}
-              className="btn btn-success w-full sm:w-auto"
+              type="button"
+              onClick={handleSaveDraft}
+              className="btn btn-outline w-full sm:w-auto"
             >
-              {isCreatingEvent ? "Creating..." : "Create Event"}
+              Save as Draft
             </button>
-          )}
+            {currentTab === "judges" && (
+              <button
+                type="button"
+                onClick={() => setCurrentTab("contestants")}
+                className="btn btn-primary w-full sm:w-auto"
+              >
+                Add Contestants <MoveRight className="size-4" />
+              </button>
+            )}
+            {canCreateEvent && (
+              <button
+                type="button"
+                onClick={handleCreateEvent}
+                disabled={isCreatingEvent}
+                className="btn btn-success w-full sm:w-auto"
+              >
+                {isCreatingEvent ? "Creating..." : "Create Event"}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
