@@ -316,7 +316,7 @@ export default function ScoringTab() {
               <th>Judge Type</th>
               <th>Entered Value</th>
               <th>Status</th>
-              <th>Lock</th>
+              <th>Confirm</th>
             </tr>
           </thead>
           <tbody>
@@ -375,7 +375,9 @@ export default function ScoringTab() {
                           lockingJudgeId === judge.id
                         }
                       >
-                        {lockingJudgeId === judge.id ? "Locking..." : "Lock"}
+                        {lockingJudgeId === judge.id
+                          ? "Confirming..."
+                          : "Confirm"}
                       </button>
                     </td>
                   </tr>
