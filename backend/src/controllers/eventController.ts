@@ -16,6 +16,7 @@ import {
   type SubmitJudgeScoreInput,
   updateEvent,
   updateEventJudge,
+  updateEventContestant,
   type UpdateEventInput,
 } from "../services/eventService.ts";
 
@@ -354,6 +355,63 @@ export async function addEventContestantController(req: Request, res: Response) 
     console.error(error);
     res.status(500).json({
       message: "Failed to add contestant",
+    });
+  }
+}
+
+export async function updateEventContestantController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const eventId = getRouteParamId(req);
+    const rawContestantId = req.params.contestantId;
+    const contestantId = Array.isArray(rawContestantId)
+      ? rawContestantId[0]
+      : rawContestantId;
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    if (typeof contestantId !== "string" || contestantId.trim() === "") {
+      return res.status(400).json({
+        message: "Contestant id is required",
+      });
+    }
+
+    const payload = req.body as AddEventContestantInput;
+    const updatedContestant = await updateEventContestant(
+      eventId,
+      contestantId,
+      payload,
+    );
+
+    if (!updatedContestant) {
+      return res.status(404).json({
+        message: "Contestant not found",
+      });
+    }
+
+    res.status(200).json(updatedContestant);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_CONTESTANT_GENDER") {
+      return res.status(400).json({
+        message: "Contestant gender must be Male or Female",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid contestant input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to update contestant",
     });
   }
 }
