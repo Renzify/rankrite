@@ -136,7 +136,17 @@ export default function JudgesTab({ showLinkGeneration }) {
   return (
     <>
       <div className="w-full space-y-5">
-        <h2 className="text-xl font-semibold tracking-tight">Manage Judges</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Manage Judges
+          </h2>
+          <div
+            className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
+            data-tip="Judges Tab: Manage the event’s judges and their scoring access. It supports judge assignment, role setup, and score page access."
+          >
+            ?
+          </div>
+        </div>
 
         <form
           className="grid gap-4 sm:grid-cols-[1.4fr_1fr_0.8fr_auto]"
@@ -233,7 +243,7 @@ export default function JudgesTab({ showLinkGeneration }) {
                               : "Available after the event is created."
                           }
                         >
-                          Generate
+                          Generate Link
                         </button>
                       </td>
                     ) : null}
@@ -371,4 +381,3 @@ export default function JudgesTab({ showLinkGeneration }) {
     </>
   );
 }
-

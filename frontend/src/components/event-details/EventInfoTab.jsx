@@ -65,33 +65,30 @@ export default function EventInfoTab() {
     );
   }, [eventDetails]);
 
-  const savedDisplayFields = useMemo(
-    () => {
-      const savedTemplateFields = [
-        ...(eventDetails?.template?.fields ?? []),
-      ].sort((a, b) => a.sortOrder - b.sortOrder);
-      const savedFormValues = eventDetails?.formValues ?? {};
+  const savedDisplayFields = useMemo(() => {
+    const savedTemplateFields = [
+      ...(eventDetails?.template?.fields ?? []),
+    ].sort((a, b) => a.sortOrder - b.sortOrder);
+    const savedFormValues = eventDetails?.formValues ?? {};
 
-      return savedTemplateFields
-        .filter((field) => field.fieldType === "select" && field.key !== "sport")
-        .filter((field) => {
-          if (!field.conditions?.length) return true;
-          return field.conditions.some((condition) =>
-            isConditionMet(condition, savedTemplateFields, savedFormValues),
-          );
-        })
-        .map((field) => {
-          const value = savedFormValues[field.key];
-          if (value === undefined || value === null || value === "") {
-            return { field, display: "--" };
-          }
+    return savedTemplateFields
+      .filter((field) => field.fieldType === "select" && field.key !== "sport")
+      .filter((field) => {
+        if (!field.conditions?.length) return true;
+        return field.conditions.some((condition) =>
+          isConditionMet(condition, savedTemplateFields, savedFormValues),
+        );
+      })
+      .map((field) => {
+        const value = savedFormValues[field.key];
+        if (value === undefined || value === null || value === "") {
+          return { field, display: "--" };
+        }
 
-          const option = (field.options ?? []).find((opt) => opt.value === value);
-          return { field, display: option?.label ?? String(value) };
-        });
-    },
-    [eventDetails],
-  );
+        const option = (field.options ?? []).find((opt) => opt.value === value);
+        return { field, display: option?.label ?? String(value) };
+      });
+  }, [eventDetails]);
 
   const canConfirmEdit =
     draftTitle.trim().length > 0 &&
@@ -125,9 +122,17 @@ export default function EventInfoTab() {
   return (
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold tracking-tight">
-          {isEditing ? "Edit Event Info" : "Event Info"}
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold tracking-tight">
+            {isEditing ? "Edit Event Info" : "Event Info"}
+          </h2>
+          <div
+            className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
+            data-tip="Event Info: View and manage the event’s core details and configuration. It contains the basic information that defines the event."
+          >
+            ?
+          </div>
+        </div>
         {isEditing ? (
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -168,7 +173,9 @@ export default function EventInfoTab() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
                 Event Type
               </p>
-              <p className="mt-2 text-sm font-semibold">{savedEventTypeLabel}</p>
+              <p className="mt-2 text-sm font-semibold">
+                {savedEventTypeLabel}
+              </p>
             </div>
             <div className="rounded-xl border border-base-300 bg-base-100 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">

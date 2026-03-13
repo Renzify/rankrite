@@ -58,7 +58,9 @@ export default function ScoringTab() {
 
     let isMounted = true;
 
-    const syncSubmittedScores = async ({ showLoading } = { showLoading: false }) => {
+    const syncSubmittedScores = async (
+      { showLoading } = { showLoading: false },
+    ) => {
       if (showLoading) {
         setIsLoadingSubmittedScores(true);
       }
@@ -157,8 +159,18 @@ export default function ScoringTab() {
 
   return (
     <div className="w-full space-y-5">
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight">Scoring Monitor</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Scoring Monitor
+          </h2>
+          <div
+            className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
+            data-tip="Scoring Tab: Monitor live score submissions and scoring progress during the event. It also handles score confirmation and result computation."
+          >
+            ?
+          </div>
+        </div>
         {isLoadingSubmittedScores ? (
           <p className="text-sm text-base-content/60">
             Loading submitted judge scores...
@@ -192,7 +204,8 @@ export default function ScoringTab() {
           <tbody>
             {judges.length ? (
               judges.map((judge, index) => {
-                const scoreEntry = judgeScores[judge.id] ?? createEmptyScoreEntry();
+                const scoreEntry =
+                  judgeScores[judge.id] ?? createEmptyScoreEntry();
                 const parsedValue = Number.parseFloat(scoreEntry.value);
                 const hasValidScore = Number.isFinite(parsedValue);
                 const status = scoreEntry.locked ? "Locked" : "Pending";
