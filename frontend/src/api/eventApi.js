@@ -73,6 +73,18 @@ export const addEventContestant = async (eventId, payload) => {
   return res.data;
 };
 
+export const updateEventContestant = async (
+  eventId,
+  contestantId,
+  payload,
+) => {
+  const res = await axiosInstance.put(
+    `/events/${eventId}/contestants/${contestantId}`,
+    payload,
+  );
+  return res.data;
+};
+
 export const importEventContestants = async (eventId, payload) => {
   const res = await axiosInstance.post(
     `/events/${eventId}/contestants/import`,

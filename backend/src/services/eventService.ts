@@ -586,6 +586,68 @@ export async function addEventContestant(
   return createdContestants?.[0] ?? null;
 }
 
+export async function updateEventContestant(
+  eventId: string,
+  contestantId: string,
+  input: AddEventContestantInput,
+): Promise<EventContestantRecord | null> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedContestantId = contestantId?.trim();
+  const fullName = input.fullName?.trim();
+  const teamName = input.teamName?.trim() || null;
+  const gender = normalizeContestantGender(input.gender);
+  const entryNo =
+    input.entryNo && input.entryNo > 0 ? Number(input.entryNo) : null;
+
+  if (!normalizedEventId || !normalizedContestantId || !fullName) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingContestantLink = await tx.query.eventContestant.findFirst({
+      where: and(
+        eq(eventContestant.eventId, normalizedEventId),
+        eq(eventContestant.contestantId, normalizedContestantId),
+      ),
+    });
+
+    if (!existingContestantLink) {
+      return null;
+    }
+
+    await tx
+      .update(contestant)
+      .set({
+        fullName,
+        teamName,
+        gender,
+      })
+      .where(eq(contestant.id, normalizedContestantId));
+
+    await tx
+      .update(eventContestant)
+      .set({
+        entryNo: entryNo ?? existingContestantLink.entryNo,
+      })
+      .where(eq(eventContestant.id, existingContestantLink.id));
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return {
+      id: normalizedContestantId,
+      fullName,
+      teamName,
+      gender,
+      entryNo: entryNo ?? existingContestantLink.entryNo,
+    };
+  });
+}
+
 export async function addEventContestants(
   eventId: string,
   input: AddEventContestantsInput,

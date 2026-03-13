@@ -14,17 +14,22 @@ export default function ContestantsTab() {
   const contestants = outletContext.contestants ?? storeContestants;
   const setContestants = outletContext.setContestants ?? storeSetContestants;
   const onCreateContestant = outletContext.onCreateContestant;
+  const onUpdateContestant = outletContext.onUpdateContestant;
   const onImportContestants = outletContext.onImportContestants;
   const isSavingContestant = outletContext.isSavingContestant ?? false;
 
   const {
     fileInputRef,
     formData,
+    editingContestantId,
     importMessage,
     importMessageTone,
     isImportingCsv,
+    submitButtonLabel,
     handleInputChange,
     handleContestantSubmit,
+    handleStartEditing,
+    handleCancelEditing,
     handleImportClick,
     handleCsvImport,
     handleCsvExport,
@@ -33,13 +38,21 @@ export default function ContestantsTab() {
     contestants,
     setContestants,
     onCreateContestant,
+    onUpdateContestant,
     onImportContestants,
   });
 
   return (
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold tracking-tight">Contestants</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-xl font-semibold tracking-tight">Contestants</h2>
+          {editingContestantId ? (
+            <span className="badge badge-outline badge-lg">
+              Editing Contestant
+            </span>
+          ) : null}
+        </div>
 
         <div className="flex flex-wrap gap-2">
           <input
@@ -125,13 +138,27 @@ export default function ContestantsTab() {
           </select>
         </label>
 
-        <div className="flex items-end">
+        <div className="flex items-end gap-2">
+          {editingContestantId ? (
+            <button
+              type="button"
+              className="btn btn-outline w-full sm:w-auto"
+              onClick={handleCancelEditing}
+              disabled={isSavingContestant}
+            >
+              Cancel
+            </button>
+          ) : null}
           <button
             type="submit"
             className="btn btn-neutral w-full sm:w-auto"
             disabled={!formData.fullName.trim() || isSavingContestant}
           >
-            {isSavingContestant ? "Submitting..." : "Submit"}
+            {isSavingContestant
+              ? editingContestantId
+                ? "Saving..."
+                : "Submitting..."
+              : submitButtonLabel}
           </button>
         </div>
       </form>
@@ -158,21 +185,37 @@ export default function ContestantsTab() {
               <th>Contestant Name</th>
               <th>Delegation</th>
               <th>Gender</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {contestants.length ? (
               contestants.map((contestant, index) => (
-                <tr key={contestant.id}>
+                <tr
+                  key={contestant.id}
+                  className={
+                    editingContestantId === contestant.id ? "bg-base-200/30" : ""
+                  }
+                >
                   <th>{index + 1}</th>
                   <td>{contestant.fullName}</td>
                   <td>{getContestantDelegation(contestant) || "-"}</td>
                   <td>{contestant.gender || "-"}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline"
+                      onClick={() => handleStartEditing(contestant)}
+                      disabled={isSavingContestant}
+                    >
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="text-base-content/60">
+                <td colSpan={5} className="text-base-content/60">
                   No contestants added for this event yet.
                 </td>
               </tr>

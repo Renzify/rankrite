@@ -9,6 +9,7 @@ import {
   importEventContestants,
   updateEvent,
   updateEventJudge,
+  updateEventContestant,
 } from "../api/eventApi";
 import StatusBadge from "../components/StatusBadge";
 import { buildEventPayload } from "../lib/eventPayload";
@@ -314,6 +315,56 @@ export default function EventDetails() {
     }
   };
 
+  const handleUpdateContestant = async (contestantId, contestantInput) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingContestant(true);
+      const updatedContestant = await updateEventContestant(
+        eventId,
+        contestantId,
+        {
+          fullName: contestantInput.fullName,
+          teamName:
+            contestantInput.teamName ?? contestantInput.delegation ?? null,
+          gender: contestantInput.gender ?? null,
+          entryNo: contestantInput.entryNo ?? null,
+        },
+      );
+
+      setContestants((prev) =>
+        prev.map((contestant) =>
+          contestant.id === contestantId
+            ? mapContestantForForm(updatedContestant)
+            : contestant,
+        ),
+      );
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              contestants: (prev.contestants ?? []).map((contestant) =>
+                contestant.id === contestantId ? updatedContestant : contestant,
+              ),
+            }
+          : prev,
+      );
+
+      toast.success("Contestant updated");
+      return updatedContestant;
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to update contestant.");
+      console.error("Failed to update contestant:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingContestant(false);
+    }
+  };
+
   const handleImportContestants = async (contestantInputs) => {
     if (!eventId) {
       throw new Error("MISSING_EVENT_ID");
@@ -458,6 +509,7 @@ export default function EventDetails() {
               contestants,
               setContestants,
               onCreateContestant: handleCreateContestant,
+              onUpdateContestant: handleUpdateContestant,
               onImportContestants: handleImportContestants,
               isSavingContestant,
             }}

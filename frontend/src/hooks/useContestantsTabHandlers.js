@@ -3,7 +3,8 @@ import {
   buildContestantCsv,
   buildContestantCsvTemplate,
   CONTESTANT_GENDER_OPTIONS,
-  createContestantRecord,
+  createContestantId,
+  getContestantDelegation,
   normalizeContestantGender,
   parseContestantCsv,
   validateContestantCsvFile,
@@ -39,13 +40,20 @@ export function useContestantsTabHandlers({
   contestants,
   setContestants,
   onCreateContestant,
+  onUpdateContestant,
   onImportContestants,
 }) {
   const [formData, setFormData] = useState(EMPTY_FORM_DATA);
+  const [editingContestantId, setEditingContestantId] = useState(null);
   const [importMessage, setImportMessage] = useState("");
   const [importMessageTone, setImportMessageTone] = useState("info");
   const [isImportingCsv, setIsImportingCsv] = useState(false);
   const fileInputRef = useRef(null);
+
+  const resetFormData = () => {
+    setFormData(EMPTY_FORM_DATA);
+    setEditingContestantId(null);
+  };
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -69,22 +77,74 @@ export function useContestantsTabHandlers({
       return;
     }
 
-    const nextContestant = createContestantRecord({
-      ...formData,
+    const trimmedDelegation = String(formData.delegation ?? "").trim();
+    const nextContestant = {
+      fullName: String(formData.fullName ?? "").trim(),
+      delegation: trimmedDelegation,
+      teamName: trimmedDelegation,
       gender: normalizedGender ?? "",
-    });
+    };
 
-    if (onCreateContestant) {
+    if (editingContestantId) {
+      const existingContestant = contestants.find(
+        (contestant) => contestant.id === editingContestantId,
+      );
+      const updatedContestant = {
+        ...existingContestant,
+        ...nextContestant,
+        id: editingContestantId,
+        entryNo: existingContestant?.entryNo ?? null,
+      };
+
+      if (onUpdateContestant) {
+        try {
+          await onUpdateContestant(editingContestantId, updatedContestant);
+        } catch {
+          return;
+        }
+      } else {
+        setContestants((prev) =>
+          prev.map((contestant) =>
+            contestant.id === editingContestantId
+              ? updatedContestant
+              : contestant,
+          ),
+        );
+      }
+    } else if (onCreateContestant) {
       try {
         await onCreateContestant(nextContestant);
       } catch {
         return;
       }
     } else {
-      setContestants((prev) => [...prev, nextContestant]);
+      setContestants((prev) => [
+        ...prev,
+        {
+          id: createContestantId(),
+          ...nextContestant,
+        },
+      ]);
     }
 
-    setFormData(EMPTY_FORM_DATA);
+    resetFormData();
+    setImportMessage("");
+    setImportMessageTone("info");
+  };
+
+  const handleStartEditing = (contestant) => {
+    setEditingContestantId(contestant.id);
+    setFormData({
+      fullName: contestant.fullName ?? "",
+      delegation: getContestantDelegation(contestant),
+      gender: contestant.gender ?? "",
+    });
+    setImportMessage("");
+    setImportMessageTone("info");
+  };
+
+  const handleCancelEditing = () => {
+    resetFormData();
     setImportMessage("");
     setImportMessageTone("info");
   };
@@ -104,8 +164,10 @@ export function useContestantsTabHandlers({
 
       if (onImportContestants) {
         const createdContestants = await onImportContestants(importedRows);
+        resetFormData();
         setImportMessage(`Imported ${createdContestants.length} contestant(s).`);
       } else {
+        resetFormData();
         setContestants(importedRows);
         setImportMessage(`Imported ${importedRows.length} contestant(s).`);
       }
@@ -163,14 +225,22 @@ export function useContestantsTabHandlers({
     setImportMessageTone("info");
   };
 
+  const submitButtonLabel = editingContestantId
+    ? "Save Changes"
+    : "Submit";
+
   return {
     fileInputRef,
     formData,
+    editingContestantId,
     importMessage,
     importMessageTone,
     isImportingCsv,
+    submitButtonLabel,
     handleInputChange,
     handleContestantSubmit,
+    handleStartEditing,
+    handleCancelEditing,
     handleImportClick,
     handleCsvImport,
     handleCsvExport,
