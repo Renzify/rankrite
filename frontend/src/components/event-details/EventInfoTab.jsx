@@ -18,6 +18,10 @@ function isConditionMet(condition, fields, values) {
   return selectedParentValue === requiredOption.value;
 }
 
+function formatDisplayLabel(label) {
+  return String(label ?? "").replace(/^select\s+/i, "").trim();
+}
+
 export default function EventInfoTab() {
   const {
     isCatalogLoading,
@@ -65,33 +69,30 @@ export default function EventInfoTab() {
     );
   }, [eventDetails]);
 
-  const savedDisplayFields = useMemo(
-    () => {
-      const savedTemplateFields = [
-        ...(eventDetails?.template?.fields ?? []),
-      ].sort((a, b) => a.sortOrder - b.sortOrder);
-      const savedFormValues = eventDetails?.formValues ?? {};
+  const savedDisplayFields = useMemo(() => {
+    const savedTemplateFields = [
+      ...(eventDetails?.template?.fields ?? []),
+    ].sort((a, b) => a.sortOrder - b.sortOrder);
+    const savedFormValues = eventDetails?.formValues ?? {};
 
-      return savedTemplateFields
-        .filter((field) => field.fieldType === "select" && field.key !== "sport")
-        .filter((field) => {
-          if (!field.conditions?.length) return true;
-          return field.conditions.some((condition) =>
-            isConditionMet(condition, savedTemplateFields, savedFormValues),
-          );
-        })
-        .map((field) => {
-          const value = savedFormValues[field.key];
-          if (value === undefined || value === null || value === "") {
-            return { field, display: "--" };
-          }
+    return savedTemplateFields
+      .filter((field) => field.fieldType === "select" && field.key !== "sport")
+      .filter((field) => {
+        if (!field.conditions?.length) return true;
+        return field.conditions.some((condition) =>
+          isConditionMet(condition, savedTemplateFields, savedFormValues),
+        );
+      })
+      .map((field) => {
+        const value = savedFormValues[field.key];
+        if (value === undefined || value === null || value === "") {
+          return { field, display: "--" };
+        }
 
-          const option = (field.options ?? []).find((opt) => opt.value === value);
-          return { field, display: option?.label ?? String(value) };
-        });
-    },
-    [eventDetails],
-  );
+        const option = (field.options ?? []).find((opt) => opt.value === value);
+        return { field, display: option?.label ?? String(value) };
+      });
+  }, [eventDetails]);
 
   const canConfirmEdit =
     draftTitle.trim().length > 0 &&
@@ -168,7 +169,9 @@ export default function EventInfoTab() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
                 Event Type
               </p>
-              <p className="mt-2 text-sm font-semibold">{savedEventTypeLabel}</p>
+              <p className="mt-2 text-sm font-semibold">
+                {savedEventTypeLabel}
+              </p>
             </div>
             <div className="rounded-xl border border-base-300 bg-base-100 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
@@ -203,7 +206,7 @@ export default function EventInfoTab() {
                     className="rounded-xl border border-base-300 bg-base-100 p-4"
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
-                      {field.label}
+                      {formatDisplayLabel(field.label)}
                     </p>
                     <p className="mt-2 text-sm font-semibold">{display}</p>
                   </div>
