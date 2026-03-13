@@ -275,22 +275,18 @@ export default function ScoringTab() {
 
   return (
     <div className="w-full space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="space-y-2">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold tracking-tight">
             Scoring Monitor
           </h2>
           <div
-            className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
+            className="tooltip tooltip-warning tooltip-bottom z-[100] flex h-[25px] w-[25px] cursor-help items-center justify-center rounded-full border-2 border-warning bg-transparent text-sm font-medium text-warning transition-all duration-200 hover:bg-warning hover:text-warning-content"
             data-tip="Scoring Tab: Monitor live score submissions and scoring progress during the event. It also handles score confirmation and result computation."
           >
             ?
           </div>
         </div>
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight">
-          Scoring Monitor
-        </h2>
         <p className="text-sm text-base-content/70">
           Click a contestant in the computation table to view that entry&apos;s
           judge submissions.
