@@ -1,12 +1,12 @@
+import { useState } from "react";
 import { useOutletContext } from "react-router";
 import {
   CONTESTANT_GENDER_OPTIONS,
   getContestantDelegation,
 } from "../../lib/contestantCsv";
 import ConfirmDeleteModal from "../ConfirmDeleteModal";
-import { useTemplateStore } from "../../stores/templateStore";
 import { useContestantsTabHandlers } from "../../hooks/useContestantsTabHandlers";
-import { useState } from "react";
+import { useTemplateStore } from "../../stores/templateStore";
 
 export default function ContestantsTab() {
   const outletContext = useOutletContext() ?? {};
@@ -81,27 +81,24 @@ export default function ContestantsTab() {
 
   return (
     <div className="w-full space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-
-        <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold tracking-tight">
-            Manage Contestants
-          </h2>
-          <div
-            className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200 mt-1"
-            data-tip="Contestants Tab: Manage the list of event contestants. It supports contestant entry, bulk import, and list export."
-          >
-            ?
-          </div>
-
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-xl font-semibold tracking-tight">Contestants</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold tracking-tight">
+              Manage Contestants
+            </h2>
+            <div
+              className="tooltip tooltip-warning tooltip-bottom z-[100] mt-1 flex h-[25px] w-[25px] cursor-help items-center justify-center rounded-full border-2 border-warning bg-transparent text-sm font-medium text-warning transition-all duration-200 hover:bg-warning hover:text-warning-content"
+              data-tip="Contestants Tab: Manage the list of event contestants. It supports contestant entry, bulk import, and list export."
+            >
+              ?
+            </div>
+          </div>
           {editingContestantId ? (
             <span className="badge badge-outline badge-lg">
               Editing Contestant
             </span>
           ) : null}
-
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -243,13 +240,11 @@ export default function ContestantsTab() {
                 <tr
                   key={contestant.id}
                   className={
-                    editingContestantId === contestant.id
-                      ? "bg-base-200/30"
-                      : ""
+                    editingContestantId === contestant.id ? "bg-base-200/30" : ""
                   }
                 >
                   <td>
-                    {index + 1 + "."} {contestant.fullName}
+                    {index + 1}. {contestant.fullName}
                   </td>
                   <td>{getContestantDelegation(contestant) || "-"}</td>
                   <td>{contestant.gender || "-"}</td>
@@ -277,7 +272,7 @@ export default function ContestantsTab() {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="text-base-content/60">
+                <td colSpan={4} className="text-base-content/60">
                   No contestants added for this event yet.
                 </td>
               </tr>
