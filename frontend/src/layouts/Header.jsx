@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Menu, X } from "lucide-react";
-import { DropdownMenu } from "../helpers/Dropdown";
+import { DropdownMenu } from "./helpers/Dropdown";
 
 function Header() {
   const navigate = useNavigate();
