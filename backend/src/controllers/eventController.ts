@@ -8,6 +8,7 @@ import {
   type AddEventContestantInput,
   type AddEventJudgeInput,
   type CreateEventDraftInput,
+  deleteEventJudge,
   deleteEvent,
   getEventDetails,
   getEventJudgeScores,
@@ -369,6 +370,47 @@ export async function updateEventJudgeController(req: Request, res: Response) {
     console.error(error);
     res.status(500).json({
       message: "Failed to update judge",
+    });
+  }
+}
+
+export async function deleteEventJudgeController(req: Request, res: Response) {
+  try {
+    const eventId = getRouteParamId(req);
+    const rawJudgeId = req.params.judgeId;
+    const judgeId = Array.isArray(rawJudgeId) ? rawJudgeId[0] : rawJudgeId;
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    if (typeof judgeId !== "string" || judgeId.trim() === "") {
+      return res.status(400).json({
+        message: "Judge id is required",
+      });
+    }
+
+    const deletedJudge = await deleteEventJudge(eventId, judgeId);
+
+    if (!deletedJudge) {
+      return res.status(404).json({
+        message: "Judge not found",
+      });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
+      return res.status(400).json({
+        message: "Invalid judge input",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to delete judge",
     });
   }
 }

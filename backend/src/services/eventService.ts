@@ -575,6 +575,55 @@ export async function updateEventJudge(
   });
 }
 
+export async function deleteEventJudge(
+  eventId: string,
+  judgeId: string,
+): Promise<boolean> {
+  const normalizedEventId = eventId?.trim();
+  const normalizedJudgeId = judgeId?.trim();
+
+  if (!normalizedEventId || !normalizedJudgeId) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  return db.transaction(async (tx) => {
+    const existingAssignment = await tx.query.eventJudgeAssignment.findFirst({
+      where: and(
+        eq(eventJudgeAssignment.eventId, normalizedEventId),
+        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+      ),
+    });
+
+    if (!existingAssignment) {
+      return false;
+    }
+
+    await tx
+      .delete(eventJudgeAssignment)
+      .where(eq(eventJudgeAssignment.id, existingAssignment.id));
+
+    const remainingAssignments = await tx
+      .select({
+        judgeId: eventJudgeAssignment.judgeId,
+      })
+      .from(eventJudgeAssignment)
+      .where(eq(eventJudgeAssignment.judgeId, normalizedJudgeId));
+
+    if (!remainingAssignments.length) {
+      await tx.delete(judge).where(eq(judge.id, normalizedJudgeId));
+    }
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+
+    return true;
+  });
+}
+
 export async function addEventContestant(
   eventId: string,
   input: AddEventContestantInput,

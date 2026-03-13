@@ -5,6 +5,7 @@ import { useDynamicTemplate } from "../hooks/useDynamicTemplate";
 import {
   addEventContestant,
   addEventJudge,
+  deleteEventJudge,
   getEventDetails,
   importEventContestants,
   updateEvent,
@@ -274,6 +275,42 @@ export default function EventDetails() {
     }
   };
 
+  const handleDeleteJudge = async (judgeId) => {
+    if (!eventId) {
+      toast.error("Missing event id.");
+      throw new Error("MISSING_EVENT_ID");
+    }
+
+    try {
+      setIsSavingJudge(true);
+      await deleteEventJudge(eventId, judgeId);
+
+      setJudges((prev) => prev.filter((judge) => judge.id !== judgeId));
+      setEventDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              judges: (prev.judges ?? []).filter((judge) => judge.id !== judgeId),
+            }
+          : prev,
+      );
+      setJudgeScores((prev) => {
+        const next = { ...prev };
+        delete next[judgeId];
+        return next;
+      });
+
+      toast.success("Judge deleted");
+    } catch (error) {
+      const message = getApiErrorMessage(error, "Failed to delete judge.");
+      console.error("Failed to delete judge:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSavingJudge(false);
+    }
+  };
+
   const handleCreateContestant = async (contestantInput) => {
     if (!eventId) {
       toast.error("Missing event id.");
@@ -503,6 +540,7 @@ export default function EventDetails() {
               setJudges,
               onCreateJudge: handleCreateJudge,
               onUpdateJudge: handleUpdateJudge,
+              onDeleteJudge: handleDeleteJudge,
               isSavingJudge,
               judgeScores,
               setJudgeScores,

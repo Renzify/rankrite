@@ -4,6 +4,7 @@ import { DropdownMenu } from "../helpers/Dropdown";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import StatusBadge from "../components/StatusBadge";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import { useEventStore } from "../stores/eventStore";
 import { useShallow } from "zustand/react/shallow";
 
@@ -146,8 +147,15 @@ function Dashboard() {
         onDeleteEvent={handleOpenDeleteModal}
       />
 
-      <DeleteEventModal
-        event={eventPendingDelete}
+      <ConfirmDeleteModal
+        isOpen={Boolean(eventPendingDelete)}
+        title="Delete Event"
+        name={eventPendingDelete?.name ?? ""}
+        descriptionLines={[
+          "This will permanently remove the event and its related records.",
+          "The action cannot be undone.",
+        ]}
+        confirmLabel="Delete Event"
         isDeleting={deletingEventId === eventPendingDelete?.id}
         onClose={handleCloseDeleteModal}
         onConfirm={handleDeleteEvent}
@@ -331,49 +339,3 @@ function EventList({
   );
 }
 
-function DeleteEventModal({ event, isDeleting, onClose, onConfirm }) {
-  if (!event) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-xl rounded-2xl border border-base-300 bg-base-100 p-5 shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold">Delete Event</h3>
-            <p className="text-sm text-base-content/70">{event.name}</p>
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-2 text-sm text-base-content/80">
-          <p>This will permanently remove the event and its related records.</p>
-          <p>The action cannot be undone.</p>
-        </div>
-
-        <div className="mt-6 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={onClose}
-            disabled={isDeleting}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn btn-error btn-sm"
-            onClick={onConfirm}
-            disabled={isDeleting}
-          >
-            {isDeleting ? "Deleting..." : "Delete Event"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
