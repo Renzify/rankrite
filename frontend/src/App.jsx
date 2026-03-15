@@ -4,7 +4,7 @@ import { Toaster } from "react-hot-toast";
 import Header from "./layouts/Header";
 import Footer from "./layouts/Footer";
 import DynamicTemplateForm from "./pages/dynamic-template-form/DynamicTemplateForm";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/dashboard/Dashboard";
 import Auth from "./auth/Auth";
 import SignupCard from "./auth/components/SignupCard";
 import LoginCard from "./auth/components/LoginCard";
