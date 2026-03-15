@@ -18,7 +18,7 @@ import DisplayControlTab from "./pages/event-details/components/display-control-
 import DisplayView from "./pages/DisplayView";
 import JudgesTab from "./pages/event-details/components/judge-tab/JudgesTab";
 import ContestantsTab from "./pages/event-details/components/contestant-tab/ContestantsTab";
-import Settings from "./pages/Settings";
+import Settings from "./pages/settings/Settings";
 
 function AppLayout() {
   return (
