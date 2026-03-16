@@ -53,6 +53,13 @@ export type EventContestantRecord = {
   teamName: string | null;
   gender: string | null;
   entryNo: number;
+  dScore?: number | null;
+  aScore?: number | null;
+  eScore?: number | null;
+  penalties?: number | null;
+  totalScore?: number | null;
+  finalScore?: number | null;
+  score?: number | null;
 };
 
 export type AddEventJudgeInput = {
@@ -101,6 +108,84 @@ function normalizeContestantGender(value?: string | null) {
   if (normalizedValue === "female" || normalizedValue === "f") return "Female";
 
   throw new Error("INVALID_CONTESTANT_GENDER");
+}
+
+function normalizeJudgeTypeName(value?: string | null) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function parsePositiveScoreValue(value: number | null | undefined) {
+  return Number.isFinite(value) && Number(value) > 0 ? Number(value) : null;
+}
+
+function parseNonNegativeScoreValue(value: number | null | undefined) {
+  return Number.isFinite(value) && Number(value) >= 0 ? Number(value) : null;
+}
+
+function getMedianScore(values: number[]) {
+  if (!values.length) return null;
+
+  const sortedValues = [...values].sort((left, right) => left - right);
+  const middleIndex = Math.floor(sortedValues.length / 2);
+
+  if (sortedValues.length % 2 === 0) {
+    return (sortedValues[middleIndex - 1] + sortedValues[middleIndex]) / 2;
+  }
+
+  return sortedValues[middleIndex];
+}
+
+function computeDifficultyAverageFromValues(
+  rawValues: Array<number | null | undefined>,
+  configuredJudgeCount: number,
+) {
+  if (configuredJudgeCount === 1) {
+    return parsePositiveScoreValue(rawValues[0]);
+  }
+
+  if (configuredJudgeCount === 2) {
+    const first = parsePositiveScoreValue(rawValues[0]);
+    const second = parsePositiveScoreValue(rawValues[1]);
+
+    if (first === null || second === null) {
+      return null;
+    }
+
+    return (first + second) / 2;
+  }
+
+  return null;
+}
+
+function computeMedianJudgeTypeScoreFromValues(
+  rawValues: Array<number | null | undefined>,
+) {
+  const submittedScores = rawValues
+    .map(parseNonNegativeScoreValue)
+    .filter((value): value is number => value !== null);
+
+  return getMedianScore(submittedScores);
+}
+
+function computePenaltyScoreFromValues(
+  rawValues: Array<number | null | undefined>,
+  configuredJudgeCount: number,
+) {
+  if (configuredJudgeCount === 0) {
+    return 0;
+  }
+
+  let total = 0;
+  for (const rawValue of rawValues) {
+    const parsedValue = parseNonNegativeScoreValue(rawValue);
+    if (parsedValue === null) {
+      return null;
+    }
+
+    total += parsedValue;
+  }
+
+  return total;
 }
 
 export async function createEventDraft(input: CreateEventDraftInput) {
@@ -1283,6 +1368,58 @@ export async function getEventDetails(eventId: string): Promise<EventDetails | n
     eventPhaseId: assignment.eventPhaseId ?? null,
   }));
 
+  const difficultyBodyAssignments = judgeAssignments.filter(
+    (assignment) =>
+      normalizeJudgeTypeName(assignment.judgeType?.name) === "difficulty body",
+  );
+  const difficultyApparatusAssignments = judgeAssignments.filter(
+    (assignment) =>
+      normalizeJudgeTypeName(assignment.judgeType?.name) ===
+      "difficulty apparatus",
+  );
+  const artistryAssignments = judgeAssignments.filter(
+    (assignment) => normalizeJudgeTypeName(assignment.judgeType?.name) === "artistry",
+  );
+  const executionAssignments = judgeAssignments.filter(
+    (assignment) => normalizeJudgeTypeName(assignment.judgeType?.name) === "execution",
+  );
+  const timeJudgeAssignments = judgeAssignments.filter(
+    (assignment) => normalizeJudgeTypeName(assignment.judgeType?.name) === "time judge",
+  );
+  const lineJudgeAssignments = judgeAssignments.filter(
+    (assignment) => normalizeJudgeTypeName(assignment.judgeType?.name) === "line judge",
+  );
+
+  const latestScoreRows = await db
+    .select({
+      contestantId: scoreSheet.contestantId,
+      judgeAssignmentId: eventJudgeAssignment.id,
+      rawScore: judgeScore.rawScore,
+    })
+    .from(judgeScore)
+    .innerJoin(
+      eventJudgeAssignment,
+      eq(judgeScore.judgeAssignmentId, eventJudgeAssignment.id),
+    )
+    .innerJoin(scoreSheet, eq(judgeScore.scoreSheetId, scoreSheet.id))
+    .where(
+      and(
+        eq(scoreSheet.eventId, eventId),
+        eq(eventJudgeAssignment.eventId, eventId),
+      ),
+    )
+    .orderBy(desc(judgeScore.createdAt));
+
+  const latestScoreByContestantAndAssignment = new Map<string, number | null>();
+
+  for (const scoreRow of latestScoreRows) {
+    const key = `${scoreRow.contestantId}:${scoreRow.judgeAssignmentId}`;
+
+    if (!latestScoreByContestantAndAssignment.has(key)) {
+      latestScoreByContestantAndAssignment.set(key, scoreRow.rawScore);
+    }
+  }
+
   const contestantLinks = await db.query.eventContestant.findMany({
     where: eq(eventContestant.eventId, eventId),
     with: {
@@ -1290,13 +1427,71 @@ export async function getEventDetails(eventId: string): Promise<EventDetails | n
     },
   });
 
-  const contestants = contestantLinks.map((link) => ({
-    id: link.contestant?.id ?? link.contestantId,
-    fullName: link.contestant?.fullName ?? "",
-    teamName: link.contestant?.teamName ?? null,
-    gender: link.contestant?.gender ?? null,
-    entryNo: link.entryNo,
-  }));
+  const contestants = contestantLinks.map((link) => {
+    const contestantId = link.contestant?.id ?? link.contestantId;
+
+    const getScoreValue = (judgeAssignmentId: string) =>
+      latestScoreByContestantAndAssignment.get(
+        `${contestantId}:${judgeAssignmentId}`,
+      ) ?? null;
+
+    const dbScore = computeDifficultyAverageFromValues(
+      difficultyBodyAssignments.map((assignment) => getScoreValue(assignment.id)),
+      difficultyBodyAssignments.length,
+    );
+    const daScore = computeDifficultyAverageFromValues(
+      difficultyApparatusAssignments.map((assignment) =>
+        getScoreValue(assignment.id),
+      ),
+      difficultyApparatusAssignments.length,
+    );
+
+    const dScore = dbScore === null || daScore === null ? null : dbScore + daScore;
+
+    const aScore = computeMedianJudgeTypeScoreFromValues(
+      artistryAssignments.map((assignment) => getScoreValue(assignment.id)),
+    );
+    const eScore = computeMedianJudgeTypeScoreFromValues(
+      executionAssignments.map((assignment) => getScoreValue(assignment.id)),
+    );
+
+    const totalScore =
+      dScore === null || aScore === null || eScore === null
+        ? null
+        : dScore + aScore + eScore;
+
+    const timePenalty = computePenaltyScoreFromValues(
+      timeJudgeAssignments.map((assignment) => getScoreValue(assignment.id)),
+      timeJudgeAssignments.length,
+    );
+    const linePenalty = computePenaltyScoreFromValues(
+      lineJudgeAssignments.map((assignment) => getScoreValue(assignment.id)),
+      lineJudgeAssignments.length,
+    );
+
+    const penalties =
+      timePenalty === null || linePenalty === null
+        ? null
+        : timePenalty + linePenalty;
+
+    const finalScore =
+      totalScore === null || penalties === null ? null : totalScore - penalties;
+
+    return {
+      id: contestantId,
+      fullName: link.contestant?.fullName ?? "",
+      teamName: link.contestant?.teamName ?? null,
+      gender: link.contestant?.gender ?? null,
+      entryNo: link.entryNo,
+      dScore,
+      aScore,
+      eScore,
+      penalties,
+      totalScore,
+      finalScore,
+      score: finalScore ?? totalScore,
+    };
+  });
 
   return {
     event: {
@@ -1313,4 +1508,3 @@ export async function getEventDetails(eventId: string): Promise<EventDetails | n
     contestants,
   };
 }
-

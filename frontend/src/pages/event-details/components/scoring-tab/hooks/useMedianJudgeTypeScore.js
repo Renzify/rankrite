@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { normalizeJudgeType } from "../helpers/scoringTabHelpers";
 
-function parseNonNegativeValue(value) {
+function parseSubmittedScoreValue(value) {
   const parsedValue = Number.parseFloat(String(value ?? ""));
   return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : null;
 }
@@ -19,25 +19,27 @@ function getMedian(values) {
   return sortedValues[middleIndex];
 }
 
-export function useArtistryScore(judges, judgeScores) {
+export function useMedianJudgeTypeScore(judges, judgeScores, judgeTypeName) {
   return useMemo(() => {
-    const artistryJudges = judges.filter(
-      (judge) => normalizeJudgeType(judge.judgeType) === "artistry",
+    const normalizedJudgeTypeName = normalizeJudgeType(judgeTypeName);
+
+    const scoreJudges = judges.filter(
+      (judge) => normalizeJudgeType(judge.judgeType) === normalizedJudgeTypeName,
     );
 
-    if (!artistryJudges.length) {
+    if (!scoreJudges.length) {
       return null;
     }
 
-    const submittedDeductions = artistryJudges
-      .map((judge) => parseNonNegativeValue(judgeScores[judge.id]?.value))
+    const submittedScores = scoreJudges
+      .map((judge) => parseSubmittedScoreValue(judgeScores[judge.id]?.value))
       .filter((value) => value !== null);
 
-    if (!submittedDeductions.length) {
+    if (!submittedScores.length) {
       return null;
     }
 
-    const artistryMedian = getMedian(submittedDeductions);
-    return artistryMedian === null ? null : artistryMedian;
-  }, [judges, judgeScores]);
+    const medianScore = getMedian(submittedScores);
+    return medianScore;
+  }, [judges, judgeScores, judgeTypeName]);
 }
