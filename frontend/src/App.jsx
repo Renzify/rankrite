@@ -19,6 +19,7 @@ import DisplayView from "./pages/DisplayView";
 import JudgesTab from "./pages/event-details/components/judge-tab/JudgesTab";
 import ContestantsTab from "./pages/event-details/components/contestant-tab/ContestantsTab";
 import Settings from "./pages/settings/Settings";
+import LandingPage from "./pages/LandingPage";
 
 function AppLayout() {
   return (
@@ -36,9 +37,11 @@ function App() {
   return (
     <>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
+
         <Route element={<AppLayout />}>
           <Route path="/event-form" element={<DynamicTemplateForm />} />
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
 
           <Route path="/events/:eventId" element={<EventDetails />}>
             <Route index element={<Navigate to="event-info" replace />} />
