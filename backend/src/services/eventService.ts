@@ -188,7 +188,30 @@ function computePenaltyScoreFromValues(
   return total;
 }
 
-export async function createEventDraft(input: CreateEventDraftInput) {
+function normalizeUserId(value: string) {
+  const normalizedValue = value?.trim();
+
+  if (!normalizedValue) {
+    throw new Error("INVALID_AUTH_CONTEXT");
+  }
+
+  return normalizedValue;
+}
+
+async function findOwnedEvent(eventId: string, ownerUserId: string) {
+  return db.query.event.findFirst({
+    where: and(
+      eq(event.id, eventId),
+      eq(event.createdByUserId, ownerUserId),
+    ),
+  });
+}
+
+export async function createEventDraft(
+  input: CreateEventDraftInput,
+  ownerUserId: string,
+) {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const templateId = input.templateId?.trim();
   const title = input.title?.trim();
   const status = input.status ?? "draft";
@@ -227,6 +250,7 @@ export async function createEventDraft(input: CreateEventDraftInput) {
       .insert(event)
       .values({
         templateId,
+        createdByUserId: normalizedOwnerUserId,
         title,
         status,
       })
@@ -337,7 +361,9 @@ export type UpdateEventInput = {
 export async function updateEvent(
   eventId: string,
   input: UpdateEventInput,
+  ownerUserId: string,
 ): Promise<EventDetails | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const templateId = input.templateId?.trim();
   const title = input.title?.trim();
 
@@ -345,9 +371,7 @@ export async function updateEvent(
     throw new Error("INVALID_EVENT_INPUT");
   }
 
-  const existingEvent = await db.query.event.findFirst({
-    where: eq(event.id, eventId),
-  });
+  const existingEvent = await findOwnedEvent(eventId, normalizedOwnerUserId);
 
   if (!existingEvent) {
     return null;
@@ -385,19 +409,24 @@ export async function updateEvent(
     }
   });
 
-  return getEventDetails(eventId);
+  return getEventDetails(eventId, normalizedOwnerUserId);
 }
 
-export async function deleteEvent(eventId: string): Promise<boolean> {
+export async function deleteEvent(
+  eventId: string,
+  ownerUserId: string,
+): Promise<boolean> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
 
   if (!normalizedEventId) {
     throw new Error("INVALID_EVENT_INPUT");
   }
 
-  const existingEvent = await db.query.event.findFirst({
-    where: eq(event.id, normalizedEventId),
-  });
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
 
   if (!existingEvent) {
     return false;
@@ -483,8 +512,10 @@ export async function deleteEvent(eventId: string): Promise<boolean> {
 
 export async function addEventJudge(
   eventId: string,
+  ownerUserId: string,
   input: AddEventJudgeInput,
 ): Promise<EventJudgeRecord | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const fullName = input.fullName?.trim();
   const judgeTypeName = input.judgeType?.trim();
@@ -501,9 +532,10 @@ export async function addEventJudge(
     throw new Error("INVALID_EVENT_INPUT");
   }
 
-  const existingEvent = await db.query.event.findFirst({
-    where: eq(event.id, normalizedEventId),
-  });
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
 
   if (!existingEvent) {
     return null;
@@ -570,9 +602,11 @@ export async function addEventJudge(
 
 export async function updateEventJudge(
   eventId: string,
+  ownerUserId: string,
   judgeId: string,
   input: AddEventJudgeInput,
 ): Promise<EventJudgeRecord | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const normalizedJudgeId = judgeId?.trim();
   const fullName = input.fullName?.trim();
@@ -588,6 +622,15 @@ export async function updateEventJudge(
     judgeNumber <= 0
   ) {
     throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
+
+  if (!existingEvent) {
+    return null;
   }
 
   return db.transaction(async (tx) => {
@@ -662,13 +705,24 @@ export async function updateEventJudge(
 
 export async function deleteEventJudge(
   eventId: string,
+  ownerUserId: string,
   judgeId: string,
 ): Promise<boolean> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const normalizedJudgeId = judgeId?.trim();
 
   if (!normalizedEventId || !normalizedJudgeId) {
     throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
+
+  if (!existingEvent) {
+    return false;
   }
 
   return db.transaction(async (tx) => {
@@ -711,13 +765,24 @@ export async function deleteEventJudge(
 
 export async function deleteEventContestant(
   eventId: string,
+  ownerUserId: string,
   contestantId: string,
 ): Promise<boolean> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const normalizedContestantId = contestantId?.trim();
 
   if (!normalizedEventId || !normalizedContestantId) {
     throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
+
+  if (!existingEvent) {
+    return false;
   }
 
   return db.transaction(async (tx) => {
@@ -778,9 +843,10 @@ export async function deleteEventContestant(
 
 export async function addEventContestant(
   eventId: string,
+  ownerUserId: string,
   input: AddEventContestantInput,
 ): Promise<EventContestantRecord | null> {
-  const createdContestants = await addEventContestants(eventId, {
+  const createdContestants = await addEventContestants(eventId, ownerUserId, {
     contestants: [input],
   });
 
@@ -789,9 +855,11 @@ export async function addEventContestant(
 
 export async function updateEventContestant(
   eventId: string,
+  ownerUserId: string,
   contestantId: string,
   input: AddEventContestantInput,
 ): Promise<EventContestantRecord | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const normalizedContestantId = contestantId?.trim();
   const fullName = input.fullName?.trim();
@@ -802,6 +870,15 @@ export async function updateEventContestant(
 
   if (!normalizedEventId || !normalizedContestantId || !fullName) {
     throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
+
+  if (!existingEvent) {
+    return null;
   }
 
   return db.transaction(async (tx) => {
@@ -851,8 +928,10 @@ export async function updateEventContestant(
 
 export async function addEventContestants(
   eventId: string,
+  ownerUserId: string,
   input: AddEventContestantsInput,
 ): Promise<EventContestantRecord[] | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const contestantsInput = (input.contestants ?? [])
     .map((contestantInput) => ({
@@ -870,9 +949,10 @@ export async function addEventContestants(
     throw new Error("INVALID_EVENT_INPUT");
   }
 
-  const existingEvent = await db.query.event.findFirst({
-    where: eq(event.id, normalizedEventId),
-  });
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
 
   if (!existingEvent) {
     return null;
@@ -944,8 +1024,10 @@ export async function addEventContestants(
 
 export async function submitJudgeScore(
   eventId: string,
+  ownerUserId: string,
   input: SubmitJudgeScoreInput,
 ): Promise<EventJudgeScoreRecord | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const normalizedJudgeId = input.judgeId?.trim();
   const normalizedContestantId = input.contestantId?.trim();
@@ -961,9 +1043,10 @@ export async function submitJudgeScore(
     throw new Error("INVALID_JUDGE_SCORE_INPUT");
   }
 
-  const existingEvent = await db.query.event.findFirst({
-    where: eq(event.id, normalizedEventId),
-  });
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
 
   if (!existingEvent) {
     return null;
@@ -1078,8 +1161,10 @@ export async function submitJudgeScore(
 
 export async function lockJudgeScore(
   eventId: string,
+  ownerUserId: string,
   input: LockJudgeScoreInput,
 ): Promise<EventJudgeScoreRecord | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const normalizedJudgeId = input.judgeId?.trim();
   const normalizedContestantId = input.contestantId?.trim();
@@ -1088,9 +1173,10 @@ export async function lockJudgeScore(
     throw new Error("INVALID_JUDGE_SCORE_LOCK_INPUT");
   }
 
-  const existingEvent = await db.query.event.findFirst({
-    where: eq(event.id, normalizedEventId),
-  });
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
 
   if (!existingEvent) {
     return null;
@@ -1173,11 +1259,13 @@ export async function lockJudgeScore(
 
 export async function getEventJudgeScores(
   eventId: string,
+  ownerUserId: string,
   options?: {
     contestantId?: string;
     judgeId?: string;
   },
 ): Promise<EventJudgeScoreRecord[] | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const normalizedEventId = eventId?.trim();
   const normalizedContestantId = options?.contestantId?.trim() || undefined;
   const normalizedJudgeId = options?.judgeId?.trim() || undefined;
@@ -1186,9 +1274,10 @@ export async function getEventJudgeScores(
     throw new Error("INVALID_EVENT_INPUT");
   }
 
-  const existingEvent = await db.query.event.findFirst({
-    where: eq(event.id, normalizedEventId),
-  });
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
 
   if (!existingEvent) {
     return null;
@@ -1300,7 +1389,9 @@ export type EventListItem = {
   updatedAt: Date;
 };
 
-export async function listEvents(): Promise<EventListItem[]> {
+export async function listEvents(ownerUserId: string): Promise<EventListItem[]> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+
   return db
     .select({
       id: event.id,
@@ -1310,6 +1401,7 @@ export async function listEvents(): Promise<EventListItem[]> {
       updatedAt: event.updatedAt,
     })
     .from(event)
+    .where(eq(event.createdByUserId, normalizedOwnerUserId))
     .orderBy(desc(event.createdAt));
 }
 
@@ -1321,10 +1413,18 @@ export type EventDetails = {
   contestants: EventContestantRecord[];
 };
 
-export async function getEventDetails(eventId: string): Promise<EventDetails | null> {
-  const eventRow = await db.query.event.findFirst({
-    where: eq(event.id, eventId),
-  });
+export async function getEventDetails(
+  eventId: string,
+  ownerUserId: string,
+): Promise<EventDetails | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+  const normalizedEventId = eventId?.trim();
+
+  if (!normalizedEventId) {
+    throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  const eventRow = await findOwnedEvent(normalizedEventId, normalizedOwnerUserId);
 
   if (!eventRow) return null;
 
@@ -1332,7 +1432,7 @@ export async function getEventDetails(eventId: string): Promise<EventDetails | n
   if (!template) return null;
 
   const fieldValues = await db.query.eventFieldValue.findMany({
-    where: eq(eventFieldValue.eventId, eventId),
+    where: eq(eventFieldValue.eventId, normalizedEventId),
     with: {
       field: true,
       option: true,
@@ -1353,7 +1453,7 @@ export async function getEventDetails(eventId: string): Promise<EventDetails | n
   }, {});
 
   const judgeAssignments = await db.query.eventJudgeAssignment.findMany({
-    where: eq(eventJudgeAssignment.eventId, eventId),
+    where: eq(eventJudgeAssignment.eventId, normalizedEventId),
     with: {
       judge: true,
       judgeType: true,
@@ -1404,8 +1504,8 @@ export async function getEventDetails(eventId: string): Promise<EventDetails | n
     .innerJoin(scoreSheet, eq(judgeScore.scoreSheetId, scoreSheet.id))
     .where(
       and(
-        eq(scoreSheet.eventId, eventId),
-        eq(eventJudgeAssignment.eventId, eventId),
+        eq(scoreSheet.eventId, normalizedEventId),
+        eq(eventJudgeAssignment.eventId, normalizedEventId),
       ),
     )
     .orderBy(desc(judgeScore.createdAt));
@@ -1421,7 +1521,7 @@ export async function getEventDetails(eventId: string): Promise<EventDetails | n
   }
 
   const contestantLinks = await db.query.eventContestant.findMany({
-    where: eq(eventContestant.eventId, eventId),
+    where: eq(eventContestant.eventId, normalizedEventId),
     with: {
       contestant: true,
     },

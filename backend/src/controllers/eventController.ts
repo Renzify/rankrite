@@ -23,16 +23,33 @@ import {
   updateEventContestant,
   type UpdateEventInput,
 } from "../services/eventService.ts";
+import type { AuthenticatedRequest } from "../middlewares/authMiddleware.ts";
 
 function getRouteParamId(req: Request) {
   const rawId = req.params.id;
   return Array.isArray(rawId) ? rawId[0] : rawId;
 }
 
+function getAuthenticatedUserId(req: Request) {
+  const authReq = req as AuthenticatedRequest;
+  const userId = authReq.user?.id;
+
+  if (typeof userId !== "string" || userId.trim() === "") {
+    return null;
+  }
+
+  return userId;
+}
+
 export async function createEventDraftController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const payload = req.body as CreateEventDraftInput;
-    const draftEvent = await createEventDraft(payload);
+    const draftEvent = await createEventDraft(payload, userId);
     res.status(201).json(draftEvent);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_CONTESTANT_GENDER") {
@@ -55,9 +72,14 @@ export async function createEventDraftController(req: Request, res: Response) {
   }
 }
 
-export async function listEventsController(_req: Request, res: Response) {
+export async function listEventsController(req: Request, res: Response) {
   try {
-    const events = await listEvents();
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const events = await listEvents(userId);
     res.status(200).json(events);
   } catch (error) {
     console.error(error);
@@ -69,6 +91,11 @@ export async function listEventsController(_req: Request, res: Response) {
 
 export async function getEventDetailsController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -77,7 +104,7 @@ export async function getEventDetailsController(req: Request, res: Response) {
       });
     }
 
-    const details = await getEventDetails(eventId);
+    const details = await getEventDetails(eventId, userId);
     if (!details) {
       return res.status(404).json({
         message: "Event not found",
@@ -98,6 +125,11 @@ export async function getEventJudgeScoresController(
   res: Response,
 ) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -113,7 +145,7 @@ export async function getEventJudgeScoresController(
     const rawJudgeId = req.query.judgeId;
     const judgeId = Array.isArray(rawJudgeId) ? rawJudgeId[0] : rawJudgeId;
 
-    const judgeScores = await getEventJudgeScores(eventId, {
+    const judgeScores = await getEventJudgeScores(eventId, userId, {
       contestantId: typeof contestantId === "string" ? contestantId : undefined,
       judgeId: typeof judgeId === "string" ? judgeId : undefined,
     });
@@ -141,6 +173,11 @@ export async function getEventJudgeScoresController(
 
 export async function submitJudgeScoreController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -150,7 +187,7 @@ export async function submitJudgeScoreController(req: Request, res: Response) {
     }
 
     const payload = req.body as SubmitJudgeScoreInput;
-    const submittedScore = await submitJudgeScore(eventId, payload);
+    const submittedScore = await submitJudgeScore(eventId, userId, payload);
 
     if (!submittedScore) {
       return res.status(404).json({
@@ -188,6 +225,11 @@ export async function submitJudgeScoreController(req: Request, res: Response) {
 
 export async function lockJudgeScoreController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -197,7 +239,7 @@ export async function lockJudgeScoreController(req: Request, res: Response) {
     }
 
     const payload = req.body as LockJudgeScoreInput;
-    const lockedScore = await lockJudgeScore(eventId, payload);
+    const lockedScore = await lockJudgeScore(eventId, userId, payload);
 
     if (!lockedScore) {
       return res.status(404).json({
@@ -234,6 +276,11 @@ export async function lockJudgeScoreController(req: Request, res: Response) {
 
 export async function updateEventController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -243,7 +290,7 @@ export async function updateEventController(req: Request, res: Response) {
     }
 
     const payload = req.body as UpdateEventInput;
-    const details = await updateEvent(eventId, payload);
+    const details = await updateEvent(eventId, payload, userId);
 
     if (!details) {
       return res.status(404).json({
@@ -268,6 +315,11 @@ export async function updateEventController(req: Request, res: Response) {
 
 export async function deleteEventController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -276,7 +328,7 @@ export async function deleteEventController(req: Request, res: Response) {
       });
     }
 
-    const deleted = await deleteEvent(eventId);
+    const deleted = await deleteEvent(eventId, userId);
 
     if (!deleted) {
       return res.status(404).json({
@@ -301,6 +353,11 @@ export async function deleteEventController(req: Request, res: Response) {
 
 export async function addEventJudgeController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -310,7 +367,7 @@ export async function addEventJudgeController(req: Request, res: Response) {
     }
 
     const payload = req.body as AddEventJudgeInput;
-    const createdJudge = await addEventJudge(eventId, payload);
+    const createdJudge = await addEventJudge(eventId, userId, payload);
 
     if (!createdJudge) {
       return res.status(404).json({
@@ -335,6 +392,11 @@ export async function addEventJudgeController(req: Request, res: Response) {
 
 export async function updateEventJudgeController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
     const rawJudgeId = req.params.judgeId;
     const judgeId = Array.isArray(rawJudgeId) ? rawJudgeId[0] : rawJudgeId;
@@ -352,7 +414,7 @@ export async function updateEventJudgeController(req: Request, res: Response) {
     }
 
     const payload = req.body as AddEventJudgeInput;
-    const updatedJudge = await updateEventJudge(eventId, judgeId, payload);
+    const updatedJudge = await updateEventJudge(eventId, userId, judgeId, payload);
 
     if (!updatedJudge) {
       return res.status(404).json({
@@ -377,6 +439,11 @@ export async function updateEventJudgeController(req: Request, res: Response) {
 
 export async function deleteEventJudgeController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
     const rawJudgeId = req.params.judgeId;
     const judgeId = Array.isArray(rawJudgeId) ? rawJudgeId[0] : rawJudgeId;
@@ -393,7 +460,7 @@ export async function deleteEventJudgeController(req: Request, res: Response) {
       });
     }
 
-    const deletedJudge = await deleteEventJudge(eventId, judgeId);
+    const deletedJudge = await deleteEventJudge(eventId, userId, judgeId);
 
     if (!deletedJudge) {
       return res.status(404).json({
@@ -418,6 +485,11 @@ export async function deleteEventJudgeController(req: Request, res: Response) {
 
 export async function addEventContestantController(req: Request, res: Response) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -427,7 +499,7 @@ export async function addEventContestantController(req: Request, res: Response) 
     }
 
     const payload = req.body as AddEventContestantInput;
-    const createdContestant = await addEventContestant(eventId, payload);
+    const createdContestant = await addEventContestant(eventId, userId, payload);
 
     if (!createdContestant) {
       return res.status(404).json({
@@ -461,6 +533,11 @@ export async function updateEventContestantController(
   res: Response,
 ) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
     const rawContestantId = req.params.contestantId;
     const contestantId = Array.isArray(rawContestantId)
@@ -482,6 +559,7 @@ export async function updateEventContestantController(
     const payload = req.body as AddEventContestantInput;
     const updatedContestant = await updateEventContestant(
       eventId,
+      userId,
       contestantId,
       payload,
     );
@@ -518,6 +596,11 @@ export async function deleteEventContestantController(
   res: Response,
 ) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
     const rawContestantId = req.params.contestantId;
     const contestantId = Array.isArray(rawContestantId)
@@ -536,7 +619,11 @@ export async function deleteEventContestantController(
       });
     }
 
-    const deletedContestant = await deleteEventContestant(eventId, contestantId);
+    const deletedContestant = await deleteEventContestant(
+      eventId,
+      userId,
+      contestantId,
+    );
 
     if (!deletedContestant) {
       return res.status(404).json({
@@ -564,6 +651,11 @@ export async function importEventContestantsController(
   res: Response,
 ) {
   try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const eventId = getRouteParamId(req);
 
     if (typeof eventId !== "string" || eventId.trim() === "") {
@@ -573,7 +665,7 @@ export async function importEventContestantsController(
     }
 
     const payload = req.body as AddEventContestantsInput;
-    const createdContestants = await addEventContestants(eventId, payload);
+    const createdContestants = await addEventContestants(eventId, userId, payload);
 
     if (!createdContestants) {
       return res.status(404).json({
