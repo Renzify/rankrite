@@ -16,6 +16,7 @@ export type SignupInput = {
   fullName: string;
   email: string;
   password: string;
+  confirmPassword: string;
   profilePic?: string | null;
 };
 
@@ -44,10 +45,15 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
   const fullName = (input.fullName ?? "").trim();
   const email = normalizeEmail(input.email);
   const password = input.password ?? "";
+  const confirmPassword = input.confirmPassword ?? "";
   const profilePic = (input.profilePic ?? "").trim() || null;
 
-  if (!fullName || !email || !password) {
+  if (!fullName || !email || !password || !confirmPassword) {
     throw new Error("INVALID_AUTH_INPUT");
+  }
+
+  if (password !== confirmPassword) {
+    throw new Error("PASSWORD_MISMATCH");
   }
 
   if (!EMAIL_REGEX.test(email)) {
