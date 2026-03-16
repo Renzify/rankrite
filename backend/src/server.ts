@@ -4,6 +4,7 @@ import cors from "cors";
 
 import templateRoutes from "./routes/templateRoute.ts";
 import eventRoutes from "./routes/eventRoute.ts";
+import authRoutes from "./routes/authRoute.ts";
 
 import { ENV } from "./lib/env.ts";
 
@@ -15,6 +16,7 @@ app.use(express.json());
 
 app.use("/api", templateRoutes);
 app.use("/api", eventRoutes);
+app.use("/api", authRoutes);
 
 if (NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
