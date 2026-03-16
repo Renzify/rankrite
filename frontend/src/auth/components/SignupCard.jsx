@@ -1,13 +1,59 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import { useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
+import toast from "react-hot-toast";
+import { signup } from "../../api/authApi";
 
 function SignupCard() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (isSubmitting) return;
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (!agreedToTerms) {
+      toast.error("Please agree to the Terms of Service");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const authenticatedUser = await signup({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password,
+        confirmPassword,
+      });
+
+      window.localStorage.removeItem("rankrite_user");
+      window.sessionStorage.removeItem("rankrite_user");
+      window.localStorage.setItem("rankrite_user", JSON.stringify(authenticatedUser));
+
+      toast.success("Account created successfully");
+      navigate("/", { replace: true });
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ?? "Failed to sign up. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -24,6 +70,8 @@ function SignupCard() {
               type="text"
               placeholder="Enter your full name"
               className="input input-bordered w-full"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
               required
             />
           </div>
@@ -36,6 +84,8 @@ function SignupCard() {
               type="email"
               placeholder="Enter your email"
               className="input input-bordered w-full"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
           </div>
@@ -49,6 +99,8 @@ function SignupCard() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 className="input input-bordered w-full pr-10"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 required
               />
               <button
@@ -70,6 +122,8 @@ function SignupCard() {
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm your password"
                 className="input input-bordered w-full pr-10"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
                 required
               />
               <button
@@ -84,7 +138,12 @@ function SignupCard() {
 
           <div className="form-control">
             <label className="label cursor-pointer justify-start gap-2 p-0">
-              <input type="checkbox" className="checkbox checkbox-primary" />
+              <input
+                type="checkbox"
+                className="checkbox checkbox-primary"
+                checked={agreedToTerms}
+                onChange={(event) => setAgreedToTerms(event.target.checked)}
+              />
               <span className="label-text">
                 I agree to the{" "}
                 <a href="/terms" className="link link-primary">
@@ -94,8 +153,12 @@ function SignupCard() {
             </label>
           </div>
 
-          <button type="submit" className="btn btn-primary w-full">
-            Sign Up
+          <button
+            type="submit"
+            className="btn btn-primary w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating account..." : "Sign Up"}
           </button>
         </form>
 

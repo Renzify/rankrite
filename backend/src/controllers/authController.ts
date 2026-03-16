@@ -39,6 +39,12 @@ export async function signupController(req: Request, res: Response) {
       });
     }
 
+    if (error instanceof Error && error.message === "PASSWORD_MISMATCH") {
+      return res.status(400).json({
+        message: "Password and confirm password do not match",
+      });
+    }
+
     if (error instanceof Error && error.message === "PASSWORD_TOO_SHORT") {
       return res.status(400).json({
         message: "Password must be at least 6 characters",

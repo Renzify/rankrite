@@ -1,12 +1,45 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import { useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
+import toast from "react-hot-toast";
+import { login } from "../../api/authApi";
 
 function LoginCard() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      const authenticatedUser = await login({
+        email: email.trim(),
+        password,
+      });
+
+      window.localStorage.removeItem("rankrite_user");
+      window.sessionStorage.removeItem("rankrite_user");
+
+      const storage = rememberMe ? window.localStorage : window.sessionStorage;
+      storage.setItem("rankrite_user", JSON.stringify(authenticatedUser));
+
+      toast.success("Login successful");
+      navigate("/", { replace: true });
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ?? "Failed to login. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -23,6 +56,8 @@ function LoginCard() {
               type="email"
               placeholder="Enter your email"
               className="input input-bordered w-full"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
           </div>
@@ -36,6 +71,8 @@ function LoginCard() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 className="input input-bordered w-full pr-10"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 required
               />
               <button
@@ -50,7 +87,12 @@ function LoginCard() {
 
           <div className="flex items-center justify-between pt-1">
             <label className="label cursor-pointer gap-2 p-0">
-              <input type="checkbox" className="checkbox checkbox-primary" />
+              <input
+                type="checkbox"
+                className="checkbox checkbox-primary"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+              />
               <span className="label-text">Remember me</span>
             </label>
             <Link to="/auth/forgot-password" className="link link-primary text-sm">
@@ -58,8 +100,12 @@ function LoginCard() {
             </Link>
           </div>
 
-          <button type="submit" className="btn btn-primary w-full">
-            Login
+          <button
+            type="submit"
+            className="btn btn-primary w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
 
