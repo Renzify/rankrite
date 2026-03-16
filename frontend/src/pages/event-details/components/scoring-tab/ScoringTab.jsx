@@ -1,22 +1,12 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useOutletContext } from "react-router";
-import { getEventJudgeScores, lockJudgeScore } from "../../../api/eventApi";
-
-function createEmptyScoreEntry() {
-  return {
-    value: "",
-    locked: false,
-    contestantId: "",
-    contestantName: "",
-    submittedAt: "",
-  };
-}
-
-function formatEnteredValue(value) {
-  const parsedValue = Number.parseFloat(String(value ?? ""));
-  return Number.isFinite(parsedValue) ? parsedValue.toFixed(2) : "";
-}
+import { getEventJudgeScores, lockJudgeScore } from "../../../../api/eventApi";
+import {
+  createEmptyScoreEntry,
+  formatEnteredValue,
+} from "./helpers/scoringTabHelpers";
+import { useDifficultyScore } from "./hooks/useDifficultyScore";
 
 export default function ScoringTab() {
   const { eventDetails, judges, judgeScores, setJudgeScores, contestants } =
@@ -213,6 +203,8 @@ export default function ScoringTab() {
 
   const scoringLocked =
     judges.length > 0 && judges.every((judge) => judgeScores[judge.id]?.locked);
+
+  const difficultyScore = useDifficultyScore(judges, judgeScores);
 
   const handleJudgeLock = async (judgeId) => {
     if (scoringLocked || !eventId || !selectedContestantId) return;
@@ -447,7 +439,11 @@ export default function ScoringTab() {
                         {contestant.fullName}
                       </td>
                       <td>{contestant.delegation}</td>
-                      <td>--</td>
+                      <td>
+                        {isSelected && difficultyScore !== null
+                          ? formatEnteredValue(difficultyScore)
+                          : "--"}
+                      </td>
                       <td>--</td>
                       <td>--</td>
                       <td>--</td>
