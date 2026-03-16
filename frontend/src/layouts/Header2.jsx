@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Menu, X } from "lucide-react";
 
-import logo from "../assets/images/f-logo-2.png";
+import logo from "../assets/images/rankrite-logo-1.png";
 
 const navItems = [
   { label: "Dashboard", type: "route", value: "/dashboard" },
-  { label: "Features", type: "anchor", value: "#features", isActive: true },
+  { label: "Features", type: "anchor", value: "#features" },
   { label: "Pricing", type: "anchor", value: "#pricing" },
   { label: "Documentation", type: "anchor", value: "#documentation" },
 ];
@@ -15,6 +15,7 @@ function Header2() {
   const navigate = useNavigate();
   const headerRef = useRef(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isHeaderStuck, setIsHeaderStuck] = useState(false);
 
   const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false);
@@ -62,17 +63,26 @@ function Header2() {
     };
   }, [closeMobileMenu]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsHeaderStuck(window.scrollY > 20);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const renderNavItem = (item, mobile = false) => {
     const baseClasses = mobile
       ? "w-full rounded-2xl px-4 py-3 text-left text-sm font-medium transition"
       : "rounded-full px-3 py-2 text-[15px] font-medium transition";
-    const stateClasses = item.isActive
-      ? mobile
-        ? "bg-orange-50 text-[#f59a23]"
-        : "text-[#f59a23]"
-      : mobile
-        ? "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-        : "text-slate-400 hover:text-slate-900";
+    const stateClasses = mobile
+      ? "text-slate-500 hover:bg-orange-50 hover:text-[#f59a23]"
+      : "text-slate-400 hover:text-[#f59a23]";
 
     if (item.type === "route") {
       return (
@@ -102,7 +112,11 @@ function Header2() {
   return (
     <header
       ref={headerRef}
-      className="relative z-30 flex justify-center border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur"
+      className={`z-40 flex justify-center border border-base-300 bg-base-100/95 px-4 backdrop-blur transition-shadow duration-300 sticky top-0 ${
+        isHeaderStuck
+          ? "landing-navbar-stuck shadow-[0_16px_35px_-28px_rgba(31,26,22,0.75)]"
+          : "shadow-sm"
+      }`}
     >
       <div className="w-full max-w-[1240px] py-4">
         <div className="flex items-center justify-between gap-4 lg:gap-8">
@@ -149,7 +163,9 @@ function Header2() {
             aria-controls="landing-mobile-menu"
             aria-expanded={isMobileMenuOpen}
             aria-label={
-              isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"
+              isMobileMenuOpen
+                ? "Close navigation menu"
+                : "Open navigation menu"
             }
             onClick={handleToggleMobileMenu}
           >

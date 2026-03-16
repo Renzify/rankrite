@@ -13,18 +13,20 @@ function LandingPage() {
         <section id="hero" className="app-page pb-14 pt-8 md:pb-18 md:pt-12">
           <div className="px-4 py-10 sm:px-6 md:px-8 md:py-14 lg:px-10">
             <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#f7d4b0] bg-[#fff0df] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#df7b27]">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#f4a04b]" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#fde5cf] bg-[#fff8f0] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#e89a52]">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#f7c08d]" />
                 All-in-one scoring platform
               </div>
 
               <h1 className="mt-7 max-w-4xl text-5xl font-bold leading-[0.95] tracking-[-0.04em] text-slate-800 sm:text-6xl lg:text-[5.5rem]">
                 Smart Competition
-                <span className="block text-[#7d5c4b]">Management Tool</span>
+                <span className="block text-[#7d5c4b] mb-2">
+                  Management Tool
+                </span>
                 <span className="block text-[#d2742f]">Made Simple</span>
               </h1>
 
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-400 sm:text-xl">
+              <p className="mt-20 max-w-3xl text-lg leading-8 text-slate-400 sm:text-xl">
                 Manage events, judges, contestants, scoring, and rankings
                 through one centralized system built for fast, accurate, and
                 transparent results.

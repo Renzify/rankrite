@@ -60,6 +60,22 @@ textarea {
 }
 
 @layer components {
+  @keyframes landing-navbar-slide {
+    from {
+      opacity: 0.88;
+      transform: translateY(-12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .landing-navbar-stuck {
+    animation: landing-navbar-slide 260ms ease-out;
+  }
+
   .app-page {
     @apply mx-auto w-3/4 max-w-6xl px-4 py-6 md:px-6 md:py-8;
   }
