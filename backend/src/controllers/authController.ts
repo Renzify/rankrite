@@ -7,6 +7,7 @@ import {
   type AuthUser,
 } from "../services/authService.ts";
 import { clearTokenCookie, generateToken } from "../lib/utils.ts";
+import type { AuthenticatedRequest } from "../middlewares/authMiddleware.ts";
 
 function serializeAuthUser(user: AuthUser) {
   // Keep `_id` for compatibility with old frontend payloads.
@@ -89,6 +90,18 @@ export async function loginController(req: Request, res: Response) {
       message: "Internal server error",
     });
   }
+}
+
+export function checkAuthController(req: Request, res: Response) {
+  const authReq = req as AuthenticatedRequest;
+
+  if (!authReq.user) {
+    return res.status(401).json({
+      message: "Unauthorized",
+    });
+  }
+
+  res.status(200).json(serializeAuthUser(authReq.user));
 }
 
 export function logoutController(_req: Request, res: Response) {

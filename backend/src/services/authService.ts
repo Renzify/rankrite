@@ -119,3 +119,27 @@ export async function login(input: LoginInput): Promise<AuthUser> {
 
   return mapToAuthUser(existingUser);
 }
+
+export async function getAuthUserById(userId: string): Promise<AuthUser | null> {
+  const normalizedUserId = (userId ?? "").trim();
+
+  if (!normalizedUserId) {
+    return null;
+  }
+
+  const existingUser = await db.query.user.findFirst({
+    where: eq(user.id, normalizedUserId),
+    columns: {
+      id: true,
+      fullName: true,
+      email: true,
+      profilePic: true,
+    },
+  });
+
+  if (!existingUser) {
+    return null;
+  }
+
+  return mapToAuthUser(existingUser);
+}

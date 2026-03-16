@@ -3,33 +3,28 @@ import { Link } from "react-router";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
-import { login } from "../../api/authApi";
+import { useAuthStore } from "../../stores/authStore";
 
 function LoginCard() {
   const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
+  const isLoggingIn = useAuthStore((state) => state.isLoggingIn);
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (isSubmitting) return;
+    if (isLoggingIn) return;
 
     try {
-      setIsSubmitting(true);
-      const authenticatedUser = await login({
+      await login({
         email: email.trim(),
         password,
       });
-
-      window.localStorage.removeItem("rankrite_user");
-      window.sessionStorage.removeItem("rankrite_user");
-
-      const storage = rememberMe ? window.localStorage : window.sessionStorage;
-      storage.setItem("rankrite_user", JSON.stringify(authenticatedUser));
 
       toast.success("Login successful");
       navigate("/dashboard", { replace: true });
@@ -37,8 +32,6 @@ function LoginCard() {
       const message =
         error?.response?.data?.message ?? "Failed to login. Please try again.";
       toast.error(message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -103,9 +96,9 @@ function LoginCard() {
           <button
             type="submit"
             className="btn btn-primary w-full"
-            disabled={isSubmitting}
+            disabled={isLoggingIn}
           >
-            {isSubmitting ? "Logging in..." : "Login"}
+            {isLoggingIn ? "Logging in..." : "Login"}
           </button>
         </form>
 
