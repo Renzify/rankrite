@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router";
+import { getEventDetails } from "../../../../api/eventApi";
 import {
   LIVE_DISPLAY_CHANNEL_NAME,
   LIVE_DISPLAY_MESSAGE_TYPE,
@@ -48,8 +49,14 @@ const OUTPUT_OPTIONS = [
 ];
 
 export default function DisplayControlTab() {
-  const { eventTitle, selectedEventType, selectedSport, contestants } =
-    useOutletContext();
+  const {
+    eventTitle,
+    selectedEventType,
+    selectedSport,
+    eventDetails,
+    contestants,
+    setContestants,
+  } = useOutletContext();
 
   const [viewMode, setViewMode] = useState("manual");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -59,6 +66,7 @@ export default function DisplayControlTab() {
   const [isBlackout, setIsBlackout] = useState(false);
 
   const channelRef = useRef(null);
+  const eventId = eventDetails?.event?.id ?? "";
 
   const hasContestants = contestants.length > 0;
   const safeActiveIndex = hasContestants
@@ -128,6 +136,50 @@ export default function DisplayControlTab() {
   }, [liveDisplayPayload]);
 
   useEffect(() => {
+    if (!eventId) return undefined;
+
+    let isMounted = true;
+
+    const mapContestantForDisplay = (contestant) => ({
+      ...contestant,
+      teamName: contestant.teamName ?? contestant.delegation ?? "",
+      delegation: contestant.teamName ?? contestant.delegation ?? "",
+    });
+
+    const refreshContestantScores = async () => {
+      try {
+        const latestEventDetails = await getEventDetails(eventId);
+        if (!isMounted) return;
+
+        const latestContestants = (latestEventDetails?.contestants ?? []).map(
+          mapContestantForDisplay,
+        );
+        setContestants(latestContestants);
+      } catch (error) {
+        console.error("Failed to refresh live display contestant scores:", error);
+      }
+    };
+
+    refreshContestantScores();
+
+    const pollId = window.setInterval(() => {
+      refreshContestantScores();
+    }, 3000);
+
+    const handleWindowFocus = () => {
+      refreshContestantScores();
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(pollId);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [eventId, setContestants]);
+
+  useEffect(() => {
     if (viewMode !== "auto") return;
     if (!isAutoRunning) return;
     if (isFrozen || isBlackout) return;
@@ -163,7 +215,7 @@ export default function DisplayControlTab() {
 
   return (
     <div className="w-full space-y-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold tracking-tight m-0">
             Display Control
@@ -175,7 +227,7 @@ export default function DisplayControlTab() {
             ?
           </div>
         </div>
-        <div className="flex flex-wrap justify-center items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <div className="badge badge-outline">
             {viewMode === "manual" ? "Manual Swapping" : "Automatic Swapping "}
           </div>
@@ -188,21 +240,21 @@ export default function DisplayControlTab() {
 
       <div className="space-y-4">
         <div className="app-surface p-4 md:p-5">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
               Live Display Preview
             </p>
             <button
               type="button"
-              className="btn btn-xs btn-outline"
+              className="btn btn-xs btn-outline self-start sm:self-auto"
               onClick={handleOpenLiveDisplay}
             >
               Open Live Display
             </button>
           </div>
 
-          <div className="mt-4 flex justify-center rounded-3xl border border-base-300 bg-slate-900/80 p-5 md:p-6">
-            <div className="w-full max-w-[920px] rounded-[2rem] border border-slate-700 bg-slate-950 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+          <div className="mt-4 hidden justify-center rounded-3xl border border-base-300 bg-slate-900/80 p-4 sm:p-5 md:p-6 lg:flex">
+            <div className="w-full max-w-[920px] rounded-[2rem] border border-slate-700 bg-slate-950 p-3 sm:p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
               <div className="mb-3 flex items-center justify-between px-2 text-[10px] uppercase tracking-[0.18em] text-slate-500">
                 <span>Live Feed</span>
                 {isFrozen ? (
@@ -221,12 +273,17 @@ export default function DisplayControlTab() {
             </div>
           </div>
 
+          <div className="mt-4 rounded-2xl border border-base-300 bg-base-200/40 p-4 text-sm text-base-content/70 lg:hidden">
+            Live preview is hidden on smaller screens to keep controls stable.
+            Use <span className="font-semibold">Open Live Display</span> for a full preview window.
+          </div>
+
           <p className="mt-3 text-xs text-base-content/70">
             This preview renders the live display and updates in real time.
           </p>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+        <div className="grid items-start gap-4 lg:grid-cols-[1fr_1fr]">
           <div className="app-muted-panel">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Viewing Mode</h3>
@@ -294,10 +351,10 @@ export default function DisplayControlTab() {
                           </svg>
                         )}
                       </div>
-                      <span className="block text-lg font-bold">
+                      <span className="block w-full max-w-xs leading-tight text-lg font-bold [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                         {option.label}
                       </span>
-                      <span className="block text-sm text-base-content/70 max-w-xs mb-5">
+                      <span className="mb-5 block max-w-xs overflow-hidden text-sm text-base-content/70 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                         {option.description}
                       </span>
                     </div>
@@ -307,7 +364,7 @@ export default function DisplayControlTab() {
             </fieldset>
 
             {viewMode === "manual" ? (
-              <div className="mt-10 flex flex-wrap gap-2 h-48 items-start">
+              <div className="mt-10 flex flex-wrap gap-2 items-start">
                 <div className="grid grid-cols-2 gap-2 w-full">
                   <button
                     type="button"
@@ -358,8 +415,55 @@ export default function DisplayControlTab() {
                 </div>
               </div>
             ) : (
-              <div className="mt-4 flex h-48 flex-col items-stretch space-y-3">
-                <label className="form-control w-full">
+              <div className="mt-4 flex flex-wrap items-end gap-3 sm:flex-nowrap">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline flex w-full items-center justify-center gap-2 sm:min-w-[12rem] sm:w-auto"
+                  onClick={() => setIsAutoRunning((prev) => !prev)}
+                  disabled={!hasContestants || isFrozen || isBlackout}
+                >
+                  {isAutoRunning ? (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-7 h-7"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 9v6m4-6v6"
+                        />
+                      </svg>
+                      Pause Auto Swap
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-7 h-7"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                        />
+                      </svg>
+                      Resume Auto Swap
+                    </>
+                  )}
+                </button>
+
+                <label className="form-control w-full sm:min-w-[13rem] sm:w-auto">
                   <div className="label pb-1">
                     <span className="label-text">Auto swap interval:</span>
                   </div>
@@ -376,55 +480,6 @@ export default function DisplayControlTab() {
                     <option value={10}>10 seconds</option>
                   </select>
                 </label>
-
-                <div className="w-full pt-2">
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline flex w-full items-center gap-2"
-                    onClick={() => setIsAutoRunning((prev) => !prev)}
-                    disabled={!hasContestants || isFrozen || isBlackout}
-                  >
-                    {isAutoRunning ? (
-                      <>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={1.5}
-                          stroke="currentColor"
-                          className="w-7 h-7"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 9v6m4-6v6"
-                          />
-                        </svg>
-                        Pause Auto Swap
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={1.5}
-                          stroke="currentColor"
-                          className="w-7 h-7"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                          />
-                        </svg>
-                        Resume Auto Swap
-                      </>
-                    )}
-                  </button>
-                </div>
               </div>
             )}
           </div>
@@ -465,10 +520,10 @@ export default function DisplayControlTab() {
                         onChange={() => setIsFrozen(option.value === "frozen")}
                       />
                       <span className="space-y-1">
-                        <span className="block text-sm font-semibold">
+                        <span className="block truncate text-sm font-semibold">
                           {option.label}
                         </span>
-                        <span className="block text-xs text-base-content/70">
+                        <span className="block overflow-hidden text-xs text-base-content/70 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                           {option.description}
                         </span>
                       </span>
@@ -504,10 +559,10 @@ export default function DisplayControlTab() {
                         }
                       />
                       <span className="space-y-1">
-                        <span className="block text-sm font-semibold">
+                        <span className="block truncate text-sm font-semibold">
                           {option.label}
                         </span>
-                        <span className="block text-xs text-base-content/70">
+                        <span className="block overflow-hidden text-xs text-base-content/70 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                           {option.description}
                         </span>
                       </span>
@@ -543,8 +598,18 @@ export default function DisplayControlTab() {
                 return (
                   <tr key={contestant.id}>
                     <th>{index + 1}</th>
-                    <td>{contestant.fullName}</td>
-                    <td>{contestant.delegation}</td>
+                    <td
+                      className="max-w-[11rem] truncate sm:max-w-[16rem]"
+                      title={contestant.fullName}
+                    >
+                      {contestant.fullName}
+                    </td>
+                    <td
+                      className="max-w-[10rem] truncate sm:max-w-[14rem]"
+                      title={contestant.delegation}
+                    >
+                      {contestant.delegation}
+                    </td>
                     <td>
                       <span
                         className={`badge ${

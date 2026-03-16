@@ -7,8 +7,24 @@ function ComputationTable({
   handleContestantRowKeyDown,
   difficultyScore,
   artistryScore,
+  executionScore,
+  penalties,
+  totalScore,
+  finalScore,
   formatEnteredValue,
 }) {
+  const getDisplayValue = (contestantValue, selectedFallback, isSelected) => {
+    if (contestantValue !== null && contestantValue !== undefined) {
+      return formatEnteredValue(contestantValue);
+    }
+
+    if (isSelected && selectedFallback !== null) {
+      return formatEnteredValue(selectedFallback);
+    }
+
+    return "--";
+  };
+
   return (
     <div>
       <table className="table">
@@ -45,25 +61,39 @@ function ComputationTable({
                   }`}
                 >
                   <td className="font-medium">
-                    {" "}
-                    {index + 1 + ". "}
-                    {contestant.fullName}
+                    {index + 1}. {contestant.fullName}
                   </td>
-                  <td>{contestant.delegation}</td>
+                  <td>{contestant.delegation ?? contestant.teamName ?? "-"}</td>
                   <td>
-                    {isSelected && difficultyScore !== null
-                      ? formatEnteredValue(difficultyScore)
-                      : "--"}
+                    {getDisplayValue(
+                      contestant.dScore,
+                      difficultyScore,
+                      isSelected,
+                    )}
                   </td>
                   <td>
-                    {isSelected && artistryScore !== null
-                      ? formatEnteredValue(artistryScore)
-                      : "--"}
+                    {getDisplayValue(contestant.aScore, artistryScore, isSelected)}
                   </td>
-                  <td>--</td>
-                  <td>--</td>
-                  <td>--</td>
-                  <td>--</td>
+                  <td>
+                    {getDisplayValue(
+                      contestant.eScore,
+                      executionScore,
+                      isSelected,
+                    )}
+                  </td>
+                  <td>
+                    {getDisplayValue(contestant.penalties, penalties, isSelected)}
+                  </td>
+                  <td>
+                    {getDisplayValue(contestant.totalScore, totalScore, isSelected)}
+                  </td>
+                  <td>
+                    {getDisplayValue(
+                      contestant.finalScore ?? contestant.score,
+                      finalScore,
+                      isSelected,
+                    )}
+                  </td>
                 </tr>
               );
             })
