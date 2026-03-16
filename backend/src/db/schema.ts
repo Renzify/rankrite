@@ -13,6 +13,27 @@ import {
 import { relations } from "drizzle-orm";
 
 /*
+  Application Users (authentication)
+*/
+
+export const user = pgTable(
+  "users",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    fullName: text("full_name").notNull(),
+    email: text("email").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    profilePic: text("profile_pic"),
+
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    emailUnique: uniqueIndex("users_email_unique").on(table.email),
+  }),
+);
+
+/*
   Template
   Defines the event creation flow dynamically
 */
