@@ -38,6 +38,7 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Navigate to="/auth/login" replace />} />
 
         <Route element={<AppLayout />}>
           <Route path="/event-form" element={<DynamicTemplateForm />} />
