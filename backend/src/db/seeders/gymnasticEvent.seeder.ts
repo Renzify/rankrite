@@ -61,7 +61,7 @@ export async function seedGymnasticsTemplate() {
       {
         templateId: template.id,
         key: "apparatus",
-        label: "Select Apparatus",
+        label: "Select Initial Apparatus",
         fieldType: "select",
         sortOrder: 6,
       },
