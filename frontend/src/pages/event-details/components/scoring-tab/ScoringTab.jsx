@@ -5,6 +5,7 @@ import {
   formatEnteredValue,
 } from "./helpers/scoringTabHelpers";
 import { useDifficultyScore } from "./hooks/useDifficultyScore";
+import { useArtistryScore } from "./hooks/useArtistryScore";
 import { useScoringTabEffects } from "./hooks/useScoringTabEffects";
 import { useScoringTabHandlers } from "./hooks/useScoringTabHandlers";
 import JudgeList from "./components/JudgeList";
@@ -39,6 +40,7 @@ export default function ScoringTab() {
     judges.length > 0 && judges.every((judge) => judgeScores[judge.id]?.locked);
 
   const difficultyScore = useDifficultyScore(judges, judgeScores);
+  const artistryScore = useArtistryScore(judges, judgeScores);
 
   const {
     lockingJudgeId,
@@ -123,6 +125,7 @@ export default function ScoringTab() {
             handleContestantSelect={handleContestantSelect}
             handleContestantRowKeyDown={handleContestantRowKeyDown}
             difficultyScore={difficultyScore}
+            artistryScore={artistryScore}
             formatEnteredValue={formatEnteredValue}
           />
         </div>

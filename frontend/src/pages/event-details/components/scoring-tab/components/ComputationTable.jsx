@@ -6,6 +6,7 @@ function ComputationTable({
   handleContestantSelect,
   handleContestantRowKeyDown,
   difficultyScore,
+  artistryScore,
   formatEnteredValue,
 }) {
   return (
@@ -54,7 +55,11 @@ function ComputationTable({
                       ? formatEnteredValue(difficultyScore)
                       : "--"}
                   </td>
-                  <td>--</td>
+                  <td>
+                    {isSelected && artistryScore !== null
+                      ? formatEnteredValue(artistryScore)
+                      : "--"}
+                  </td>
                   <td>--</td>
                   <td>--</td>
                   <td>--</td>
