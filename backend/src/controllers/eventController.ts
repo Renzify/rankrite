@@ -16,6 +16,7 @@ import {
   listEvents,
   lockJudgeScore,
   type LockJudgeScoreInput,
+  setCurrentEventPhase,
   submitJudgeScore,
   type SubmitJudgeScoreInput,
   updateEvent,
@@ -120,6 +121,58 @@ export async function getEventDetailsController(req: Request, res: Response) {
   }
 }
 
+export async function updateCurrentEventPhaseController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const rawEventPhaseId = (req.body as { eventPhaseId?: string }).eventPhaseId;
+    const eventPhaseId = Array.isArray(rawEventPhaseId)
+      ? rawEventPhaseId[0]
+      : rawEventPhaseId;
+
+    if (typeof eventPhaseId !== "string" || eventPhaseId.trim() === "") {
+      return res.status(400).json({
+        message: "Event phase id is required",
+      });
+    }
+
+    const details = await setCurrentEventPhase(eventId, userId, eventPhaseId);
+
+    if (!details) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    return res.status(200).json(details);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_EVENT_PHASE") {
+      return res.status(400).json({
+        message: "Invalid event phase for this event",
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json({
+      message: "Failed to update current event phase",
+    });
+  }
+}
+
 export async function getEventJudgeScoresController(
   req: Request,
   res: Response,
@@ -144,10 +197,16 @@ export async function getEventJudgeScoresController(
       : rawContestantId;
     const rawJudgeId = req.query.judgeId;
     const judgeId = Array.isArray(rawJudgeId) ? rawJudgeId[0] : rawJudgeId;
+    const rawEventPhaseId = req.query.eventPhaseId;
+    const eventPhaseId = Array.isArray(rawEventPhaseId)
+      ? rawEventPhaseId[0]
+      : rawEventPhaseId;
 
     const judgeScores = await getEventJudgeScores(eventId, userId, {
       contestantId: typeof contestantId === "string" ? contestantId : undefined,
       judgeId: typeof judgeId === "string" ? judgeId : undefined,
+      eventPhaseId:
+        typeof eventPhaseId === "string" ? eventPhaseId : undefined,
     });
 
     if (!judgeScores) {
@@ -161,6 +220,12 @@ export async function getEventJudgeScoresController(
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
       return res.status(400).json({
         message: "Invalid event input",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_EVENT_PHASE") {
+      return res.status(400).json({
+        message: "Invalid event phase for this event",
       });
     }
 
@@ -216,6 +281,12 @@ export async function submitJudgeScoreController(req: Request, res: Response) {
       });
     }
 
+    if (error instanceof Error && error.message === "INVALID_EVENT_PHASE") {
+      return res.status(400).json({
+        message: "Invalid event phase for this event",
+      });
+    }
+
     console.error(error);
     res.status(500).json({
       message: "Failed to submit judge score",
@@ -264,6 +335,12 @@ export async function lockJudgeScoreController(req: Request, res: Response) {
     if (error instanceof Error && error.message === "JUDGE_SCORE_NOT_FOUND") {
       return res.status(404).json({
         message: "Judge submission not found for this contestant",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_EVENT_PHASE") {
+      return res.status(400).json({
+        message: "Invalid event phase for this event",
       });
     }
 

@@ -9,6 +9,7 @@ import {
   deleteEventJudge,
   getEventDetails,
   importEventContestants,
+  updateCurrentEventPhase,
   updateEvent,
   updateEventJudge,
   updateEventContestant,
@@ -91,6 +92,7 @@ export default function EventDetails() {
   const [isSavingEventInfo, setIsSavingEventInfo] = useState(false);
   const [isSavingJudge, setIsSavingJudge] = useState(false);
   const [isSavingContestant, setIsSavingContestant] = useState(false);
+  const [isUpdatingCurrentPhase, setIsUpdatingCurrentPhase] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,9 +142,15 @@ export default function EventDetails() {
 
   const eventTitle =
     eventDetails?.event?.title || formValues.eventTitle || "Event Details";
+  const eventPhases = eventDetails?.eventPhases ?? [];
+  const currentEventPhaseId =
+    eventDetails?.currentEventPhaseId ?? eventPhases[0]?.id ?? "";
 
   const selectableFields = useMemo(
-    () => visibleFields.filter((field) => field.fieldType === "select"),
+    () =>
+      visibleFields.filter(
+        (field) => field.fieldType === "select" && field.key !== "apparatus",
+      ),
     [visibleFields],
   );
 
@@ -479,6 +487,41 @@ export default function EventDetails() {
     }
   };
 
+  const handleCurrentPhaseChange = async (nextPhaseId) => {
+    if (!eventId || !nextPhaseId) {
+      return;
+    }
+
+    try {
+      setIsUpdatingCurrentPhase(true);
+      const updatedDetails = await updateCurrentEventPhase(eventId, {
+        eventPhaseId: nextPhaseId,
+      });
+
+      applyLoadedEventDetails(updatedDetails, {
+        setEventDetails,
+        setSelectedEventType,
+        setSelectedSport,
+        setJudges,
+        setContestants,
+        setPendingFormValues,
+        setDidHydrate,
+      });
+      setJudgeScores({});
+
+      toast.success("Current apparatus updated");
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Failed to update current apparatus.",
+      );
+      console.error("Failed to update current apparatus:", error);
+      toast.error(message);
+    } finally {
+      setIsUpdatingCurrentPhase(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="app-page app-page-wide">
@@ -515,23 +558,50 @@ export default function EventDetails() {
         </button>
       </div>
       <section className="app-surface">
-        <div className="app-section flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
-              Event Details
-            </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">
-              {eventTitle}
-            </h1>
+        <div className="app-section">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
+                Event Details
+              </p>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {eventTitle}
+              </h1>
+
+              {eventPhases.length ? (
+                <label className="form-control w-full sm:max-w-[280px]">
+                  <div className="label pb-1">
+                    <span className="label-text font-semibold">
+                      Current Apparatus
+                    </span>
+                  </div>
+                  <select
+                    className="select select-bordered w-full"
+                    value={currentEventPhaseId}
+                    onChange={(event) =>
+                      handleCurrentPhaseChange(event.target.value)
+                    }
+                    disabled={isUpdatingCurrentPhase}
+                  >
+                    {eventPhases.map((phase) => (
+                      <option key={phase.id} value={phase.id}>
+                        {phase.optionLabel ?? phase.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
+
+            {eventDetails?.event?.status ? (
+              <StatusBadge
+                status={eventDetails.event.status
+                  .split("_")
+                  .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                  .join(" ")}
+              />
+            ) : null}
           </div>
-          {eventDetails?.event?.status ? (
-            <StatusBadge
-              status={eventDetails.event.status
-                .split("_")
-                .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-                .join(" ")}
-            />
-          ) : null}
         </div>
       </section>
 
@@ -574,6 +644,8 @@ export default function EventDetails() {
               onResetEventInfo: handleResetEventInfo,
               onSaveEventInfo: handleSaveEventInfo,
               eventTitle,
+              eventPhases,
+              currentEventPhaseId,
               judges,
               setJudges,
               onCreateJudge: handleCreateJudge,

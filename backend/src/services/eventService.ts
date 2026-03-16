@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import {
   contestant,
@@ -6,11 +6,15 @@ import {
   eventContestant,
   eventFieldValue,
   eventJudgeAssignment,
+  eventPhase,
   eventTemplate,
   judge,
   judgeScore,
   judgeType,
   scoreSheet,
+  templateField,
+  templateFieldOption,
+  templateOptionDependency,
 } from "../db/schema.ts";
 import { getTemplateById } from "./templateService.ts";
 
@@ -84,20 +88,35 @@ export type SubmitJudgeScoreInput = {
   judgeId: string;
   contestantId: string;
   score: number | string;
+  eventPhaseId?: string | null;
 };
 
 export type LockJudgeScoreInput = {
   judgeId: string;
   contestantId: string;
+  eventPhaseId?: string | null;
 };
 
 export type EventJudgeScoreRecord = {
   judgeId: string;
   contestantId: string | null;
   contestantName: string | null;
+  eventPhaseId: string | null;
   rawScore: number | null;
   locked: boolean;
   submittedAt: Date | null;
+};
+
+export type EventPhaseRecord = {
+  id: string;
+  phaseType: string;
+  label: string;
+  sequenceNo: number;
+  isActive: boolean;
+  linkedFieldId: string | null;
+  linkedOptionId: string | null;
+  optionValue: string | null;
+  optionLabel: string | null;
 };
 
 function normalizeContestantGender(value?: string | null) {
@@ -205,6 +224,323 @@ async function findOwnedEvent(eventId: string, ownerUserId: string) {
       eq(event.createdByUserId, ownerUserId),
     ),
   });
+}
+
+function normalizeOptionalPhaseId(value?: string | null) {
+  const normalizedValue = (value ?? "").trim();
+  return normalizedValue || null;
+}
+
+function buildSelectedOptionByFieldId(
+  rows: Array<{ fieldId: string; optionId: string | null }>,
+) {
+  const selectedOptionByFieldId = new Map<string, string>();
+
+  for (const row of rows) {
+    if (row.optionId) {
+      selectedOptionByFieldId.set(row.fieldId, row.optionId);
+    }
+  }
+
+  return selectedOptionByFieldId;
+}
+
+async function syncEventApparatusPhases(
+  eventId: string,
+  templateId: string,
+  selectedOptionByFieldId: Map<string, string>,
+) {
+  const apparatusField = await db.query.templateField.findFirst({
+    where: and(
+      eq(templateField.templateId, templateId),
+      eq(templateField.key, "apparatus"),
+      eq(templateField.isActive, true),
+    ),
+  });
+
+  if (!apparatusField) {
+    return {
+      phases: [] as EventPhaseRecord[],
+      currentEventPhaseId: null as string | null,
+    };
+  }
+
+  const [apparatusOptions, dependencies] = await Promise.all([
+    db
+      .select()
+      .from(templateFieldOption)
+      .where(
+        and(
+          eq(templateFieldOption.fieldId, apparatusField.id),
+          eq(templateFieldOption.isActive, true),
+        ),
+      )
+      .orderBy(asc(templateFieldOption.sortOrder)),
+    db
+      .select()
+      .from(templateOptionDependency)
+      .where(eq(templateOptionDependency.childFieldId, apparatusField.id)),
+  ]);
+
+  const dependenciesByOptionId = new Map<
+    string,
+    Array<(typeof dependencies)[number]>
+  >();
+
+  for (const dependency of dependencies) {
+    const existingDependencies =
+      dependenciesByOptionId.get(dependency.childOptionId) ?? [];
+    existingDependencies.push(dependency);
+    dependenciesByOptionId.set(dependency.childOptionId, existingDependencies);
+  }
+
+  const availableOptions =
+    dependencies.length === 0
+      ? apparatusOptions
+      : apparatusOptions.filter((option) => {
+          const optionDependencies =
+            dependenciesByOptionId.get(option.id) ?? [];
+
+          if (!optionDependencies.length) {
+            return false;
+          }
+
+          return optionDependencies.some((dependency) => {
+            const selectedParentOptionId = selectedOptionByFieldId.get(
+              dependency.parentFieldId,
+            );
+            return selectedParentOptionId === dependency.parentOptionId;
+          });
+        });
+
+  if (!availableOptions.length) {
+    await db
+      .update(eventPhase)
+      .set({
+        isActive: false,
+      })
+      .where(
+        and(
+          eq(eventPhase.eventId, eventId),
+          eq(eventPhase.phaseType, "apparatus_round"),
+        ),
+      );
+
+    return {
+      phases: [] as EventPhaseRecord[],
+      currentEventPhaseId: null as string | null,
+    };
+  }
+
+  const availableOptionById = new Map(
+    availableOptions.map((option) => [option.id, option]),
+  );
+
+  return db.transaction(async (tx) => {
+    const existingPhases = await tx.query.eventPhase.findMany({
+      where: and(
+        eq(eventPhase.eventId, eventId),
+        eq(eventPhase.phaseType, "apparatus_round"),
+      ),
+      orderBy: [asc(eventPhase.sequenceNo), asc(eventPhase.createdAt)],
+    });
+
+    const existingPhaseByOptionId = new Map(
+      existingPhases
+        .filter((phase) => phase.linkedOptionId)
+        .map((phase) => [phase.linkedOptionId as string, phase]),
+    );
+
+    for (let index = 0; index < availableOptions.length; index += 1) {
+      const option = availableOptions[index];
+      const sequenceNo = index + 1;
+      const existingPhase = existingPhaseByOptionId.get(option.id);
+
+      if (existingPhase) {
+        const shouldUpdate =
+          existingPhase.label !== option.label ||
+          existingPhase.sequenceNo !== sequenceNo ||
+          existingPhase.linkedFieldId !== apparatusField.id ||
+          existingPhase.linkedOptionId !== option.id;
+
+        if (shouldUpdate) {
+          await tx
+            .update(eventPhase)
+            .set({
+              label: option.label,
+              sequenceNo,
+              linkedFieldId: apparatusField.id,
+              linkedOptionId: option.id,
+            })
+            .where(eq(eventPhase.id, existingPhase.id));
+        }
+
+        continue;
+      }
+
+      await tx.insert(eventPhase).values({
+        eventId,
+        phaseType: "apparatus_round",
+        label: option.label,
+        sequenceNo,
+        isActive: false,
+        linkedFieldId: apparatusField.id,
+        linkedOptionId: option.id,
+      });
+    }
+
+    const availableOptionIds = availableOptions.map((option) => option.id);
+    const refreshedAvailablePhases = await tx.query.eventPhase.findMany({
+      where: and(
+        eq(eventPhase.eventId, eventId),
+        eq(eventPhase.phaseType, "apparatus_round"),
+        inArray(eventPhase.linkedOptionId, availableOptionIds),
+      ),
+      orderBy: [asc(eventPhase.sequenceNo), asc(eventPhase.createdAt)],
+    });
+
+    const preferredActivePhase =
+      refreshedAvailablePhases.find((phase) => phase.isActive) ??
+      refreshedAvailablePhases[0] ??
+      null;
+
+    if (preferredActivePhase) {
+      await tx
+        .update(eventPhase)
+        .set({
+          isActive: false,
+        })
+        .where(
+          and(
+            eq(eventPhase.eventId, eventId),
+            eq(eventPhase.phaseType, "apparatus_round"),
+          ),
+        );
+
+      await tx
+        .update(eventPhase)
+        .set({
+          isActive: true,
+        })
+        .where(eq(eventPhase.id, preferredActivePhase.id));
+    }
+
+    const phases = refreshedAvailablePhases.map((phase) => {
+      const linkedOption = phase.linkedOptionId
+        ? availableOptionById.get(phase.linkedOptionId)
+        : null;
+
+      return {
+        id: phase.id,
+        phaseType: phase.phaseType,
+        label: phase.label,
+        sequenceNo: phase.sequenceNo,
+        isActive: preferredActivePhase
+          ? phase.id === preferredActivePhase.id
+          : phase.isActive,
+        linkedFieldId: phase.linkedFieldId,
+        linkedOptionId: phase.linkedOptionId,
+        optionValue: linkedOption?.value ?? null,
+        optionLabel: linkedOption?.label ?? null,
+      };
+    });
+
+    return {
+      phases,
+      currentEventPhaseId: preferredActivePhase?.id ?? null,
+    };
+  });
+}
+
+async function ensureEventApparatusPhases(eventId: string, templateId: string) {
+  const selectedRows = await db
+    .select({
+      fieldId: eventFieldValue.fieldId,
+      optionId: eventFieldValue.optionId,
+    })
+    .from(eventFieldValue)
+    .where(eq(eventFieldValue.eventId, eventId));
+
+  return syncEventApparatusPhases(
+    eventId,
+    templateId,
+    buildSelectedOptionByFieldId(selectedRows),
+  );
+}
+
+async function resolveEventPhaseForScoring(
+  eventId: string,
+  requestedEventPhaseId?: string | null,
+) {
+  const normalizedRequestedEventPhaseId = normalizeOptionalPhaseId(
+    requestedEventPhaseId,
+  );
+
+  if (normalizedRequestedEventPhaseId) {
+    const matchingPhase = await db.query.eventPhase.findFirst({
+      where: and(
+        eq(eventPhase.id, normalizedRequestedEventPhaseId),
+        eq(eventPhase.eventId, eventId),
+        eq(eventPhase.phaseType, "apparatus_round"),
+      ),
+    });
+
+    if (!matchingPhase) {
+      throw new Error("INVALID_EVENT_PHASE");
+    }
+
+    return matchingPhase.id;
+  }
+
+  const activePhase = await db.query.eventPhase.findFirst({
+    where: and(
+      eq(eventPhase.eventId, eventId),
+      eq(eventPhase.phaseType, "apparatus_round"),
+      eq(eventPhase.isActive, true),
+    ),
+    orderBy: [asc(eventPhase.sequenceNo), asc(eventPhase.createdAt)],
+  });
+
+  return activePhase?.id ?? null;
+}
+
+async function resolveJudgeAssignmentForScoring(
+  eventId: string,
+  judgeId: string,
+  scoringPhaseId: string | null,
+) {
+  const candidateAssignments = await db.query.eventJudgeAssignment.findMany({
+    where: scoringPhaseId
+      ? and(
+          eq(eventJudgeAssignment.eventId, eventId),
+          eq(eventJudgeAssignment.judgeId, judgeId),
+          or(
+            eq(eventJudgeAssignment.eventPhaseId, scoringPhaseId),
+            isNull(eventJudgeAssignment.eventPhaseId),
+          ),
+        )
+      : and(
+          eq(eventJudgeAssignment.eventId, eventId),
+          eq(eventJudgeAssignment.judgeId, judgeId),
+          isNull(eventJudgeAssignment.eventPhaseId),
+        ),
+  });
+
+  if (!candidateAssignments.length) {
+    return null;
+  }
+
+  if (scoringPhaseId) {
+    return (
+      candidateAssignments.find(
+        (assignment) => assignment.eventPhaseId === scoringPhaseId,
+      ) ??
+      candidateAssignments.find((assignment) => assignment.eventPhaseId === null) ??
+      null
+    );
+  }
+
+  return candidateAssignments.find((assignment) => assignment.eventPhaseId === null) ?? null;
 }
 
 export async function createEventDraft(
@@ -349,6 +685,8 @@ export async function createEventDraft(
     return createdEvent;
   });
 
+  await ensureEventApparatusPhases(result.id, templateId);
+
   return result;
 }
 
@@ -364,14 +702,18 @@ export async function updateEvent(
   ownerUserId: string,
 ): Promise<EventDetails | null> {
   const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+  const normalizedEventId = eventId?.trim();
   const templateId = input.templateId?.trim();
   const title = input.title?.trim();
 
-  if (!eventId?.trim() || !templateId || !title) {
+  if (!normalizedEventId || !templateId || !title) {
     throw new Error("INVALID_EVENT_INPUT");
   }
 
-  const existingEvent = await findOwnedEvent(eventId, normalizedOwnerUserId);
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
 
   if (!existingEvent) {
     return null;
@@ -393,12 +735,14 @@ export async function updateEvent(
         title,
         updatedAt: new Date(),
       })
-      .where(eq(event.id, eventId));
+      .where(eq(event.id, normalizedEventId));
 
-    await tx.delete(eventFieldValue).where(eq(eventFieldValue.eventId, eventId));
+    await tx
+      .delete(eventFieldValue)
+      .where(eq(eventFieldValue.eventId, normalizedEventId));
 
     const values = (input.fieldValues ?? []).map((value) => ({
-      eventId,
+      eventId: normalizedEventId,
       fieldId: value.fieldId,
       optionId: value.optionId ?? null,
       valueText: value.valueText ?? null,
@@ -409,7 +753,9 @@ export async function updateEvent(
     }
   });
 
-  return getEventDetails(eventId, normalizedOwnerUserId);
+  await ensureEventApparatusPhases(normalizedEventId, templateId);
+
+  return getEventDetails(normalizedEventId, normalizedOwnerUserId);
 }
 
 export async function deleteEvent(
@@ -1052,13 +1398,17 @@ export async function submitJudgeScore(
     return null;
   }
 
+  const scoringEventPhaseId = await resolveEventPhaseForScoring(
+    normalizedEventId,
+    input.eventPhaseId,
+  );
+
   const [judgeAssignment, contestantRecord] = await Promise.all([
-    db.query.eventJudgeAssignment.findFirst({
-      where: and(
-        eq(eventJudgeAssignment.eventId, normalizedEventId),
-        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
-      ),
-    }),
+    resolveJudgeAssignmentForScoring(
+      normalizedEventId,
+      normalizedJudgeId,
+      scoringEventPhaseId,
+    ),
     db
       .select({
         contestantId: contestant.id,
@@ -1087,8 +1437,8 @@ export async function submitJudgeScore(
       where: and(
         eq(scoreSheet.eventId, normalizedEventId),
         eq(scoreSheet.contestantId, normalizedContestantId),
-        judgeAssignment.eventPhaseId
-          ? eq(scoreSheet.eventPhaseId, judgeAssignment.eventPhaseId)
+        scoringEventPhaseId
+          ? eq(scoreSheet.eventPhaseId, scoringEventPhaseId)
           : isNull(scoreSheet.eventPhaseId),
       ),
     });
@@ -1101,7 +1451,7 @@ export async function submitJudgeScore(
           .values({
             eventId: normalizedEventId,
             contestantId: normalizedContestantId,
-            eventPhaseId: judgeAssignment.eventPhaseId,
+            eventPhaseId: scoringEventPhaseId,
             status: "in_progress",
             updatedAt: submittedAt,
           })
@@ -1152,6 +1502,7 @@ export async function submitJudgeScore(
       judgeId: normalizedJudgeId,
       contestantId: contestantRecord.contestantId,
       contestantName: contestantRecord.contestantName,
+      eventPhaseId: scoringEventPhaseId,
       rawScore,
       locked: false,
       submittedAt,
@@ -1182,13 +1533,17 @@ export async function lockJudgeScore(
     return null;
   }
 
+  const scoringEventPhaseId = await resolveEventPhaseForScoring(
+    normalizedEventId,
+    input.eventPhaseId,
+  );
+
   const [judgeAssignment, contestantRecord] = await Promise.all([
-    db.query.eventJudgeAssignment.findFirst({
-      where: and(
-        eq(eventJudgeAssignment.eventId, normalizedEventId),
-        eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
-      ),
-    }),
+    resolveJudgeAssignmentForScoring(
+      normalizedEventId,
+      normalizedJudgeId,
+      scoringEventPhaseId,
+    ),
     db
       .select({
         contestantId: contestant.id,
@@ -1215,8 +1570,8 @@ export async function lockJudgeScore(
       where: and(
         eq(scoreSheet.eventId, normalizedEventId),
         eq(scoreSheet.contestantId, normalizedContestantId),
-        judgeAssignment.eventPhaseId
-          ? eq(scoreSheet.eventPhaseId, judgeAssignment.eventPhaseId)
+        scoringEventPhaseId
+          ? eq(scoreSheet.eventPhaseId, scoringEventPhaseId)
           : isNull(scoreSheet.eventPhaseId),
       ),
     });
@@ -1250,6 +1605,7 @@ export async function lockJudgeScore(
       judgeId: normalizedJudgeId,
       contestantId: contestantRecord.contestantId,
       contestantName: contestantRecord.contestantName,
+      eventPhaseId: scoringEventPhaseId,
       rawScore: existingJudgeScore.rawScore,
       locked: true,
       submittedAt: existingJudgeScore.createdAt,
@@ -1263,6 +1619,7 @@ export async function getEventJudgeScores(
   options?: {
     contestantId?: string;
     judgeId?: string;
+    eventPhaseId?: string | null;
   },
 ): Promise<EventJudgeScoreRecord[] | null> {
   const normalizedOwnerUserId = normalizeUserId(ownerUserId);
@@ -1283,6 +1640,20 @@ export async function getEventJudgeScores(
     return null;
   }
 
+  const scoringEventPhaseId = await resolveEventPhaseForScoring(
+    normalizedEventId,
+    options?.eventPhaseId,
+  );
+  const assignmentPhaseCondition = scoringEventPhaseId
+    ? or(
+        eq(eventJudgeAssignment.eventPhaseId, scoringEventPhaseId),
+        isNull(eventJudgeAssignment.eventPhaseId),
+      )
+    : isNull(eventJudgeAssignment.eventPhaseId);
+  const scoreSheetPhaseCondition = scoringEventPhaseId
+    ? eq(scoreSheet.eventPhaseId, scoringEventPhaseId)
+    : isNull(scoreSheet.eventPhaseId);
+
   const [judgeAssignments, scoreRows] = await Promise.all([
     db
       .select({
@@ -1294,14 +1665,19 @@ export async function getEventJudgeScores(
           ? and(
               eq(eventJudgeAssignment.eventId, normalizedEventId),
               eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+              assignmentPhaseCondition,
             )
-          : eq(eventJudgeAssignment.eventId, normalizedEventId),
+          : and(
+              eq(eventJudgeAssignment.eventId, normalizedEventId),
+              assignmentPhaseCondition,
+            ),
       ),
     db
       .select({
         judgeId: eventJudgeAssignment.judgeId,
         contestantId: scoreSheet.contestantId,
         contestantName: contestant.fullName,
+        eventPhaseId: scoreSheet.eventPhaseId,
         rawScore: judgeScore.rawScore,
         locked: judgeScore.isLocked,
         submittedAt: judgeScore.createdAt,
@@ -1319,18 +1695,28 @@ export async function getEventJudgeScores(
               eq(scoreSheet.eventId, normalizedEventId),
               eq(scoreSheet.contestantId, normalizedContestantId),
               eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+              assignmentPhaseCondition,
+              scoreSheetPhaseCondition,
             )
           : normalizedContestantId
             ? and(
                 eq(scoreSheet.eventId, normalizedEventId),
                 eq(scoreSheet.contestantId, normalizedContestantId),
+                assignmentPhaseCondition,
+                scoreSheetPhaseCondition,
               )
             : normalizedJudgeId
               ? and(
                   eq(scoreSheet.eventId, normalizedEventId),
                   eq(eventJudgeAssignment.judgeId, normalizedJudgeId),
+                  assignmentPhaseCondition,
+                  scoreSheetPhaseCondition,
                 )
-              : eq(scoreSheet.eventId, normalizedEventId),
+              : and(
+                  eq(scoreSheet.eventId, normalizedEventId),
+                  assignmentPhaseCondition,
+                  scoreSheetPhaseCondition,
+                ),
       )
       .orderBy(desc(judgeScore.createdAt)),
   ]);
@@ -1353,6 +1739,7 @@ export async function getEventJudgeScores(
       judgeId: scoreRow.judgeId,
       contestantId: scoreRow.contestantId,
       contestantName: scoreRow.contestantName,
+      eventPhaseId: scoreRow.eventPhaseId ?? scoringEventPhaseId,
       rawScore: scoreRow.rawScore,
       locked: scoreRow.locked,
       submittedAt: scoreRow.submittedAt,
@@ -1374,11 +1761,79 @@ export async function getEventJudgeScores(
       judgeId: assignment.judgeId,
       contestantId: latestScore?.contestantId ?? null,
       contestantName: latestScore?.contestantName ?? null,
+      eventPhaseId: latestScore?.eventPhaseId ?? scoringEventPhaseId,
       rawScore: latestScore?.rawScore ?? null,
       locked: latestScore?.locked ?? false,
       submittedAt: latestScore?.submittedAt ?? null,
     };
   });
+}
+
+export async function setCurrentEventPhase(
+  eventId: string,
+  ownerUserId: string,
+  eventPhaseId: string,
+): Promise<EventDetails | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+  const normalizedEventId = eventId?.trim();
+  const normalizedEventPhaseId = normalizeOptionalPhaseId(eventPhaseId);
+
+  if (!normalizedEventId || !normalizedEventPhaseId) {
+    throw new Error("INVALID_EVENT_PHASE");
+  }
+
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  await ensureEventApparatusPhases(normalizedEventId, existingEvent.templateId);
+
+  const targetPhase = await db.query.eventPhase.findFirst({
+    where: and(
+      eq(eventPhase.id, normalizedEventPhaseId),
+      eq(eventPhase.eventId, normalizedEventId),
+      eq(eventPhase.phaseType, "apparatus_round"),
+    ),
+  });
+
+  if (!targetPhase) {
+    throw new Error("INVALID_EVENT_PHASE");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(eventPhase)
+      .set({
+        isActive: false,
+      })
+      .where(
+        and(
+          eq(eventPhase.eventId, normalizedEventId),
+          eq(eventPhase.phaseType, "apparatus_round"),
+        ),
+      );
+
+    await tx
+      .update(eventPhase)
+      .set({
+        isActive: true,
+      })
+      .where(eq(eventPhase.id, targetPhase.id));
+
+    await tx
+      .update(event)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(eq(event.id, normalizedEventId));
+  });
+
+  return getEventDetails(normalizedEventId, normalizedOwnerUserId);
 }
 
 export type EventListItem = {
@@ -1411,6 +1866,9 @@ export type EventDetails = {
   formValues: Record<string, string>;
   judges: EventJudgeRecord[];
   contestants: EventContestantRecord[];
+  eventPhases: EventPhaseRecord[];
+  currentEventPhaseId: string | null;
+  currentEventPhaseLabel: string | null;
 };
 
 export async function getEventDetails(
@@ -1452,6 +1910,22 @@ export async function getEventDetails(
     return acc;
   }, {});
 
+  const apparatusPhaseContext = await syncEventApparatusPhases(
+    normalizedEventId,
+    eventRow.templateId,
+    buildSelectedOptionByFieldId(
+      fieldValues.map((value) => ({
+        fieldId: value.fieldId,
+        optionId: value.optionId,
+      })),
+    ),
+  );
+  const currentEventPhaseId = apparatusPhaseContext.currentEventPhaseId;
+  const currentEventPhaseLabel =
+    apparatusPhaseContext.phases.find(
+      (phase) => phase.id === currentEventPhaseId,
+    )?.label ?? null;
+
   const judgeAssignments = await db.query.eventJudgeAssignment.findMany({
     where: eq(eventJudgeAssignment.eventId, normalizedEventId),
     with: {
@@ -1468,25 +1942,32 @@ export async function getEventDetails(
     eventPhaseId: assignment.eventPhaseId ?? null,
   }));
 
-  const difficultyBodyAssignments = judgeAssignments.filter(
+  const scoringJudgeAssignments = judgeAssignments.filter((assignment) =>
+    currentEventPhaseId
+      ? assignment.eventPhaseId === null ||
+        assignment.eventPhaseId === currentEventPhaseId
+      : assignment.eventPhaseId === null,
+  );
+
+  const difficultyBodyAssignments = scoringJudgeAssignments.filter(
     (assignment) =>
       normalizeJudgeTypeName(assignment.judgeType?.name) === "difficulty body",
   );
-  const difficultyApparatusAssignments = judgeAssignments.filter(
+  const difficultyApparatusAssignments = scoringJudgeAssignments.filter(
     (assignment) =>
       normalizeJudgeTypeName(assignment.judgeType?.name) ===
       "difficulty apparatus",
   );
-  const artistryAssignments = judgeAssignments.filter(
+  const artistryAssignments = scoringJudgeAssignments.filter(
     (assignment) => normalizeJudgeTypeName(assignment.judgeType?.name) === "artistry",
   );
-  const executionAssignments = judgeAssignments.filter(
+  const executionAssignments = scoringJudgeAssignments.filter(
     (assignment) => normalizeJudgeTypeName(assignment.judgeType?.name) === "execution",
   );
-  const timeJudgeAssignments = judgeAssignments.filter(
+  const timeJudgeAssignments = scoringJudgeAssignments.filter(
     (assignment) => normalizeJudgeTypeName(assignment.judgeType?.name) === "time judge",
   );
-  const lineJudgeAssignments = judgeAssignments.filter(
+  const lineJudgeAssignments = scoringJudgeAssignments.filter(
     (assignment) => normalizeJudgeTypeName(assignment.judgeType?.name) === "line judge",
   );
 
@@ -1506,6 +1987,15 @@ export async function getEventDetails(
       and(
         eq(scoreSheet.eventId, normalizedEventId),
         eq(eventJudgeAssignment.eventId, normalizedEventId),
+        currentEventPhaseId
+          ? eq(scoreSheet.eventPhaseId, currentEventPhaseId)
+          : isNull(scoreSheet.eventPhaseId),
+        currentEventPhaseId
+          ? or(
+              eq(eventJudgeAssignment.eventPhaseId, currentEventPhaseId),
+              isNull(eventJudgeAssignment.eventPhaseId),
+            )
+          : isNull(eventJudgeAssignment.eventPhaseId),
       ),
     )
     .orderBy(desc(judgeScore.createdAt));
@@ -1606,5 +2096,8 @@ export async function getEventDetails(
     formValues,
     judges,
     contestants,
+    eventPhases: apparatusPhaseContext.phases,
+    currentEventPhaseId,
+    currentEventPhaseLabel,
   };
 }
