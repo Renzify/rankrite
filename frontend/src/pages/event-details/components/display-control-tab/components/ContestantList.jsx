@@ -1,6 +1,11 @@
 import React from "react";
 
-function ContestantList({ contestants }) {
+function ContestantList({
+  contestants,
+  safeActiveIndex,
+  nextIndex,
+  isBlackout,
+}) {
   return (
     <div>
       <table className="table table-zebra">

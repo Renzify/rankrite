@@ -1,9 +1,31 @@
+import { useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import ConfirmDeleteModal from "../../../../shared/components/ConfirmDeleteModal";
 import JudgeLinkModal from "./components/JudgeLinkModal";
+import SwitchContestantConfirmModal from "./components/SwitchContestantConfirmModal";
 import { useJudgeForm } from "./hooks/useJudgeForm";
 import { useJudgeLinkModal } from "./hooks/useJudgeLinkModal";
+import { useJudgesTabContext } from "./hooks/useJudgesTabContext";
+
+function formatContestantLabel(contestant) {
+  if (!contestant) {
+    return "No contestant selected";
+  }
+
+  const entryNo = Number.parseInt(String(contestant.entryNo ?? ""), 10);
+  const entryLabel = Number.isFinite(entryNo) ? `#${entryNo}` : "#-";
+  const fullName =
+    contestant.fullName || contestant.name || "Unnamed contestant";
+  const delegation = contestant.teamName || contestant.delegation || "";
+
+  return delegation
+    ? `${entryLabel} - ${fullName} (${delegation})`
+    : `${entryLabel} - ${fullName}`;
+}
 
 export default function JudgesTab({ showLinkGeneration }) {
+  const { activeContestantId, contestants, setActiveContestantId } =
+    useJudgesTabContext();
   const {
     JUDGE_TYPE_OPTIONS,
     actionButtonLabel,
@@ -35,6 +57,57 @@ export default function JudgesTab({ showLinkGeneration }) {
     shouldShowLinkGeneration,
   } = useJudgeLinkModal(showLinkGeneration);
 
+  const switchContestantModalRef = useRef(null);
+
+  const sortedContestants = useMemo(
+    () =>
+      [...contestants].sort(
+        (left, right) =>
+          (left.entryNo ?? Number.MAX_SAFE_INTEGER) -
+          (right.entryNo ?? Number.MAX_SAFE_INTEGER),
+      ),
+    [contestants],
+  );
+
+  const [selectedCandidateContestantId, setSelectedCandidateContestantId] =
+    useState("");
+  const pendingActiveContestantId =
+    selectedCandidateContestantId || activeContestantId || "";
+
+  const hasContestants = sortedContestants.length > 0;
+  const activeContestant =
+    sortedContestants.find(
+      (contestant) => contestant.id === activeContestantId,
+    ) ?? null;
+  const pendingContestant =
+    sortedContestants.find(
+      (contestant) => contestant.id === pendingActiveContestantId,
+    ) ?? null;
+
+  const canSwitchActiveContestant = Boolean(
+    pendingContestant && pendingContestant.id !== activeContestantId,
+  );
+
+  const handleSwitchRequest = () => {
+    if (!pendingContestant || !canSwitchActiveContestant) {
+      return;
+    }
+
+    switchContestantModalRef.current?.open({
+      currentContestantLabel: activeContestant
+        ? formatContestantLabel(activeContestant)
+        : "No active contestant",
+      nextContestantLabel: formatContestantLabel(pendingContestant),
+      onConfirm: () => {
+        setActiveContestantId(pendingContestant.id);
+        setSelectedCandidateContestantId("");
+        toast.success(
+          `Active contestant switched to ${pendingContestant.fullName}.`,
+        );
+      },
+    });
+  };
+
   const emptyJudgeColSpan = shouldShowLinkGeneration ? 5 : 4;
 
   return (
@@ -55,6 +128,57 @@ export default function JudgesTab({ showLinkGeneration }) {
           {editingJudgeId ? (
             <span className="badge badge-outline badge-lg">Editing Judge</span>
           ) : null}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
+        <div>
+          <h3 className="text-base font-semibold">Active Contestant Control</h3>
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-[1.2fr_1.2fr_auto]">
+          <div>
+            <p className="text-sm font-semibold tracking-wide text-base-content/60">
+              Current Active
+            </p>
+            <div className="mt-1 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm font-medium ">
+              {activeContestant
+                ? formatContestantLabel(activeContestant)
+                : "No contestants available yet."}
+            </div>
+          </div>
+
+          <label className="form-control w-full">
+            <div className="label rounded-sm">
+              <span className="label-text font-semibold">Switch To</span>
+            </div>
+            <select
+              className="select select-bordered w-full"
+              value={pendingActiveContestantId}
+              onChange={(event) =>
+                setSelectedCandidateContestantId(event.target.value)
+              }
+              disabled={!hasContestants || isSavingJudge}
+            >
+              <option value="">-- Select Contestant --</option>
+              {sortedContestants.map((contestant) => (
+                <option key={contestant.id} value={contestant.id}>
+                  {formatContestantLabel(contestant)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              className="btn btn-neutral w-full md:w-auto"
+              onClick={handleSwitchRequest}
+              disabled={!canSwitchActiveContestant || isSavingJudge}
+            >
+              Switch Active Contestant
+            </button>
+          </div>
         </div>
       </div>
 
@@ -233,6 +357,8 @@ export default function JudgesTab({ showLinkGeneration }) {
         onCopyLink={handleCopyLink}
         onTabChange={setLinkModalTab}
       />
+
+      <SwitchContestantConfirmModal ref={switchContestantModalRef} />
     </div>
   );
 }

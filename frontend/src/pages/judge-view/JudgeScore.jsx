@@ -9,7 +9,6 @@ function JudgeScore() {
     activeScoreValue,
     calculatedMedianScore,
     canSubmitCurrentEntry,
-    contestants,
     currentJudge,
     deductionValues,
     formatScore,
@@ -17,7 +16,6 @@ function JudgeScore() {
     getWholeNumber,
     handleAddDeductionInput,
     handleCancelEdit,
-    handleContestantChange,
     handleDecrease,
     handleDeductionInputChange,
     handleEditSubmission,
@@ -170,28 +168,20 @@ function JudgeScore() {
             <div className="mb-4 flex items-center gap-2">
               <hr className="flex-1 border-base-300" />
               <span className="text-sm font-medium whitespace-nowrap">
-                Select Contestant:
+                Active Contestant:
               </span>
               <hr className="flex-1 border-base-300" />
             </div>
-            <select
-              className="select select-bordered w-full"
-              value={selectedContestant}
-              onChange={handleContestantChange}
-              disabled={
-                isLoading ||
-                Boolean(loadError) ||
-                !contestants.length ||
-                isSubmitting
-              }
-            >
-              <option value="">-- Select a Contestant --</option>
-              {contestants.map((contestant) => (
-                <option key={contestant.id} value={contestant.id}>
-                  Contestant #{contestant.entryNo} - {contestant.name}
-                </option>
-              ))}
-            </select>
+            <div className="rounded-lg border border-base-300 bg-base-200 px-4 py-3">
+              <p className="text-sm text-base-content/70">
+                Contestant selection is controlled by the admin.
+              </p>
+              <p className="mt-1 text-sm font-medium">
+                {selectedContestantData
+                  ? "Contestant #" + selectedContestantData.entryNo + " - " + selectedContestantData.name
+                  : "Waiting for an active contestant."}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -248,7 +238,7 @@ function JudgeScore() {
               <div className="rounded-lg border border-base-200 bg-base-200 p-4">
                 <div className="flex h-full flex-col items-center justify-center py-4">
                   <p className="text-sm text-base-content/50">
-                    Select a Contestant
+                    Waiting for Active Contestant
                   </p>
                 </div>
               </div>

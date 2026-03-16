@@ -153,7 +153,12 @@ export default function DisplayControlTab() {
       </div>
 
       <div className="app-table-wrap">
-        <ContestantList contestants={contestants} />
+        <ContestantList
+          contestants={contestants}
+          safeActiveIndex={safeActiveIndex}
+          nextIndex={nextIndex}
+          isBlackout={isBlackout}
+        />
       </div>
     </div>
   );
