@@ -3,10 +3,13 @@ import { Link } from "react-router";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
-import { signup } from "../../api/authApi";
+import { useAuthStore } from "../../stores/authStore";
 
 function SignupCard() {
   const navigate = useNavigate();
+  const signup = useAuthStore((state) => state.signup);
+  const isSigningUp = useAuthStore((state) => state.isSigningUp);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -14,12 +17,11 @@ function SignupCard() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (isSubmitting) return;
+    if (isSigningUp) return;
 
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
@@ -32,19 +34,12 @@ function SignupCard() {
     }
 
     try {
-      setIsSubmitting(true);
-
-      const authenticatedUser = await signup({
+      await signup({
         fullName: fullName.trim(),
         email: email.trim(),
         password,
         confirmPassword,
       });
-
-      if (authenticatedUser) {
-        window.localStorage.removeItem("rankrite_user");
-        window.sessionStorage.removeItem("rankrite_user");
-      }
 
       toast.success("Account created successfully");
       navigate("/login", { replace: true });
@@ -52,8 +47,6 @@ function SignupCard() {
       const message =
         error?.response?.data?.message ?? "Failed to sign up. Please try again.";
       toast.error(message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -157,9 +150,9 @@ function SignupCard() {
           <button
             type="submit"
             className="btn btn-primary w-full"
-            disabled={isSubmitting}
+            disabled={isSigningUp}
           >
-            {isSubmitting ? "Creating account..." : "Sign Up"}
+            {isSigningUp ? "Creating account..." : "Sign Up"}
           </button>
         </form>
 

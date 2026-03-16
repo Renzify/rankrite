@@ -2,9 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Menu, X } from "lucide-react";
 import { DropdownMenu } from "./helpers/Dropdown";
+import toast from "react-hot-toast";
+import { useAuthStore } from "../stores/authStore";
 
 function Header() {
   const navigate = useNavigate();
+  const authUser = useAuthStore((state) => state.authUser);
+  const logout = useAuthStore((state) => state.logout);
+  const isLoggingOut = useAuthStore((state) => state.isLoggingOut);
+
   const headerRef = useRef(null);
   const profileDropdownRef = useRef(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -30,6 +36,18 @@ function Header() {
     closeAllDropdowns();
     setIsMobileMenuOpen((prev) => !prev);
   }, [closeAllDropdowns]);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully");
+      navigateTo("/auth/login");
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ?? "Failed to log out. Please try again.";
+      toast.error(message);
+    }
+  }, [logout, navigateTo]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -71,7 +89,7 @@ function Header() {
           <button
             type="button"
             className="flex items-center gap-3 text-left"
-            onClick={() => navigateTo("/")}
+            onClick={() => navigateTo("/dashboard")}
           >
             <img
               src="/src/assets/images/f-logo-2.png"
@@ -84,7 +102,7 @@ function Header() {
             <button
               type="button"
               className="btn btn-ghost hidden md:inline-flex"
-              onClick={() => navigateTo("/")}
+              onClick={() => navigateTo("/dashboard")}
             >
               Home
             </button>
@@ -105,7 +123,9 @@ function Header() {
                     <div className="avatar placeholder">
                       <div className="w-8 rounded-full bg-neutral text-neutral-content" />
                     </div>
-                    <span className="text-sm font-medium">Admin</span>
+                    <span className="text-sm font-medium">
+                      {authUser?.fullName || "Admin"}
+                    </span>
                   </button>
                 )}
               >
@@ -129,9 +149,11 @@ function Header() {
                   <li>
                     <button
                       type="button"
+                      disabled={isLoggingOut}
                       className="text-error hover:bg-error hover:text-error-content"
+                      onClick={handleLogout}
                     >
-                      Log out
+                      {isLoggingOut ? "Logging out..." : "Log out"}
                     </button>
                   </li>
                 </ul>
@@ -160,7 +182,7 @@ function Header() {
               <button
                 type="button"
                 className="btn btn-ghost justify-start"
-                onClick={() => navigateTo("/")}
+                onClick={() => navigateTo("/dashboard")}
               >
                 Home
               </button>
@@ -180,9 +202,11 @@ function Header() {
               </button>
               <button
                 type="button"
+                disabled={isLoggingOut}
                 className="btn btn-ghost justify-start text-error hover:bg-error hover:text-error-content"
+                onClick={handleLogout}
               >
-                Log out
+                {isLoggingOut ? "Logging out..." : "Log out"}
               </button>
             </div>
 
@@ -191,7 +215,9 @@ function Header() {
                 <div className="w-10 rounded-full bg-neutral text-neutral-content" />
               </div>
               <div>
-                <p className="text-sm font-semibold">Admin</p>
+                <p className="text-sm font-semibold">
+                  {authUser?.fullName || "Admin"}
+                </p>
                 <p className="text-xs text-base-content/60">Administrator</p>
               </div>
             </div>

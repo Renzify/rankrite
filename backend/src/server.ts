@@ -1,10 +1,12 @@
 import express from "express";
 import path from "path";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import templateRoutes from "./routes/templateRoute.ts";
 import eventRoutes from "./routes/eventRoute.ts";
 import authRoutes from "./routes/authRoute.ts";
+import { protectRoute } from "./middlewares/authMiddleware.ts";
 
 import { ENV } from "./lib/env.ts";
 
@@ -13,10 +15,11 @@ const { PORT, CLIENT_URL, NODE_ENV } = ENV;
 
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
-app.use("/api", templateRoutes);
-app.use("/api", eventRoutes);
 app.use("/api", authRoutes);
+app.use("/api", protectRoute, templateRoutes);
+app.use("/api", protectRoute, eventRoutes);
 
 if (NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));

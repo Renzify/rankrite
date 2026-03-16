@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { Toaster } from "react-hot-toast";
 
@@ -20,6 +21,7 @@ import JudgesTab from "./pages/event-details/components/judge-tab/JudgesTab";
 import ContestantsTab from "./pages/event-details/components/contestant-tab/ContestantsTab";
 import Settings from "./pages/settings/Settings";
 import LandingPage from "./pages/LandingPage";
+import { useAuthStore } from "./stores/authStore";
 
 function AppLayout() {
   return (
@@ -33,36 +35,85 @@ function AppLayout() {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <div className="app-page flex min-h-screen items-center justify-center">
+      <span className="loading loading-spinner loading-lg text-primary" />
+    </div>
+  );
+}
+
+function ProtectedRoute() {
+  const authUser = useAuthStore((state) => state.authUser);
+  const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
+
+  if (isCheckingAuth) {
+    return <LoadingScreen />;
+  }
+
+  if (!authUser) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  return <Outlet />;
+}
+
+function AuthOnlyRoute() {
+  const authUser = useAuthStore((state) => state.authUser);
+  const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
+
+  if (isCheckingAuth) {
+    return <LoadingScreen />;
+  }
+
+  if (authUser) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Outlet />;
+}
+
 function App() {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Navigate to="/auth/login" replace />} />
 
-        <Route element={<AppLayout />}>
-          <Route path="/event-form" element={<DynamicTemplateForm />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-
-          <Route path="/events/:eventId" element={<EventDetails />}>
-            <Route index element={<Navigate to="event-info" replace />} />
-            <Route path="event-info" element={<EventInfoTab />} />
-            <Route path="judges" element={<JudgesTab />} />
-            <Route path="contestant" element={<ContestantsTab />} />
-            <Route path="scoring" element={<ScoringTab />} />
-            <Route path="display-control" element={<DisplayControlTab />} />
-          </Route>
-
+        <Route element={<AuthOnlyRoute />}>
           <Route path="/auth" element={<Auth />}>
             <Route index element={<Navigate to="login" replace />} />
             <Route path="login" element={<LoginCard />} />
             <Route path="signup" element={<SignupCard />} />
             <Route path="forgot-password" element={<ForgotPasswordCard />} />
           </Route>
-
-          <Route path="/activity-log" element={<ActivityLog />} />
-          <Route path="/settings" element={<Settings />} />
         </Route>
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/event-form" element={<DynamicTemplateForm />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+
+            <Route path="/events/:eventId" element={<EventDetails />}>
+              <Route index element={<Navigate to="event-info" replace />} />
+              <Route path="event-info" element={<EventInfoTab />} />
+              <Route path="judges" element={<JudgesTab />} />
+              <Route path="contestant" element={<ContestantsTab />} />
+              <Route path="scoring" element={<ScoringTab />} />
+              <Route path="display-control" element={<DisplayControlTab />} />
+            </Route>
+
+            <Route path="/activity-log" element={<ActivityLog />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+        </Route>
+
         <Route path="/judge-score" element={<JudgeScore />} />
         <Route path="/judge/score" element={<JudgeScore />} />
         <Route path="/judge-scoring" element={<JudgeScore />} />
