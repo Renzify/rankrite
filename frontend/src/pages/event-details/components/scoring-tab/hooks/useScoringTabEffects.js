@@ -11,6 +11,7 @@ export function useScoringTabEffects({
   selectedContestantId,
   selectedContestantName,
   eventId,
+  eventPhaseId,
   setSelectedContestantId,
   setJudgeScores,
   setIsLoadingSubmittedScores,
@@ -111,6 +112,7 @@ export function useScoringTabEffects({
       try {
         const submittedScores = await getEventJudgeScores(eventId, {
           contestantId: selectedContestantId,
+          eventPhaseId,
         });
         if (!isMounted) return;
 
@@ -188,6 +190,7 @@ export function useScoringTabEffects({
     };
   }, [
     eventId,
+    eventPhaseId,
     judges,
     selectedContestantName,
     selectedContestantId,

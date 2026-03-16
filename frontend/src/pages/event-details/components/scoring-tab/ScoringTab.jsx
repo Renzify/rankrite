@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router";
 import {
   createEmptyScoreEntry,
@@ -13,9 +13,31 @@ import JudgeList from "./components/JudgeList";
 import ComputationTable from "./components/ComputationTable";
 
 export default function ScoringTab() {
-  const { eventDetails, judges, judgeScores, setJudgeScores, contestants } =
-    useOutletContext();
+  const {
+    eventDetails,
+    judges,
+    judgeScores,
+    setJudgeScores,
+    contestants,
+    eventPhases,
+    currentEventPhaseId,
+  } = useOutletContext();
   const eventId = eventDetails?.event?.id ?? "";
+  const scopedJudges = useMemo(
+    () =>
+      judges.filter((judge) =>
+        currentEventPhaseId
+          ? !judge.eventPhaseId || judge.eventPhaseId === currentEventPhaseId
+          : !judge.eventPhaseId,
+      ),
+    [currentEventPhaseId, judges],
+  );
+  const currentApparatusLabel = useMemo(
+    () =>
+      eventPhases?.find((phase) => phase.id === currentEventPhaseId)?.label ??
+      "",
+    [currentEventPhaseId, eventPhases],
+  );
   const [selectedContestantId, setSelectedContestantId] = useState("");
   const [isLoadingSubmittedScores, setIsLoadingSubmittedScores] = useState(
     Boolean(eventId),
@@ -27,10 +49,11 @@ export default function ScoringTab() {
     null;
   useScoringTabEffects({
     contestants,
-    judges,
+    judges: scopedJudges,
     selectedContestantId,
     selectedContestantName: selectedContestant?.fullName,
     eventId,
+    eventPhaseId: currentEventPhaseId,
     setSelectedContestantId,
     setJudgeScores,
     setIsLoadingSubmittedScores,
@@ -38,16 +61,25 @@ export default function ScoringTab() {
   });
 
   const scoringLocked =
-    judges.length > 0 && judges.every((judge) => judgeScores[judge.id]?.locked);
+    scopedJudges.length > 0 &&
+    scopedJudges.every((judge) => judgeScores[judge.id]?.locked);
 
-  const difficultyScore = useDifficultyScore(judges, judgeScores);
-  const artistryScore = useMedianJudgeTypeScore(judges, judgeScores, "artistry");
-  const executionScore = useMedianJudgeTypeScore(judges, judgeScores, "execution");
+  const difficultyScore = useDifficultyScore(scopedJudges, judgeScores);
+  const artistryScore = useMedianJudgeTypeScore(
+    scopedJudges,
+    judgeScores,
+    "artistry",
+  );
+  const executionScore = useMedianJudgeTypeScore(
+    scopedJudges,
+    judgeScores,
+    "execution",
+  );
   const totalScore =
     difficultyScore === null || artistryScore === null || executionScore === null
       ? null
       : difficultyScore + artistryScore + executionScore;
-  const { penalties } = usePenaltyScore(judges, judgeScores);
+  const { penalties } = usePenaltyScore(scopedJudges, judgeScores);
   const finalScore =
     totalScore === null || penalties === null ? null : totalScore - penalties;
 
@@ -61,6 +93,7 @@ export default function ScoringTab() {
     scoringLocked,
     selectedContestantId,
     selectedContestantName: selectedContestant?.fullName,
+    eventPhaseId: currentEventPhaseId,
     judgeScores,
     setJudgeScores,
     setSubmittedScoresError,
@@ -91,6 +124,14 @@ export default function ScoringTab() {
             {selectedContestant.fullName}
           </p>
         ) : null}
+        {currentApparatusLabel ? (
+          <p className="text-sm text-base-content/70">
+            Current Apparatus:{" "}
+            <span className="font-semibold text-base-content/90">
+              {currentApparatusLabel}
+            </span>
+          </p>
+        ) : null}
         {isLoadingSubmittedScores ? (
           <p className="text-sm text-base-content/60">
             Loading submitted judge scores...
@@ -112,7 +153,7 @@ export default function ScoringTab() {
 
       <div className="app-table-wrap">
         <JudgeList
-          judges={judges}
+          judges={scopedJudges}
           judgeScores={judgeScores}
           handleJudgeLock={handleJudgeLock}
           lockingJudgeId={lockingJudgeId}

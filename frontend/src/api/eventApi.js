@@ -26,6 +26,10 @@ export const getEventJudgeScores = async (eventId, options = {}) => {
     params.set("judgeId", options.judgeId);
   }
 
+  if (options.eventPhaseId) {
+    params.set("eventPhaseId", options.eventPhaseId);
+  }
+
   const queryString = params.toString();
   const res = await axiosInstance.get(
     `/events/${eventId}/judge-scores${queryString ? `?${queryString}` : ""}`,
@@ -35,6 +39,11 @@ export const getEventJudgeScores = async (eventId, options = {}) => {
 
 export const updateEvent = async (eventId, payload) => {
   const res = await axiosInstance.put(`/events/${eventId}`, payload);
+  return res.data;
+};
+
+export const updateCurrentEventPhase = async (eventId, payload) => {
+  const res = await axiosInstance.put(`/events/${eventId}/current-phase`, payload);
   return res.data;
 };
 

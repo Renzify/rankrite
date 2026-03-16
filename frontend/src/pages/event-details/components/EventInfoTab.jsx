@@ -76,7 +76,12 @@ export default function EventInfoTab() {
     const savedFormValues = eventDetails?.formValues ?? {};
 
     return savedTemplateFields
-      .filter((field) => field.fieldType === "select" && field.key !== "sport")
+      .filter(
+        (field) =>
+          field.fieldType === "select" &&
+          field.key !== "sport" &&
+          field.key !== "apparatus",
+      )
       .filter((field) => {
         if (!field.conditions?.length) return true;
         return field.conditions.some((condition) =>

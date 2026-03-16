@@ -11,6 +11,7 @@ export function useScoringTabHandlers({
   scoringLocked,
   selectedContestantId,
   selectedContestantName,
+  eventPhaseId,
   judgeScores,
   setJudgeScores,
   setSubmittedScoresError,
@@ -31,6 +32,7 @@ export function useScoringTabHandlers({
       const lockedEntry = await lockJudgeScore(eventId, {
         judgeId,
         contestantId: selectedContestantId,
+        eventPhaseId,
       });
 
       setJudgeScores((prev) => {
