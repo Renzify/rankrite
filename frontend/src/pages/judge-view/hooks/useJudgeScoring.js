@@ -164,7 +164,7 @@ export function useJudgeScoring() {
   const judgeId = searchParams.get("judgeId") ?? "";
   const judgeNameParam = searchParams.get("judgeName") ?? "";
   const judgeTypeParam = searchParams.get("judgeType") ?? "";
-
+  const activeContestantIdParam = searchParams.get("activeContestantId") ?? "";
   const fallbackJudge = useMemo(
     () => buildFallbackJudge(judgeId, judgeNameParam, judgeTypeParam),
     [judgeId, judgeNameParam, judgeTypeParam],
@@ -256,7 +256,14 @@ export function useJudgeScoring() {
 
           setSubmissionsByContestantId(nextSubmissionsByContestantId);
 
+          const linkAssignedContestant = activeContestantIdParam
+            ? nextContestants.find(
+                (contestant) => contestant.id === activeContestantIdParam,
+              ) ?? null
+            : null;
+
           const nextDefaultContestant =
+            linkAssignedContestant ??
             nextContestants.find(
               (contestant) => !nextSubmissionsByContestantId[contestant.id],
             ) ??
@@ -304,6 +311,7 @@ export function useJudgeScoring() {
     eventTitleParam,
     fallbackJudge,
     judgeId,
+    activeContestantIdParam,
     judgeNameParam,
     sportParam,
   ]);
@@ -596,7 +604,7 @@ export function useJudgeScoring() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedContestantData) {
-      toast.error("Select a contestant first.");
+      toast.error("No active contestant is assigned yet.");
       return;
     }
 

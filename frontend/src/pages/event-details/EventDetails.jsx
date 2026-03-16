@@ -82,6 +82,7 @@ export default function EventDetails() {
 
   const [judges, setJudges] = useState([]);
   const [contestants, setContestants] = useState([]);
+  const [activeContestantId, setActiveContestantId] = useState("");
   const [judgeScores, setJudgeScores] = useState({});
   const [eventDetails, setEventDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -137,6 +138,19 @@ export default function EventDetails() {
     setFormValues(pendingFormValues);
     setDidHydrate(true);
   }, [pendingFormValues, template, didHydrate, setFormValues]);
+  useEffect(() => {
+    setActiveContestantId((currentId) => {
+      if (!contestants.length) {
+        return "";
+      }
+
+      if (contestants.some((contestant) => contestant.id === currentId)) {
+        return currentId;
+      }
+
+      return contestants[0].id;
+    });
+  }, [contestants]);
 
   const eventTitle =
     eventDetails?.event?.title || formValues.eventTitle || "Event Details";
@@ -584,6 +598,8 @@ export default function EventDetails() {
               setJudgeScores,
               contestants,
               setContestants,
+              activeContestantId,
+              setActiveContestantId,
               onCreateContestant: handleCreateContestant,
               onUpdateContestant: handleUpdateContestant,
               onDeleteContestant: handleDeleteContestant,
