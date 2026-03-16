@@ -23,7 +23,7 @@ export async function signupController(req: Request, res: Response) {
   try {
     const payload = req.body as SignupInput;
     const createdUser = await signupUser(payload);
-    generateToken(createdUser.id, res);
+    clearTokenCookie(res);
 
     res.status(201).json(serializeAuthUser(createdUser));
   } catch (error) {

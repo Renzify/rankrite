@@ -32,7 +32,7 @@ function LoginCard() {
       storage.setItem("rankrite_user", JSON.stringify(authenticatedUser));
 
       toast.success("Login successful");
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (error) {
       const message =
         error?.response?.data?.message ?? "Failed to login. Please try again.";

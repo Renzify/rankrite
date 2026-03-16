@@ -41,12 +41,13 @@ function SignupCard() {
         confirmPassword,
       });
 
-      window.localStorage.removeItem("rankrite_user");
-      window.sessionStorage.removeItem("rankrite_user");
-      window.localStorage.setItem("rankrite_user", JSON.stringify(authenticatedUser));
+      if (authenticatedUser) {
+        window.localStorage.removeItem("rankrite_user");
+        window.sessionStorage.removeItem("rankrite_user");
+      }
 
       toast.success("Account created successfully");
-      navigate("/", { replace: true });
+      navigate("/login", { replace: true });
     } catch (error) {
       const message =
         error?.response?.data?.message ?? "Failed to sign up. Please try again.";
