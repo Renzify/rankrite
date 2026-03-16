@@ -171,6 +171,10 @@ export const event = pgTable("event", {
     .notNull()
     .references(() => eventTemplate.id, { onDelete: "restrict" }),
 
+  createdByUserId: uuid("created_by_user_id").references(() => user.id, {
+    onDelete: "restrict",
+  }),
+
   title: text("title").notNull(),
   status: text("status").notNull().default("draft"),
   // draft | live | finished
@@ -529,10 +533,18 @@ export const templateOptionDependencyRelations = relations(
   }),
 );
 
+export const userRelations = relations(user, ({ many }) => ({
+  events: many(event),
+}));
+
 export const eventRelations = relations(event, ({ one, many }) => ({
   template: one(eventTemplate, {
     fields: [event.templateId],
     references: [eventTemplate.id],
+  }),
+  creator: one(user, {
+    fields: [event.createdByUserId],
+    references: [user.id],
   }),
   fieldValues: many(eventFieldValue),
   phases: many(eventPhase),
