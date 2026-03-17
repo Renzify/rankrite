@@ -149,6 +149,8 @@ export default function DisplayControlTab() {
           handleViewModeChange={handleViewModeChange}
           handleFreezeStateChange={handleFreezeStateChange}
           handleOutputStateChange={handleOutputStateChange}
+          isAutoRunning={isAutoRunning}
+          swapSeconds={swapSeconds}
         />
       </div>
 

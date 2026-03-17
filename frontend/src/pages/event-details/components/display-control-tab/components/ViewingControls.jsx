@@ -50,6 +50,8 @@ function ViewingControls({
   handleToggleAutoSwap,
   handleSwapSecondsChange,
   handleViewModeChange,
+  isAutoRunning,
+  swapSeconds,
 }) {
   return (
     <div>

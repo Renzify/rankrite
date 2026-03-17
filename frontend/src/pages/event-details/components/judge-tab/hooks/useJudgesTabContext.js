@@ -14,9 +14,12 @@ export function useJudgesTabContext() {
     eventDetails: outletContext.eventDetails,
     eventTitle: outletContext.eventTitle ?? "",
     isSavingJudge: outletContext.isSavingJudge ?? false,
+    isSwitchingActiveContestant:
+      outletContext.isSwitchingActiveContestant ?? false,
     judges: outletContext.judges ?? storeJudges,
     onCreateJudge: outletContext.onCreateJudge,
     onDeleteJudge: outletContext.onDeleteJudge,
+    onSetActiveContestant: outletContext.onSetActiveContestant,
     onUpdateJudge: outletContext.onUpdateJudge,
     selectedSport: outletContext.selectedSport ?? "",
     setActiveContestantId: outletContext.setActiveContestantId ?? NOOP,

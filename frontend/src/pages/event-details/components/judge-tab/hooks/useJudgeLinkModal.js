@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useJudgesTabContext } from "./useJudgesTabContext";
 
 export function useJudgeLinkModal(showLinkGeneration) {
-  const { eventDetails, eventTitle, selectedSport, activeContestantId } =
-    useJudgesTabContext();
+  const { eventDetails, eventTitle, selectedSport } = useJudgesTabContext();
 
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [linkModalTab, setLinkModalTab] = useState("qr");
@@ -25,9 +24,6 @@ export function useJudgeLinkModal(showLinkGeneration) {
     if (judge.id) params.set("judgeId", judge.id);
     if (judge.fullName) params.set("judgeName", judge.fullName);
     if (judge.judgeType) params.set("judgeType", judge.judgeType);
-    if (activeContestantId) {
-      params.set("activeContestantId", activeContestantId);
-    }
 
     const queryString = params.toString();
     return `${baseUrl}/judge-score${queryString ? `?${queryString}` : ""}`;
