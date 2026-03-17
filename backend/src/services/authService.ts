@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import { user } from "../db/schema.ts";
 
@@ -25,6 +25,27 @@ export type LoginInput = {
   password: string;
 };
 
+export type SettingsProfile = {
+  id: string;
+  fullName: string;
+  email: string;
+  profilePic: string | null;
+  passwordUpdatedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type UpdateProfileInput = {
+  fullName: string;
+  email: string;
+};
+
+export type UpdatePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+};
+
 function normalizeEmail(value: string | undefined) {
   return (value ?? "").trim().toLowerCase();
 }
@@ -38,6 +59,27 @@ function mapToAuthUser(record: Pick<
     fullName: record.fullName,
     email: record.email,
     profilePic: record.profilePic,
+  };
+}
+
+function mapToSettingsProfile(record: Pick<
+  typeof user.$inferSelect,
+  | "id"
+  | "fullName"
+  | "email"
+  | "profilePic"
+  | "passwordUpdatedAt"
+  | "createdAt"
+  | "updatedAt"
+>): SettingsProfile {
+  return {
+    id: record.id,
+    fullName: record.fullName,
+    email: record.email,
+    profilePic: record.profilePic,
+    passwordUpdatedAt: record.passwordUpdatedAt,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
   };
 }
 
@@ -142,4 +184,153 @@ export async function getAuthUserById(userId: string): Promise<AuthUser | null> 
   }
 
   return mapToAuthUser(existingUser);
+}
+
+export async function getSettingsProfileById(
+  userId: string,
+): Promise<SettingsProfile | null> {
+  const normalizedUserId = (userId ?? "").trim();
+
+  if (!normalizedUserId) {
+    return null;
+  }
+
+  const existingUser = await db.query.user.findFirst({
+    where: eq(user.id, normalizedUserId),
+    columns: {
+      id: true,
+      fullName: true,
+      email: true,
+      profilePic: true,
+      passwordUpdatedAt: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!existingUser) {
+    return null;
+  }
+
+  return mapToSettingsProfile(existingUser);
+}
+
+export async function updateSettingsProfile(
+  userId: string,
+  input: UpdateProfileInput,
+): Promise<SettingsProfile> {
+  const normalizedUserId = (userId ?? "").trim();
+  const fullName = (input.fullName ?? "").trim();
+  const email = normalizeEmail(input.email);
+
+  if (!normalizedUserId || !fullName || !email) {
+    throw new Error("INVALID_AUTH_INPUT");
+  }
+
+  if (!EMAIL_REGEX.test(email)) {
+    throw new Error("INVALID_EMAIL_FORMAT");
+  }
+
+  const emailConflict = await db.query.user.findFirst({
+    where: and(eq(user.email, email), ne(user.id, normalizedUserId)),
+    columns: {
+      id: true,
+    },
+  });
+
+  if (emailConflict) {
+    throw new Error("EMAIL_EXISTS");
+  }
+
+  const [updatedUser] = await db
+    .update(user)
+    .set({
+      fullName,
+      email,
+      updatedAt: new Date(),
+    })
+    .where(eq(user.id, normalizedUserId))
+    .returning({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      profilePic: user.profilePic,
+      passwordUpdatedAt: user.passwordUpdatedAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+
+  if (!updatedUser) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  return mapToSettingsProfile(updatedUser);
+}
+
+export async function updateSettingsPassword(
+  userId: string,
+  input: UpdatePasswordInput,
+): Promise<Date> {
+  const normalizedUserId = (userId ?? "").trim();
+  const currentPassword = input.currentPassword ?? "";
+  const newPassword = input.newPassword ?? "";
+  const confirmNewPassword = input.confirmNewPassword ?? "";
+
+  if (
+    !normalizedUserId ||
+    !currentPassword ||
+    !newPassword ||
+    !confirmNewPassword
+  ) {
+    throw new Error("INVALID_AUTH_INPUT");
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    throw new Error("PASSWORD_MISMATCH");
+  }
+
+  if (newPassword.length < 6) {
+    throw new Error("PASSWORD_TOO_SHORT");
+  }
+
+  const existingUser = await db.query.user.findFirst({
+    where: eq(user.id, normalizedUserId),
+    columns: {
+      id: true,
+      passwordHash: true,
+    },
+  });
+
+  if (!existingUser) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  const isCurrentPasswordCorrect = await bcrypt.compare(
+    currentPassword,
+    existingUser.passwordHash,
+  );
+
+  if (!isCurrentPasswordCorrect) {
+    throw new Error("INVALID_CURRENT_PASSWORD");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+
+  const [updatedUser] = await db
+    .update(user)
+    .set({
+      passwordHash,
+      passwordUpdatedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(user.id, normalizedUserId))
+    .returning({
+      passwordUpdatedAt: user.passwordUpdatedAt,
+    });
+
+  if (!updatedUser) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  return updatedUser.passwordUpdatedAt;
 }

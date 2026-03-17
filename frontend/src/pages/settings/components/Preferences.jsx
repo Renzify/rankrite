@@ -36,8 +36,7 @@ function Preferences({
                   </div> */}
           </div>
           <p className="mt-1 text-sm text-base-content/60">
-            Adjust the interface theme and notification behavior for this
-            account.
+            Adjust the interface theme for this account.
           </p>
 
           <div className="mt-6 space-y-6">
@@ -49,16 +48,6 @@ function Preferences({
               }
               checkedLabel="Dark mode"
               uncheckedLabel="Light mode"
-            />
-
-            <PreferenceToggle
-              description=""
-              checked={settings.notifications}
-              onChange={(event) =>
-                handleChange("notifications", event.target.checked)
-              }
-              checkedLabel="Disable Notifications"
-              uncheckedLabel="Enable Notifications"
             />
 
             <button
