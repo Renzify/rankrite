@@ -5,6 +5,10 @@
 :root {
   font-family:
     "Plus Jakarta Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+:root,
+:root[data-theme="light"] {
   color-scheme: light;
   --color-base-100: #fffaf4;
   --color-base-200: #f5ede3;
@@ -28,6 +32,30 @@
   --color-error-content: #fff5f3;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-base-100: #111827;
+  --color-base-200: #0f172a;
+  --color-base-300: #1f2937;
+  --color-base-content: #e5e7eb;
+  --color-primary: #f59e0b;
+  --color-primary-content: #111827;
+  --color-secondary: #94a3b8;
+  --color-secondary-content: #0f172a;
+  --color-accent: #22c55e;
+  --color-accent-content: #052e16;
+  --color-neutral: #0b1220;
+  --color-neutral-content: #d1d5db;
+  --color-info: #38bdf8;
+  --color-info-content: #082f49;
+  --color-success: #4ade80;
+  --color-success-content: #052e16;
+  --color-warning: #fbbf24;
+  --color-warning-content: #422006;
+  --color-error: #f87171;
+  --color-error-content: #450a0a;
+}
+
 html,
 body {
   min-height: 100%;
@@ -41,10 +69,20 @@ body {
   font-family: inherit;
   color: var(--color-base-content);
   background-color: var(--color-base-200);
+  background-attachment: fixed;
+}
+
+:root:not([data-theme]) body,
+:root[data-theme="light"] body {
   background-image:
     radial-gradient(circle at top, rgba(221, 122, 31, 0.16), transparent 36%),
     linear-gradient(180deg, #fff3e3 0%, #fffaf4 24%, #f5ede3 100%);
-  background-attachment: fixed;
+}
+
+:root[data-theme="dark"] body {
+  background-image:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.14), transparent 40%),
+    linear-gradient(180deg, #0b1220 0%, #0f172a 40%, #111827 100%);
 }
 
 ::selection {
@@ -74,6 +112,22 @@ textarea {
 
   .landing-navbar-stuck {
     animation: landing-navbar-slide 260ms ease-out;
+  }
+
+  :root[data-theme="dark"] .landing-hero-title {
+    color: #f8fafc;
+  }
+
+  :root[data-theme="dark"] .landing-hero-subtitle {
+    color: #cbd5e1;
+  }
+
+  :root[data-theme="dark"] .landing-hero-accent {
+    color: #fbbf24;
+  }
+
+  :root[data-theme="dark"] .landing-feature-heading {
+    color: #e5e7eb;
   }
 
   .reveal-on-scroll {

@@ -126,12 +126,14 @@ function LandingPage() {
                 All-in-one scoring platform
               </div>
 
-              <h1 className="mt-7 max-w-4xl text-5xl font-bold leading-[0.95] tracking-[-0.04em] text-slate-800 sm:text-6xl lg:text-[5.5rem]">
+              <h1 className="landing-hero-title mt-7 max-w-4xl text-5xl font-bold leading-[0.95] tracking-[-0.04em] text-slate-800 sm:text-6xl lg:text-[5.5rem]">
                 Smart Competition
-                <span className="block text-[#7d5c4b] mb-2">
+                <span className="landing-hero-subtitle mb-2 block text-[#7d5c4b]">
                   Management Tool
                 </span>
-                <span className="block text-[#d2742f]">Made Simple</span>
+                <span className="landing-hero-accent block text-[#d2742f]">
+                  Made Simple
+                </span>
               </h1>
 
               <p className="mt-20 max-w-3xl text-lg leading-8 text-slate-400 sm:text-xl">
@@ -211,7 +213,7 @@ function LandingPage() {
                 Guided Event Setup
               </div>
 
-              <h2 className="mt-7 text-4xl font-bold tracking-tight text-[#474c56] sm:text-[3.05rem]">
+              <h2 className="landing-feature-heading mt-7 text-4xl font-bold tracking-tight text-[#474c56] sm:text-[3.05rem]">
                 Modular Event Builder
               </h2>
 
@@ -287,7 +289,7 @@ function LandingPage() {
                 Exclusive Judge Access
               </div>
 
-              <h2 className="mt-7 text-4xl font-bold tracking-tight text-[#474c56] sm:text-[3.05rem]">
+              <h2 className="landing-feature-heading mt-7 text-4xl font-bold tracking-tight text-[#474c56] sm:text-[3.05rem]">
                 Score Table
                 <span className="block">QR &amp; Link Generator</span>
               </h2>
@@ -332,7 +334,7 @@ function LandingPage() {
                 Live Ranking Monitor
               </div>
 
-              <h2 className="mt-7 text-4xl font-bold tracking-tight text-[#474c56] sm:text-[3.05rem]">
+              <h2 className="landing-feature-heading mt-7 text-4xl font-bold tracking-tight text-[#474c56] sm:text-[3.05rem]">
                 Real-Time
                 <span className="block">Leaderboard View</span>
               </h2>
@@ -423,7 +425,7 @@ function LandingPage() {
                 User Management
               </div>
 
-              <h2 className="mt-7 text-4xl font-bold tracking-tight text-[#474c56] sm:text-[3.05rem]">
+              <h2 className="landing-feature-heading mt-7 text-4xl font-bold tracking-tight text-[#474c56] sm:text-[3.05rem]">
                 Manage Judges
                 <span className="block">&amp; Contestants</span>
               </h2>
@@ -472,7 +474,7 @@ function LandingPage() {
                 <p className="text-sm font-semibold uppercase tracking-[0.1em] text-[#63d28a]">
                   Flexible Pricing
                 </p>
-                <h2 className="mt-5 text-4xl font-bold tracking-tight text-[#444b62] sm:text-[3.1rem]">
+                <h2 className="landing-feature-heading mt-5 text-4xl font-bold tracking-tight text-[#444b62] sm:text-[3.1rem]">
                   Plan For Every Event Size
                 </h2>
               </div>
