@@ -50,6 +50,15 @@ function normalizeEmail(value: string | undefined) {
   return (value ?? "").trim().toLowerCase();
 }
 
+function isUndefinedColumnError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "42703"
+  );
+}
+
 function mapToAuthUser(record: Pick<
   typeof user.$inferSelect,
   "id" | "fullName" | "email" | "profilePic"
@@ -195,18 +204,57 @@ export async function getSettingsProfileById(
     return null;
   }
 
-  const existingUser = await db.query.user.findFirst({
-    where: eq(user.id, normalizedUserId),
-    columns: {
-      id: true,
-      fullName: true,
-      email: true,
-      profilePic: true,
-      passwordUpdatedAt: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+  let existingUser: {
+    id: string;
+    fullName: string;
+    email: string;
+    profilePic: string | null;
+    passwordUpdatedAt: Date;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null = null;
+
+  try {
+    const result = await db.query.user.findFirst({
+      where: eq(user.id, normalizedUserId),
+      columns: {
+        id: true,
+        fullName: true,
+        email: true,
+        profilePic: true,
+        passwordUpdatedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (result) {
+      existingUser = result;
+    }
+  } catch (error) {
+    if (!isUndefinedColumnError(error)) {
+      throw error;
+    }
+
+    const fallbackUser = await db.query.user.findFirst({
+      where: eq(user.id, normalizedUserId),
+      columns: {
+        id: true,
+        fullName: true,
+        email: true,
+        profilePic: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (fallbackUser) {
+      existingUser = {
+        ...fallbackUser,
+        passwordUpdatedAt: fallbackUser.updatedAt,
+      };
+    }
+  }
 
   if (!existingUser) {
     return null;
@@ -242,23 +290,67 @@ export async function updateSettingsProfile(
     throw new Error("EMAIL_EXISTS");
   }
 
-  const [updatedUser] = await db
-    .update(user)
-    .set({
-      fullName,
-      email,
-      updatedAt: new Date(),
-    })
-    .where(eq(user.id, normalizedUserId))
-    .returning({
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      profilePic: user.profilePic,
-      passwordUpdatedAt: user.passwordUpdatedAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    });
+  let updatedUser:
+    | {
+        id: string;
+        fullName: string;
+        email: string;
+        profilePic: string | null;
+        passwordUpdatedAt: Date;
+        createdAt: Date;
+        updatedAt: Date;
+      }
+    | undefined;
+
+  try {
+    const [result] = await db
+      .update(user)
+      .set({
+        fullName,
+        email,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, normalizedUserId))
+      .returning({
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        profilePic: user.profilePic,
+        passwordUpdatedAt: user.passwordUpdatedAt,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      });
+
+    updatedUser = result;
+  } catch (error) {
+    if (!isUndefinedColumnError(error)) {
+      throw error;
+    }
+
+    const [fallbackUpdatedUser] = await db
+      .update(user)
+      .set({
+        fullName,
+        email,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, normalizedUserId))
+      .returning({
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        profilePic: user.profilePic,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      });
+
+    if (fallbackUpdatedUser) {
+      updatedUser = {
+        ...fallbackUpdatedUser,
+        passwordUpdatedAt: fallbackUpdatedUser.updatedAt,
+      };
+    }
+  }
 
   if (!updatedUser) {
     throw new Error("USER_NOT_FOUND");
@@ -316,17 +408,44 @@ export async function updateSettingsPassword(
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
 
-  const [updatedUser] = await db
-    .update(user)
-    .set({
-      passwordHash,
-      passwordUpdatedAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .where(eq(user.id, normalizedUserId))
-    .returning({
-      passwordUpdatedAt: user.passwordUpdatedAt,
-    });
+  let updatedUser: { passwordUpdatedAt: Date } | undefined;
+
+  try {
+    const [result] = await db
+      .update(user)
+      .set({
+        passwordHash,
+        passwordUpdatedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, normalizedUserId))
+      .returning({
+        passwordUpdatedAt: user.passwordUpdatedAt,
+      });
+
+    updatedUser = result;
+  } catch (error) {
+    if (!isUndefinedColumnError(error)) {
+      throw error;
+    }
+
+    const [fallbackResult] = await db
+      .update(user)
+      .set({
+        passwordHash,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, normalizedUserId))
+      .returning({
+        updatedAt: user.updatedAt,
+      });
+
+    if (fallbackResult) {
+      updatedUser = {
+        passwordUpdatedAt: fallbackResult.updatedAt,
+      };
+    }
+  }
 
   if (!updatedUser) {
     throw new Error("USER_NOT_FOUND");

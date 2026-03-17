@@ -92,10 +92,15 @@ export function useSettingsPage() {
       syncProfileToState(profile);
     } catch (error) {
       console.error("Failed to load settings profile:", error);
+      setSettings((prev) => ({
+        ...prev,
+        username: authUser?.fullName ?? prev.username,
+        email: authUser?.email ?? prev.email,
+      }));
     } finally {
       setIsLoadingProfile(false);
     }
-  }, [syncProfileToState]);
+  }, [authUser?.email, authUser?.fullName, syncProfileToState]);
 
   useEffect(() => {
     if (!authUser) {
