@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { ArrowRight, Play } from "lucide-react";
 
 import Header from "../layouts/Header";
@@ -15,7 +15,7 @@ import orangeArrowIcon from "../assets/svg/feature-1/orange-arrow-icon.png";
 import feature2Image from "../assets/images/feature-2-img.png";
 import configureIcon from "../assets/svg/feature-2/configure-icon.png";
 import starCircleIcon from "../assets/svg/feature-2/star-circle-icon.png";
-import feature3Image from "../assets/images/feature-3-img.png";
+import feature3Image from "../assets/images/live-display-img.png";
 import lightningIcon from "../assets/svg/feature-3/lightning-icon.png";
 import feature3ArrowIcon from "../assets/svg/feature-3/arrow-icon.png";
 import feature4JudgesImage from "../assets/images/feature-4.1-img.png";
@@ -80,11 +80,45 @@ const professionalPlanFeatures = [
 ];
 
 function LandingPage() {
+  useEffect(() => {
+    const revealElements = Array.from(
+      document.querySelectorAll(".reveal-on-scroll"),
+    );
+
+    if (!revealElements.length) {
+      return undefined;
+    }
+
+    const revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.15,
+        rootMargin: "0px 0px -8% 0px",
+      },
+    );
+
+    revealElements.forEach((element) => revealObserver.observe(element));
+
+    return () => {
+      revealObserver.disconnect();
+    };
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section id="hero" className="app-page pb-14 pt-8 md:pb-18 md:pt-12">
+        <section
+          id="hero"
+          className="app-page pb-14 pt-8 md:pb-18 md:pt-12 reveal-on-scroll"
+        >
           <div className="px-4 py-10 sm:px-6 md:px-8 md:py-14 lg:px-10">
             <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#fde5cf] bg-[#fff8f0] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#e89a52]">
@@ -138,10 +172,10 @@ function LandingPage() {
 
         <section
           id="hero-footer"
-          className="border-y border-base-300/80 bg-[#FFFFFF]"
+          className="border-y border-base-300/80 bg-[#FFFFFF] reveal-on-scroll"
         >
           <div className="app-page py-4 md:py-5">
-            <div className="mx-auto grid w-full max-w-5xl grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4 md:gap-x-8">
+            <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4 md:gap-x-8">
               {heroFooterItems.map((item) => (
                 <div
                   key={item.label}
@@ -163,9 +197,9 @@ function LandingPage() {
 
         <section
           id="feature-1st"
-          className="app-page app-page-wide py-16 md:py-20"
+          className="app-page app-page-wide py-16 md:py-20 mt-20 mb-50 reveal-on-scroll"
         >
-          <div className="mx-auto grid w-full max-w-[1240px] items-center gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,560px)] lg:gap-20">
+          <div className="mx-auto grid w-full max-w-[1280px] items-center gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,560px)] lg:gap-20">
             <div className="order-2 lg:order-1">
               <div className="inline-flex items-center gap-2 rounded-lg border border-[#ffe2cf] bg-[#fff4ea] px-4 py-2 text-sm font-medium text-[#ed8739]">
                 <img
@@ -181,7 +215,7 @@ function LandingPage() {
                 Modular Event Builder
               </h2>
 
-              <p className="mt-7 max-w-[640px] text-[16px] leading-10 text-slate-400 sm:text-[1.5rem]">
+              <p className="mt-7 max-w-[640px] text-[16px] leading-10 text-slate-400 sm:text-[1.3rem]">
                 Create events through a guided workflow from event draft to
                 judge and contestant setup. Manage event details, scoring, and
                 display controls in one organized process.
@@ -229,7 +263,7 @@ function LandingPage() {
 
         <section
           id="feature-2nd"
-          className="app-page app-page-wide pb-16 pt-4 md:pb-20 md:pt-6"
+          className="app-page app-page-wide pb-16 pt-4 md:pb-20 md:pt-6 my-50 reveal-on-scroll"
         >
           <div className="mx-auto grid w-full max-w-[1240px] items-center gap-10 lg:grid-cols-[minmax(0,560px)_minmax(0,1.08fr)] lg:gap-20">
             <div>
@@ -258,7 +292,7 @@ function LandingPage() {
                 <span className="block">QR &amp; Link Generator</span>
               </h2>
 
-              <p className="mt-7 max-w-[640px] text-[16px] leading-10 text-slate-400 sm:text-[1.5rem]">
+              <p className="mt-7 max-w-[640px] text-[16px] leading-10 text-slate-400 sm:text-[1.3rem]">
                 Provide each judge with a dedicated scoring page based on their
                 assigned role. Generate direct links or QR codes for score table
                 access and monitor scoring activity in real time from a separate
@@ -284,9 +318,9 @@ function LandingPage() {
 
         <section
           id="feature-3rd"
-          className="app-page app-page-wide pb-16 pt-4 md:pb-20 md:pt-6"
+          className="app-page app-page-wide pb-16 pt-4 md:pb-20 md:pt-6 my-50 reveal-on-scroll"
         >
-          <div className="mx-auto grid w-full max-w-[1240px] items-center gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,560px)] lg:gap-20">
+          <div className="mx-auto grid w-full max-w-[1280px] items-center gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,560px)] lg:gap-20">
             <div className="order-2 lg:order-1">
               <div className="inline-flex items-center gap-2 rounded-lg border border-[#eadbff] bg-[#f4ecff] px-4 py-2 text-sm font-medium text-[#a07ef4]">
                 <img
@@ -303,7 +337,7 @@ function LandingPage() {
                 <span className="block">Leaderboard View</span>
               </h2>
 
-              <p className="mt-7 max-w-[640px] text-[16px] leading-10 text-slate-400 sm:text-[1.5rem]">
+              <p className="mt-7 max-w-[640px] text-[16px] leading-10 text-slate-400 sm:text-[1.3rem]">
                 Track event rankings and score progress as results are updated.
                 Monitor ongoing and completed events through a live ranking
                 display built for fast and clear viewing.
@@ -353,13 +387,13 @@ function LandingPage() {
 
         <section
           id="feature-4th"
-          className="app-page app-page-wide pb-16 pt-4 md:pb-20 md:pt-6"
+          className="app-page app-page-wide pb-16 pt-4 md:pb-20 md:pt-6 my-50 reveal-on-scroll"
         >
-          <div className="mx-auto grid w-full max-w-[1240px] items-center gap-10 lg:grid-cols-[minmax(0,560px)_minmax(0,1.08fr)] lg:gap-20">
+          <div className="mx-auto grid w-full max-w-[1280px] items-center gap-10 lg:grid-cols-[minmax(0,560px)_minmax(0,1.08fr)] lg:gap-20">
             <div>
               <div className="mx-auto w-full max-w-[560px]">
                 <div className="relative md:pb-24">
-                  <div className="w-full rounded-[42px] border border-[#d6d8dc] bg-[#f8f9fa] p-3 shadow-[0_28px_60px_-42px_rgba(33,39,55,0.6)] sm:p-4">
+                  <div className="relative z-10 w-full rounded-[42px] border border-[#d6d8dc] bg-[#f8f9fa] p-3 shadow-[0_28px_60px_-42px_rgba(33,39,55,0.6)] sm:p-4">
                     <img
                       src={feature4JudgesImage}
                       alt="Manage judges preview"
@@ -367,7 +401,7 @@ function LandingPage() {
                     />
                   </div>
 
-                  <div className="mt-4 w-full rounded-[38px] border border-[#d6d8dc] bg-[#f8f9fa] p-2.5 shadow-[0_24px_55px_-44px_rgba(33,39,55,0.65)] sm:p-3 md:absolute md:-bottom-16 md:right-0 md:mt-0 md:w-[72%]">
+                  <div className="relative z-20 mt-4 w-full rounded-[38px] border border-[#d6d8dc] bg-[#f8f9fa] p-2.5 shadow-[0_24px_55px_-44px_rgba(33,39,55,0.65)] sm:p-3 md:absolute md:-bottom-16 md:left-[28%] md:mt-0 md:w-[72%]">
                     <img
                       src={feature4ContestantsImage}
                       alt="Manage contestants preview"
@@ -394,16 +428,17 @@ function LandingPage() {
                 <span className="block">&amp; Contestants</span>
               </h2>
 
-              <p className="mt-7 max-w-[640px] text-[16px] leading-10 text-slate-400 sm:text-[1.5rem]">
+              <p className="mt-7 max-w-[640px] text-[16px] leading-10 text-slate-400 sm:text-[1.3rem]">
                 Organize judges and user access in one place. Add judges, assign
                 roles, and manage permissions for smooth event operations.
               </p>
 
               <div className="mt-10 space-y-4">
-                {fourthFeatureHighlights.map((item) => (
+                {fourthFeatureHighlights.map((item, index) => (
                   <article
                     key={item.title}
-                    className="flex items-center gap-4 rounded-sm bg-[#f4f5f7] px-4 py-4 sm:px-5"
+                    className="reveal-on-scroll flex items-center gap-4 rounded-sm bg-[#FFFFFF] px-4 py-4 sm:px-5"
+                    style={{ transitionDelay: `${100 + index * 90}ms` }}
                   >
                     <div
                       className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${item.bgClassName}`}
@@ -430,9 +465,9 @@ function LandingPage() {
           </div>
         </section>
 
-        <section id="pricing" className="bg-[#f4f5f7] py-16 md:py-22">
+        <section id="pricing" className="py-16 md:py-22 my-50 reveal-on-scroll">
           <div className="app-page app-page-wide py-0">
-            <div className="mx-auto w-full max-w-[1240px]">
+            <div className="mx-auto w-full max-w-[1280px]">
               <div className="text-center">
                 <p className="text-sm font-semibold uppercase tracking-[0.1em] text-[#63d28a]">
                   Flexible Pricing
@@ -443,9 +478,11 @@ function LandingPage() {
               </div>
 
               <div className="mx-auto mt-12 grid w-full max-w-[920px] grid-cols-1 gap-5 lg:grid-cols-2">
-                <article className="relative flex min-h-[460px] flex-col rounded-sm bg-[#f3f4f6] px-8 py-10 shadow-[0_18px_40px_-28px_rgba(5,10,20,0.85)] sm:px-10">
-                  <h3 className="text-[2rem] font-medium text-slate-500">Starter</h3>
-                  <p className="mt-1 text-[1.65rem] text-slate-300">
+                <article className="relative flex min-h-[460px] flex-col rounded-sm bg-[#FFFFFF] px-8 py-10 shadow-[0_18px_40px_-28px_rgba(5,10,20,0.85)] sm:px-10">
+                  <h3 className="text-[2rem] font-medium text-slate-500">
+                    Starter
+                  </h3>
+                  <p className="mb-5 text-[1.3rem] text-slate-300">
                     For small school events
                   </p>
 
@@ -453,7 +490,9 @@ function LandingPage() {
                     <span className="text-4xl font-bold leading-none text-[#3c4458]">
                       Free
                     </span>
-                    <span className="text-[1.45rem] text-slate-300">| forever</span>
+                    <span className="text-[1.45rem] text-slate-300">
+                      | forever
+                    </span>
                   </p>
 
                   <ul className="mt-9 space-y-4">
@@ -465,7 +504,9 @@ function LandingPage() {
                           aria-hidden="true"
                           className="h-[15px] w-[15px] object-contain"
                         />
-                        <span className="text-[1.5rem] text-slate-400">{feature}</span>
+                        <span className="text-[1.5rem] text-slate-400">
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -478,7 +519,7 @@ function LandingPage() {
                   </button>
                 </article>
 
-                <article className="relative flex min-h-[460px] flex-col rounded-sm border-2 border-[#29bd61] bg-[#f3f4f6] px-8 py-10 shadow-[0_0_0_1px_rgba(41,189,97,0.2),0_24px_50px_-28px_rgba(41,189,97,0.55)] sm:px-10">
+                <article className="relative flex min-h-[460px] flex-col rounded-sm border-2 border-[#29bd61] bg-[#FFFFFF] px-8 py-10 shadow-[0_0_0_1px_rgba(41,189,97,0.2),0_24px_50px_-28px_rgba(41,189,97,0.55)] sm:px-10">
                   <div className="absolute right-0 top-0 rounded-bl-xl bg-[#29bd61] px-5 py-2 text-[1.1rem] font-semibold uppercase tracking-[0.06em] text-white">
                     Popular
                   </div>
@@ -486,7 +527,7 @@ function LandingPage() {
                   <h3 className="text-[2rem] font-semibold text-slate-500">
                     Professional
                   </h3>
-                  <p className="mt-1 text-[1.65rem] text-slate-300">
+                  <p className="mb-5 text-[1.3rem] text-slate-300">
                     For growing institutions
                   </p>
 
@@ -494,7 +535,9 @@ function LandingPage() {
                     <span className="text-4xl font-bold leading-none text-[#3c4458]">
                       ₱69
                     </span>
-                    <span className="text-[1.45rem] text-slate-300">/ month</span>
+                    <span className="text-[1.45rem] text-slate-300">
+                      / month
+                    </span>
                   </p>
 
                   <ul className="mt-9 space-y-4">
@@ -506,14 +549,16 @@ function LandingPage() {
                           aria-hidden="true"
                           className="h-[15px] w-[15px] object-contain"
                         />
-                        <span className="text-[1.5rem] text-slate-400">{feature}</span>
+                        <span className="text-[1.5rem] text-slate-400">
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
 
                   <button
                     type="button"
-                    className="mt-auto h-14 rounded-xl bg-[#1ea84a] text-[1.95rem] font-semibold text-white shadow-[0_16px_28px_-22px_rgba(30,168,74,0.85)] transition hover:bg-[#1b9843]"
+                    className="mt-30 h-14 rounded-xl bg-[#1ea84a] text-[1.95rem] font-semibold text-white shadow-[0_16px_28px_-22px_rgba(30,168,74,0.85)] transition hover:bg-[#1b9843]"
                   >
                     Start Free Trial
                   </button>
@@ -525,9 +570,9 @@ function LandingPage() {
 
         <section
           id="signup-login"
-          className="app-page app-page-wide pb-20 pt-8 md:pb-24 md:pt-10"
+          className="app-page app-page-wide pb-20 pt-8 md:pb-24 md:pt-10 my-50 reveal-on-scroll"
         >
-          <div className="mx-auto w-full max-w-[1240px]">
+          <div className="mx-auto w-full max-w-[1280px]">
             <div className="rounded-[34px] bg-[linear-gradient(135deg,#10223f_0%,#0d1a30_55%,#0b1629_100%)] px-6 py-14 text-center shadow-[0_28px_60px_-38px_rgba(9,20,42,0.9)] sm:px-10 md:py-18">
               <h2 className="text-[2rem] font-bold tracking-tight text-[#c9d0db] sm:text-[3.15rem]">
                 Ready to streamline your next event?
@@ -556,7 +601,9 @@ function LandingPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <div className="reveal-on-scroll">
+        <Footer />
+      </div>
     </div>
   );
 }
