@@ -11,6 +11,7 @@ import {
   getEventJudgeScoresController,
   listEventsController,
   lockJudgeScoreController,
+  unlockJudgeScoreController,
   submitJudgeScoreController,
   updateCurrentEventPhaseController,
   setEventActiveContestantController,
@@ -29,6 +30,7 @@ router.put("/events/:id/active-contestant", setEventActiveContestantController);
 router.get("/events/:id/judge-scores", getEventJudgeScoresController);
 router.post("/events/:id/judge-scores", submitJudgeScoreController);
 router.post("/events/:id/judge-scores/lock", lockJudgeScoreController);
+router.post("/events/:id/judge-scores/unlock", unlockJudgeScoreController);
 router.put("/events/:id", updateEventController);
 router.delete("/events/:id", deleteEventController);
 router.post("/events/:id/judges", addEventJudgeController);

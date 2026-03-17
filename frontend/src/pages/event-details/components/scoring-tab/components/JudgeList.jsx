@@ -67,19 +67,25 @@ function JudgeList({
                   <td>
                     <button
                       type="button"
-                      className="btn btn-sm btn-neutral"
+                      className={`btn btn-sm ${
+                        scoreEntry.locked ? "btn-warning" : "btn-neutral"
+                      }`}
                       onClick={() => handleJudgeLock(judge.id)}
                       disabled={
-                        !selectedContestantId ||
-                        !hasValidScore ||
-                        scoreEntry.locked ||
-                        scoringLocked ||
-                        lockingJudgeId === judge.id
+                        lockingJudgeId === judge.id ||
+                        (!scoreEntry.locked &&
+                          ((!selectedContestantId && !scoreEntry.locked) ||
+                            (!hasValidScore && !scoreEntry.locked) ||
+                            scoringLocked))
                       }
                     >
                       {lockingJudgeId === judge.id
-                        ? "Confirming..."
-                        : "Confirm"}
+                        ? scoreEntry.locked
+                          ? "Unlocking..."
+                          : "Locking..."
+                        : scoreEntry.locked
+                          ? "Unlock"
+                          : "Lock"}
                     </button>
                   </td>
                 </tr>

@@ -43,7 +43,10 @@ export const updateEvent = async (eventId, payload) => {
 };
 
 export const updateCurrentEventPhase = async (eventId, payload) => {
-  const res = await axiosInstance.put(`/events/${eventId}/current-phase`, payload);
+  const res = await axiosInstance.put(
+    `/events/${eventId}/current-phase`,
+    payload,
+  );
   return res.data;
 };
 
@@ -87,6 +90,14 @@ export const submitJudgeScore = async (eventId, payload) => {
 export const lockJudgeScore = async (eventId, payload) => {
   const res = await axiosInstance.post(
     `/events/${eventId}/judge-scores/lock`,
+    payload,
+  );
+  return res.data;
+};
+
+export const unlockJudgeScore = async (eventId, payload) => {
+  const res = await axiosInstance.post(
+    `/events/${eventId}/judge-scores/unlock`,
     payload,
   );
   return res.data;
