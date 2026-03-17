@@ -32,6 +32,26 @@ function normalizeContestants(contestants) {
     }));
 }
 
+function hasContestantId(contestants, contestantId) {
+  if (!contestantId) {
+    return false;
+  }
+
+  return contestants.some((contestant) => contestant.id === contestantId);
+}
+
+function resolveEventActiveContestantId(contestants, activeContestantId) {
+  const normalizedContestantId = String(activeContestantId ?? "").trim();
+
+  if (!normalizedContestantId) {
+    return "";
+  }
+
+  return hasContestantId(contestants, normalizedContestantId)
+    ? normalizedContestantId
+    : "";
+}
+
 function parseScoreNumber(value) {
   const numericValue = Number.parseFloat(String(value ?? "").trim());
   if (!Number.isFinite(numericValue) || numericValue < 0) {
@@ -164,7 +184,6 @@ export function useJudgeScoring() {
   const judgeId = searchParams.get("judgeId") ?? "";
   const judgeNameParam = searchParams.get("judgeName") ?? "";
   const judgeTypeParam = searchParams.get("judgeType") ?? "";
-  const activeContestantIdParam = searchParams.get("activeContestantId") ?? "";
   const fallbackJudge = useMemo(
     () => buildFallbackJudge(judgeId, judgeNameParam, judgeTypeParam),
     [judgeId, judgeNameParam, judgeTypeParam],
@@ -256,23 +275,12 @@ export function useJudgeScoring() {
 
           setSubmissionsByContestantId(nextSubmissionsByContestantId);
 
-          const linkAssignedContestant = activeContestantIdParam
-            ? nextContestants.find(
-                (contestant) => contestant.id === activeContestantIdParam,
-              ) ?? null
-            : null;
+          const nextActiveContestantId = resolveEventActiveContestantId(
+            nextContestants,
+            data.event?.activeContestantId,
+          );
 
-          const nextDefaultContestant =
-            linkAssignedContestant ??
-            nextContestants.find(
-              (contestant) => !nextSubmissionsByContestantId[contestant.id],
-            ) ??
-            nextContestants[0] ??
-            null;
-
-          if (nextDefaultContestant) {
-            setSelectedContestant(nextDefaultContestant.id);
-          }
+          setSelectedContestant(nextActiveContestantId);
         } else {
           setCurrentJudge(fallbackJudge);
           setPageNotice(
@@ -311,7 +319,6 @@ export function useJudgeScoring() {
     eventTitleParam,
     fallbackJudge,
     judgeId,
-    activeContestantIdParam,
     judgeNameParam,
     sportParam,
   ]);
@@ -323,34 +330,63 @@ export function useJudgeScoring() {
 
     let isMounted = true;
 
-    const syncLockedSubmissions = async () => {
-      try {
-        const judgeScores = await getEventJudgeScores(eventId, {
+    const syncJudgeContext = async () => {
+      const [judgeScoresResult, eventDetailsResult] = await Promise.allSettled([
+        getEventJudgeScores(eventId, {
           judgeId: currentJudge.id,
-        });
-        if (!isMounted) return;
+        }),
+        getEventDetails(eventId),
+      ]);
 
+      if (!isMounted) return;
+
+      if (judgeScoresResult.status === "fulfilled") {
         const nextSubmissionMap = buildSubmissionsByContestantId(
-          judgeScores,
+          judgeScoresResult.value,
           currentJudge.id,
         );
 
         setSubmissionsByContestantId((prev) =>
           mergeSubmissionMaps(prev, nextSubmissionMap),
         );
-      } catch (error) {
-        console.error("Failed to refresh judge submissions:", error);
+      } else {
+        console.error(
+          "Failed to refresh judge submissions:",
+          judgeScoresResult.reason,
+        );
+      }
+
+      if (eventDetailsResult.status === "fulfilled") {
+        const nextContestants = normalizeContestants(
+          eventDetailsResult.value?.contestants ?? [],
+        );
+        const nextActiveContestantId = resolveEventActiveContestantId(
+          nextContestants,
+          eventDetailsResult.value?.event?.activeContestantId,
+        );
+
+        setContestants(nextContestants);
+        setSelectedContestant((previousContestantId) =>
+          previousContestantId === nextActiveContestantId
+            ? previousContestantId
+            : nextActiveContestantId,
+        );
+      } else {
+        console.error(
+          "Failed to refresh active contestant:",
+          eventDetailsResult.reason,
+        );
       }
     };
 
-    syncLockedSubmissions();
+    syncJudgeContext();
 
     const pollId = window.setInterval(() => {
-      syncLockedSubmissions();
+      syncJudgeContext();
     }, 3000);
 
     const handleWindowFocus = () => {
-      syncLockedSubmissions();
+      syncJudgeContext();
     };
 
     window.addEventListener("focus", handleWindowFocus);

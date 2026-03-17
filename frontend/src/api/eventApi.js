@@ -47,6 +47,14 @@ export const updateCurrentEventPhase = async (eventId, payload) => {
   return res.data;
 };
 
+export const setEventActiveContestant = async (eventId, payload) => {
+  const res = await axiosInstance.put(
+    `/events/${eventId}/active-contestant`,
+    payload,
+  );
+  return res.data;
+};
+
 export const deleteEvent = async (eventId) => {
   await axiosInstance.delete(`/events/${eventId}`);
 };

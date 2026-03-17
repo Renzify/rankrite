@@ -24,8 +24,13 @@ function formatContestantLabel(contestant) {
 }
 
 export default function JudgesTab({ showLinkGeneration }) {
-  const { activeContestantId, contestants, setActiveContestantId } =
-    useJudgesTabContext();
+  const {
+    activeContestantId,
+    contestants,
+    isSwitchingActiveContestant,
+    onSetActiveContestant,
+    setActiveContestantId,
+  } = useJudgesTabContext();
   const {
     JUDGE_TYPE_OPTIONS,
     actionButtonLabel,
@@ -98,8 +103,13 @@ export default function JudgesTab({ showLinkGeneration }) {
         ? formatContestantLabel(activeContestant)
         : "No active contestant",
       nextContestantLabel: formatContestantLabel(pendingContestant),
-      onConfirm: () => {
-        setActiveContestantId(pendingContestant.id);
+      onConfirm: async () => {
+        if (onSetActiveContestant) {
+          await onSetActiveContestant(pendingContestant.id);
+        } else {
+          setActiveContestantId(pendingContestant.id);
+        }
+
         setSelectedCandidateContestantId("");
         toast.success(
           `Active contestant switched to ${pendingContestant.fullName}.`,
@@ -134,6 +144,10 @@ export default function JudgesTab({ showLinkGeneration }) {
       <div className="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
         <div>
           <h3 className="text-base font-semibold">Active Contestant Control</h3>
+          <p className="text-sm text-base-content/70">
+            Judges cannot pick contestants. Admin controls who is currently
+            active.
+          </p>
         </div>
 
         <div className="mt-3 grid gap-3 md:grid-cols-[1.2fr_1.2fr_auto]">
@@ -158,7 +172,9 @@ export default function JudgesTab({ showLinkGeneration }) {
               onChange={(event) =>
                 setSelectedCandidateContestantId(event.target.value)
               }
-              disabled={!hasContestants || isSavingJudge}
+              disabled={
+                !hasContestants || isSavingJudge || isSwitchingActiveContestant
+              }
             >
               <option value="">-- Select Contestant --</option>
               {sortedContestants.map((contestant) => (
@@ -174,9 +190,15 @@ export default function JudgesTab({ showLinkGeneration }) {
               type="button"
               className="btn btn-neutral w-full md:w-auto"
               onClick={handleSwitchRequest}
-              disabled={!canSwitchActiveContestant || isSavingJudge}
+              disabled={
+                !canSwitchActiveContestant ||
+                isSavingJudge ||
+                isSwitchingActiveContestant
+              }
             >
-              Switch Active Contestant
+              {isSwitchingActiveContestant
+                ? "Switching..."
+                : "Switch Active Contestant"}
             </button>
           </div>
         </div>

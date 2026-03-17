@@ -1769,6 +1769,64 @@ export async function getEventJudgeScores(
   });
 }
 
+export type SetEventActiveContestantInput = {
+  contestantId?: string | null;
+};
+
+export async function setEventActiveContestant(
+  eventId: string,
+  ownerUserId: string,
+  input: SetEventActiveContestantInput,
+): Promise<EventDetails | null> {
+  const normalizedOwnerUserId = normalizeUserId(ownerUserId);
+  const normalizedEventId = eventId?.trim();
+  const normalizedContestantId = (input.contestantId ?? "").toString().trim();
+
+  if (!normalizedEventId) {
+    throw new Error("INVALID_ACTIVE_CONTESTANT_INPUT");
+  }
+
+  const existingEvent = await findOwnedEvent(
+    normalizedEventId,
+    normalizedOwnerUserId,
+  );
+
+  if (!existingEvent) {
+    return null;
+  }
+
+  const nextActiveContestantId = normalizedContestantId || null;
+
+  if (nextActiveContestantId) {
+    const contestantLink = await db
+      .select({
+        contestantId: eventContestant.contestantId,
+      })
+      .from(eventContestant)
+      .where(
+        and(
+          eq(eventContestant.eventId, normalizedEventId),
+          eq(eventContestant.contestantId, nextActiveContestantId),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows[0] ?? null);
+
+    if (!contestantLink) {
+      throw new Error("INVALID_ACTIVE_CONTESTANT_CONTEXT");
+    }
+  }
+
+  await db
+    .update(event)
+    .set({
+      activeContestantId: nextActiveContestantId,
+      updatedAt: new Date(),
+    })
+    .where(eq(event.id, normalizedEventId));
+
+  return getEventDetails(normalizedEventId, normalizedOwnerUserId);
+}
 export async function setCurrentEventPhase(
   eventId: string,
   ownerUserId: string,
@@ -1861,7 +1919,7 @@ export async function listEvents(ownerUserId: string): Promise<EventListItem[]> 
 }
 
 export type EventDetails = {
-  event: EventListItem & { templateId: string };
+  event: EventListItem & { templateId: string; activeContestantId: string | null };
   template: Awaited<ReturnType<typeof getTemplateById>>;
   formValues: Record<string, string>;
   judges: EventJudgeRecord[];
@@ -2091,6 +2149,7 @@ export async function getEventDetails(
       createdAt: eventRow.createdAt,
       updatedAt: eventRow.updatedAt,
       templateId: eventRow.templateId,
+      activeContestantId: eventRow.activeContestantId ?? null,
     },
     template,
     formValues,

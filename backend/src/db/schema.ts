@@ -179,6 +179,11 @@ export const event = pgTable("event", {
   status: text("status").notNull().default("draft"),
   // draft | live | finished
 
+  activeContestantId: uuid("active_contestant_id").references(
+    () => contestant.id,
+    { onDelete: "set null" },
+  ),
+
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
 });
@@ -545,6 +550,11 @@ export const eventRelations = relations(event, ({ one, many }) => ({
   creator: one(user, {
     fields: [event.createdByUserId],
     references: [user.id],
+  }),
+  activeContestant: one(contestant, {
+    fields: [event.activeContestantId],
+    references: [contestant.id],
+    relationName: "event_active_contestant",
   }),
   fieldValues: many(eventFieldValue),
   phases: many(eventPhase),

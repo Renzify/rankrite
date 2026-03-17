@@ -17,6 +17,8 @@ import {
   lockJudgeScore,
   type LockJudgeScoreInput,
   setCurrentEventPhase,
+  setEventActiveContestant,
+  type SetEventActiveContestantInput,
   submitJudgeScore,
   type SubmitJudgeScoreInput,
   updateEvent,
@@ -173,6 +175,59 @@ export async function updateCurrentEventPhaseController(
   }
 }
 
+export async function setEventActiveContestantController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const payload = req.body as SetEventActiveContestantInput;
+    const details = await setEventActiveContestant(eventId, userId, payload);
+
+    if (!details) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    return res.status(200).json(details);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "INVALID_ACTIVE_CONTESTANT_INPUT"
+    ) {
+      return res.status(400).json({
+        message: "A contestant id is required to set active contestant",
+      });
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "INVALID_ACTIVE_CONTESTANT_CONTEXT"
+    ) {
+      return res.status(400).json({
+        message: "Contestant is not assigned to this event",
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json({
+      message: "Failed to update active contestant",
+    });
+  }
+}
 export async function getEventJudgeScoresController(
   req: Request,
   res: Response,

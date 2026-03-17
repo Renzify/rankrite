@@ -9,6 +9,7 @@ import {
   deleteEventJudge,
   getEventDetails,
   importEventContestants,
+  setEventActiveContestant,
   updateCurrentEventPhase,
   updateEvent,
   updateEventJudge,
@@ -27,11 +28,24 @@ const TAB_LINKS = [
 ];
 
 function applyLoadedEventDetails(data, actions) {
+  const nextContestants = (data.contestants ?? []).map(mapContestantForForm);
+  const activeContestantId = data.event?.activeContestantId ?? "";
+
   actions.setEventDetails(data);
   actions.setSelectedEventType(data.template?.eventType ?? "");
   actions.setSelectedSport(data.formValues?.sport ?? "");
   actions.setJudges(data.judges ?? []);
-  actions.setContestants((data.contestants ?? []).map(mapContestantForForm));
+  actions.setContestants(nextContestants);
+  actions.setActiveContestantId?.(() => {
+    if (
+      activeContestantId &&
+      nextContestants.some((contestant) => contestant.id === activeContestantId)
+    ) {
+      return activeContestantId;
+    }
+
+    return "";
+  });
   actions.setPendingFormValues({
     ...data.formValues,
     eventTitle: data.event.title,
@@ -94,6 +108,8 @@ export default function EventDetails() {
   const [isSavingJudge, setIsSavingJudge] = useState(false);
   const [isSavingContestant, setIsSavingContestant] = useState(false);
   const [isUpdatingCurrentPhase, setIsUpdatingCurrentPhase] = useState(false);
+  const [isSwitchingActiveContestant, setIsSwitchingActiveContestant] =
+    useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -116,6 +132,7 @@ export default function EventDetails() {
           setSelectedSport,
           setJudges,
           setContestants,
+          setActiveContestantId,
           setPendingFormValues,
           setDidHydrate,
         });
@@ -142,15 +159,11 @@ export default function EventDetails() {
   }, [pendingFormValues, template, didHydrate, setFormValues]);
   useEffect(() => {
     setActiveContestantId((currentId) => {
-      if (!contestants.length) {
-        return "";
-      }
-
       if (contestants.some((contestant) => contestant.id === currentId)) {
         return currentId;
       }
 
-      return contestants[0].id;
+      return "";
     });
   }, [contestants]);
 
@@ -177,6 +190,7 @@ export default function EventDetails() {
       setSelectedSport,
       setJudges,
       setContestants,
+      setActiveContestantId,
       setPendingFormValues,
       setDidHydrate,
     });
@@ -204,6 +218,7 @@ export default function EventDetails() {
         setSelectedSport,
         setJudges,
         setContestants,
+        setActiveContestantId,
         setPendingFormValues,
         setDidHydrate,
       });
@@ -501,6 +516,40 @@ export default function EventDetails() {
     }
   };
 
+  const handleSetActiveContestant = async (nextContestantId) => {
+    if (!eventId || !nextContestantId) {
+      return;
+    }
+
+    try {
+      setIsSwitchingActiveContestant(true);
+      const updatedDetails = await setEventActiveContestant(eventId, {
+        contestantId: nextContestantId,
+      });
+
+      applyLoadedEventDetails(updatedDetails, {
+        setEventDetails,
+        setSelectedEventType,
+        setSelectedSport,
+        setJudges,
+        setContestants,
+        setActiveContestantId,
+        setPendingFormValues,
+        setDidHydrate,
+      });
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Failed to switch active contestant.",
+      );
+      console.error("Failed to switch active contestant:", error);
+      toast.error(message);
+      throw error;
+    } finally {
+      setIsSwitchingActiveContestant(false);
+    }
+  };
+
   const handleCurrentPhaseChange = async (nextPhaseId) => {
     if (!eventId || !nextPhaseId) {
       return;
@@ -518,6 +567,7 @@ export default function EventDetails() {
         setSelectedSport,
         setJudges,
         setContestants,
+        setActiveContestantId,
         setPendingFormValues,
         setDidHydrate,
       });
@@ -672,6 +722,8 @@ export default function EventDetails() {
               setContestants,
               activeContestantId,
               setActiveContestantId,
+              onSetActiveContestant: handleSetActiveContestant,
+              isSwitchingActiveContestant,
               onCreateContestant: handleCreateContestant,
               onUpdateContestant: handleUpdateContestant,
               onDeleteContestant: handleDeleteContestant,
