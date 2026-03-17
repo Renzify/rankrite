@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { Toaster } from "react-hot-toast";
 
-import Header from "./layouts/Header";
+import Header2 from "./layouts/Header2";
 import Footer from "./layouts/Footer";
 import DynamicTemplateForm from "./pages/dynamic-template-form/DynamicTemplateForm";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -26,7 +26,7 @@ import { useAuthStore } from "./stores/authStore";
 function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
+      <Header2 />
       <main className="flex-1">
         <Outlet />
       </main>
