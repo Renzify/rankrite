@@ -1,11 +1,11 @@
 import { Outlet } from "react-router";
-import Header2 from "../layouts/Header2";
+import Header from "../layouts/Header";
 import Footer from "../layouts/Footer";
 
 function Auth() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Header2 />
+      <Header />
       <main className="flex-1">
         <div className="app-page">
           <div className="app-auth-shell">

@@ -7,7 +7,7 @@ import { useAuthStore } from "../stores/authStore";
 
 import logo from "../assets/images/rankrite-logo-1.png";
 
-function Header2() {
+function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useAuthStore((state) => state.authUser);
@@ -19,14 +19,19 @@ function Header2() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isHeaderStuck, setIsHeaderStuck] = useState(false);
 
-  const isLandingPage = location.pathname === "/";
-  const navItems = [
-    ...(authUser
-      ? [{ label: "Dashboard", type: "route", value: "/dashboard" }]
-      : []),
-    { label: "Features", type: "anchor", value: "#features" },
-    { label: "Pricing", type: "anchor", value: "#pricing" },
-  ];
+  const isLoginPage = location.pathname === "/auth/login";
+  const isLoginButtonAccent = isLoginPage;
+  const isGetStartedButtonAccent = !isLoginPage;
+
+  const desktopAccentButtonClass =
+    "rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-[0_14px_30px_-22px_rgba(15,23,42,0.95)] transition hover:bg-slate-800";
+  const desktopNormalButtonClass =
+    "rounded-full px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-900";
+
+  const mobileAccentButtonClass =
+    "w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800";
+  const mobileNormalButtonClass =
+    "w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
 
   const closeAllDropdowns = useCallback(() => {
     profileDropdownRef.current?.close();
@@ -109,41 +114,6 @@ function Header2() {
     };
   }, []);
 
-  const renderNavItem = (item, mobile = false) => {
-    const baseClasses = mobile
-      ? "w-full rounded-2xl px-4 py-3 text-left text-sm font-medium transition"
-      : "rounded-full px-3 py-2 text-[15px] font-medium transition";
-    const stateClasses = mobile
-      ? "text-slate-500 hover:bg-orange-50 hover:text-[#f59a23]"
-      : "text-slate-400 hover:text-[#f59a23]";
-
-    if (item.type === "route") {
-      const isActive = location.pathname.startsWith(item.value);
-
-      return (
-        <button
-          key={item.label}
-          type="button"
-          className={`${baseClasses} ${stateClasses} ${isActive ? "text-[#f59a23]" : ""}`}
-          onClick={() => handleRouteNavigation(item.value)}
-        >
-          {item.label}
-        </button>
-      );
-    }
-
-    return (
-      <a
-        key={item.label}
-        href={item.value}
-        className={`${baseClasses} ${stateClasses} block`}
-        onClick={closeAllMenus}
-      >
-        {item.label}
-      </a>
-    );
-  };
-
   return (
     <header
       ref={headerRef}
@@ -170,12 +140,6 @@ function Header2() {
               className="relative h-10 w-auto sm:h-11"
             />
           </button>
-
-          <div className="hidden flex-1 items-center justify-center gap-4 lg:flex xl:gap-8">
-            {isLandingPage
-              ? navItems.map((item) => renderNavItem(item))
-              : null}
-          </div>
 
           <div className="hidden shrink-0 items-center gap-2 lg:flex">
             {authUser ? (
@@ -239,14 +203,22 @@ function Header2() {
               <>
                 <button
                   type="button"
-                  className="rounded-full px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-900"
+                  className={
+                    isLoginButtonAccent
+                      ? desktopAccentButtonClass
+                      : desktopNormalButtonClass
+                  }
                   onClick={() => handleRouteNavigation("/auth/login")}
                 >
                   Log in
                 </button>
                 <button
                   type="button"
-                  className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-[0_14px_30px_-22px_rgba(15,23,42,0.95)] transition hover:bg-slate-800"
+                  className={
+                    isGetStartedButtonAccent
+                      ? desktopAccentButtonClass
+                      : desktopNormalButtonClass
+                  }
                   onClick={() => handleRouteNavigation("/auth/signup")}
                 >
                   Get Started
@@ -276,15 +248,7 @@ function Header2() {
             id="landing-mobile-menu"
             className="mt-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_24px_50px_-28px_rgba(15,23,42,0.4)] lg:hidden"
           >
-            {isLandingPage ? (
-              <nav className="flex flex-col gap-1.5">
-                {navItems.map((item) => renderNavItem(item, true))}
-              </nav>
-            ) : null}
-
-            <div
-              className={`flex flex-col gap-3 ${isLandingPage ? "mt-4 border-t border-slate-100 pt-4" : ""}`}
-            >
+            <div className="flex flex-col gap-3">
               {authUser ? (
                 <>
                   <button
@@ -327,14 +291,22 @@ function Header2() {
                 <>
                   <button
                     type="button"
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className={
+                      isLoginButtonAccent
+                        ? mobileAccentButtonClass
+                        : mobileNormalButtonClass
+                    }
                     onClick={() => handleRouteNavigation("/auth/login")}
                   >
                     Log in
                   </button>
                   <button
                     type="button"
-                    className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+                    className={
+                      isGetStartedButtonAccent
+                        ? mobileAccentButtonClass
+                        : mobileNormalButtonClass
+                    }
                     onClick={() => handleRouteNavigation("/auth/signup")}
                   >
                     Get Started
@@ -349,4 +321,4 @@ function Header2() {
   );
 }
 
-export default Header2;
+export default Header;
