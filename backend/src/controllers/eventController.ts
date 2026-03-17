@@ -59,6 +59,12 @@ export async function createEventDraftController(req: Request, res: Response) {
       });
     }
 
+    if (error instanceof Error && error.message === "INVALID_EVENT_STATUS") {
+      return res.status(400).json({
+        message: "Invalid event status",
+      });
+    }
+
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
       return res.status(400).json({
         message: "Invalid event input",
@@ -380,6 +386,21 @@ export async function updateEventController(req: Request, res: Response) {
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
       return res.status(400).json({
         message: "Invalid event input",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_EVENT_STATUS") {
+      return res.status(400).json({
+        message: "Invalid event status",
+      });
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "INVALID_EVENT_STATUS_TRANSITION"
+    ) {
+      return res.status(400).json({
+        message: "Event can only be set to Finished when status is Live",
       });
     }
 

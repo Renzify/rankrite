@@ -177,7 +177,7 @@ export const event = pgTable("event", {
 
   title: text("title").notNull(),
   status: text("status").notNull().default("draft"),
-  // draft | live | finished
+  // draft | to_be_held | live | finished
 
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),

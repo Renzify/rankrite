@@ -18,6 +18,17 @@ import {
 } from "../db/schema.ts";
 import { getTemplateById } from "./templateService.ts";
 
+const EVENT_STATUS_VALUES = [
+  "draft",
+  "to_be_held",
+  "live",
+  "finished",
+] as const;
+
+type EventStatus = (typeof EVENT_STATUS_VALUES)[number];
+
+const EVENT_STATUS_SET = new Set<string>(EVENT_STATUS_VALUES);
+
 export type CreateEventDraftFieldValueInput = {
   fieldId: string;
   optionId?: string | null;
@@ -27,7 +38,7 @@ export type CreateEventDraftFieldValueInput = {
 export type CreateEventDraftInput = {
   templateId: string;
   title: string;
-  status?: "draft" | "live" | "finished" | "to_be_held";
+  status?: EventStatus;
   fieldValues?: CreateEventDraftFieldValueInput[];
   judges?: {
     fullName: string;
@@ -118,6 +129,20 @@ export type EventPhaseRecord = {
   optionValue: string | null;
   optionLabel: string | null;
 };
+
+function parseEventStatus(value?: string | null): EventStatus | null {
+  const normalizedValue = (value ?? "").trim().toLowerCase();
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  if (!EVENT_STATUS_SET.has(normalizedValue)) {
+    return null;
+  }
+
+  return normalizedValue as EventStatus;
+}
 
 function normalizeContestantGender(value?: string | null) {
   const normalizedValue = (value ?? "").trim().toLowerCase();
@@ -550,7 +575,8 @@ export async function createEventDraft(
   const normalizedOwnerUserId = normalizeUserId(ownerUserId);
   const templateId = input.templateId?.trim();
   const title = input.title?.trim();
-  const status = input.status ?? "draft";
+  const parsedStatus = parseEventStatus(input.status);
+  const status = parsedStatus ?? "draft";
   const judgesInput = (input.judges ?? [])
     .map((judgeInput) => ({
       fullName: (judgeInput.fullName ?? "").trim(),
@@ -576,6 +602,10 @@ export async function createEventDraft(
           : index + 1,
     }))
     .filter((contestantInput) => contestantInput.fullName);
+
+  if (input.status !== undefined && !parsedStatus) {
+    throw new Error("INVALID_EVENT_STATUS");
+  }
 
   if (!templateId || !title) {
     throw new Error("INVALID_EVENT_INPUT");
@@ -693,6 +723,7 @@ export async function createEventDraft(
 export type UpdateEventInput = {
   templateId: string;
   title: string;
+  status?: EventStatus;
   fieldValues?: CreateEventDraftFieldValueInput[];
 };
 
@@ -705,9 +736,14 @@ export async function updateEvent(
   const normalizedEventId = eventId?.trim();
   const templateId = input.templateId?.trim();
   const title = input.title?.trim();
+  const parsedStatus = parseEventStatus(input.status);
 
   if (!normalizedEventId || !templateId || !title) {
     throw new Error("INVALID_EVENT_INPUT");
+  }
+
+  if (input.status !== undefined && !parsedStatus) {
+    throw new Error("INVALID_EVENT_STATUS");
   }
 
   const existingEvent = await findOwnedEvent(
@@ -717,6 +753,14 @@ export async function updateEvent(
 
   if (!existingEvent) {
     return null;
+  }
+
+  if (
+    parsedStatus === "finished" &&
+    existingEvent.status !== "live" &&
+    existingEvent.status !== "finished"
+  ) {
+    throw new Error("INVALID_EVENT_STATUS_TRANSITION");
   }
 
   const existingTemplate = await db.query.eventTemplate.findFirst({
@@ -733,6 +777,7 @@ export async function updateEvent(
       .set({
         templateId,
         title,
+        status: parsedStatus ?? existingEvent.status,
         updatedAt: new Date(),
       })
       .where(eq(event.id, normalizedEventId));
