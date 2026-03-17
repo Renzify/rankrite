@@ -19,6 +19,7 @@ function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isHeaderStuck, setIsHeaderStuck] = useState(false);
 
+  const isLandingPage = location.pathname === "/";
   const isLoginPage = location.pathname === "/auth/login";
   const isLoginButtonAccent = isLoginPage;
   const isGetStartedButtonAccent = !isLoginPage;
@@ -114,11 +115,15 @@ function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    closeAllMenus();
+  }, [location.pathname, closeAllMenus]);
+
   return (
     <header
       ref={headerRef}
       className={`z-40 flex justify-center border border-base-300 bg-base-100/95 px-4 backdrop-blur transition-shadow duration-300 sticky top-0 ${
-        isHeaderStuck
+        isHeaderStuck && isLandingPage
           ? "landing-navbar-stuck shadow-[0_16px_35px_-28px_rgba(31,26,22,0.75)]"
           : "shadow-sm"
       }`}
@@ -230,7 +235,7 @@ function Header() {
           <button
             type="button"
             className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 lg:hidden"
-            aria-controls="landing-mobile-menu"
+            aria-controls="header-mobile-menu"
             aria-expanded={isMobileMenuOpen}
             aria-label={
               isMobileMenuOpen
@@ -245,7 +250,7 @@ function Header() {
 
         {isMobileMenuOpen ? (
           <div
-            id="landing-mobile-menu"
+            id="header-mobile-menu"
             className="mt-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_24px_50px_-28px_rgba(15,23,42,0.4)] lg:hidden"
           >
             <div className="flex flex-col gap-3">
