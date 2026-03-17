@@ -20,4 +20,27 @@ pool.on("error", () => {
   console.error("Failed to connect to database");
 });
 
+async function ensureSettingsAndActivityLogSchema() {
+  try {
+    await pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS password_updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        action TEXT NOT NULL,
+        details TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (error) {
+    console.error("Failed to ensure settings/activity log schema:", error);
+  }
+}
+
+void ensureSettingsAndActivityLogSchema();
+
 export const db = drizzle({ client: pool, schema });

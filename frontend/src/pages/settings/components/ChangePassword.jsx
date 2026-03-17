@@ -11,19 +11,19 @@ function PasswordInput({
   return (
     <label className="form-control w-full">
       <span className="label">
-        <span className="label-text">{label}</span>
+        <span className="label-text mb-2">{label}</span>
       </span>
-      <div className="relative">
+      <div className="relative mb-4">
         <input
           type={isVisible ? "text" : "password"}
-          className="input input-bordered w-full pr-10"
+          className="input input-bordered w-full pr-12"
           value={value}
           onChange={onChange}
           placeholder={placeholder}
         />
         <button
           type="button"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60"
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-base-content/60 hover:text-base-content"
           onClick={onToggleVisibility}
           aria-label={isVisible ? `Hide ${label}` : `Show ${label}`}
         >
@@ -63,11 +63,11 @@ function ChangePassword({
           <div className="mt-6 space-y-4">
             <label className="form-control w-full">
               <span className="label">
-                <span className="label-text">Current Password</span>
+                <span className="label-text mb-2">Current Password</span>
               </span>
               <input
                 type="password"
-                className="input input-bordered w-full cursor-not-allowed bg-base-200"
+                className="input input-bordered w-full cursor-not-allowed bg-base-200 mb-4"
                 value="********"
                 disabled
                 readOnly
@@ -76,11 +76,11 @@ function ChangePassword({
 
             <label className="form-control w-full">
               <span className="label">
-                <span className="label-text">Last Updated</span>
+                <span className="label-text mb-2">Last Updated</span>
               </span>
               <input
                 type="text"
-                className="input input-bordered w-full cursor-not-allowed bg-base-200"
+                className="input input-bordered w-full cursor-not-allowed bg-base-200 mb-4"
                 value={settings.lastPasswordUpdated || "--"}
                 disabled
                 readOnly
@@ -113,9 +113,13 @@ function ChangePassword({
             <PasswordInput
               label="New Password"
               value={settings.newPassword}
-              onChange={(event) => handleChange("newPassword", event.target.value)}
+              onChange={(event) =>
+                handleChange("newPassword", event.target.value)
+              }
               isVisible={showNewPassword}
-              onToggleVisibility={() => setShowNewPassword((current) => !current)}
+              onToggleVisibility={() =>
+                setShowNewPassword((current) => !current)
+              }
               placeholder="Enter new password"
             />
 
