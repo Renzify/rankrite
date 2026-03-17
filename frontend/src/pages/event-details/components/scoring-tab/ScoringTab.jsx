@@ -11,6 +11,7 @@ import { usePenaltyScore } from "./hooks/usePenaltyScore";
 import { useScoringTabHandlers } from "./hooks/useScoringTabHandlers";
 import JudgeList from "./components/JudgeList";
 import ComputationTable from "./components/ComputationTable";
+import ConfirmScoreModal from "./components/ConfirmScoreModal";
 
 export default function ScoringTab() {
   const {
@@ -43,10 +44,27 @@ export default function ScoringTab() {
     Boolean(eventId),
   );
   const [submittedScoresError, setSubmittedScoresError] = useState("");
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [selectedJudgeIdForConfirm, setSelectedJudgeIdForConfirm] =
+    useState("");
+  const [isUnlockMode, setIsUnlockMode] = useState(false);
 
   const selectedContestant =
     contestants.find((contestant) => contestant.id === selectedContestantId) ??
     null;
+
+  const handleShowConfirmModal = (judgeId, shouldUnlock = false) => {
+    setSelectedJudgeIdForConfirm(judgeId);
+    setIsUnlockMode(shouldUnlock);
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleCloseConfirmModal = () => {
+    setIsConfirmModalOpen(false);
+    setSelectedJudgeIdForConfirm("");
+    setIsUnlockMode(false);
+  };
+
   useScoringTabEffects({
     contestants,
     judges: scopedJudges,
@@ -76,7 +94,9 @@ export default function ScoringTab() {
     "execution",
   );
   const totalScore =
-    difficultyScore === null || artistryScore === null || executionScore === null
+    difficultyScore === null ||
+    artistryScore === null ||
+    executionScore === null
       ? null
       : difficultyScore + artistryScore + executionScore;
   const { penalties } = usePenaltyScore(scopedJudges, judgeScores);
@@ -86,6 +106,8 @@ export default function ScoringTab() {
   const {
     lockingJudgeId,
     handleJudgeLock,
+    handleConfirmScoreLock,
+    handleConfirmScoreUnlock,
     handleContestantSelect,
     handleContestantRowKeyDown,
   } = useScoringTabHandlers({
@@ -98,6 +120,7 @@ export default function ScoringTab() {
     setJudgeScores,
     setSubmittedScoresError,
     setSelectedContestantId,
+    onShowConfirmModal: handleShowConfirmModal,
   });
 
   return (
@@ -184,6 +207,31 @@ export default function ScoringTab() {
           />
         </div>
       </div>
+
+      <ConfirmScoreModal
+        isOpen={isConfirmModalOpen}
+        isUnlock={isUnlockMode}
+        onClose={handleCloseConfirmModal}
+        onConfirm={() => {
+          if (isUnlockMode) {
+            handleConfirmScoreUnlock(selectedJudgeIdForConfirm);
+          } else {
+            handleConfirmScoreLock(selectedJudgeIdForConfirm);
+          }
+          handleCloseConfirmModal();
+        }}
+        judgeName={
+          scopedJudges.find((j) => j.id === selectedJudgeIdForConfirm)
+            ?.fullName ?? ""
+        }
+        score={judgeScores[selectedJudgeIdForConfirm]?.value ?? ""}
+        scoreValue={
+          judgeScores[selectedJudgeIdForConfirm]?.value
+            ? Number.parseFloat(judgeScores[selectedJudgeIdForConfirm].value)
+            : null
+        }
+        isConfirming={lockingJudgeId === selectedJudgeIdForConfirm}
+      />
     </div>
   );
 }

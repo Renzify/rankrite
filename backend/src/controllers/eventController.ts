@@ -15,6 +15,7 @@ import {
   getEventJudgeScores,
   listEvents,
   lockJudgeScore,
+  unlockJudgeScore,
   type LockJudgeScoreInput,
   setCurrentEventPhase,
   setEventActiveContestant,
@@ -408,6 +409,63 @@ export async function lockJudgeScoreController(req: Request, res: Response) {
     console.error(error);
     res.status(500).json({
       message: "Failed to lock judge score",
+    });
+  }
+}
+
+export async function unlockJudgeScoreController(req: Request, res: Response) {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const eventId = getRouteParamId(req);
+
+    if (typeof eventId !== "string" || eventId.trim() === "") {
+      return res.status(400).json({
+        message: "Event id is required",
+      });
+    }
+
+    const payload = req.body as LockJudgeScoreInput;
+    const unlockedScore = await unlockJudgeScore(eventId, userId, payload);
+
+    if (!unlockedScore) {
+      return res.status(404).json({
+        message: "Event not found",
+      });
+    }
+
+    res.status(200).json(unlockedScore);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_JUDGE_SCORE_LOCK_INPUT") {
+      return res.status(400).json({
+        message: "Judge score unlock requires an assigned judge and contestant",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_JUDGE_SCORE_CONTEXT") {
+      return res.status(400).json({
+        message: "Judge or contestant is not assigned to this event",
+      });
+    }
+
+    if (error instanceof Error && error.message === "JUDGE_SCORE_NOT_FOUND") {
+      return res.status(404).json({
+        message: "Judge submission not found for this contestant",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_EVENT_PHASE") {
+      return res.status(400).json({
+        message: "Invalid event phase for this event",
+      });
+    }
+
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to unlock judge score",
     });
   }
 }
