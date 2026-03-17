@@ -177,7 +177,7 @@ export const event = pgTable("event", {
 
   title: text("title").notNull(),
   status: text("status").notNull().default("draft"),
-  // draft | live | finished
+  // draft | to_be_held | live | finished
 
   activeContestantId: uuid("active_contestant_id").references(
     () => contestant.id,
