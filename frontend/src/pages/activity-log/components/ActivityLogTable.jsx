@@ -1,4 +1,18 @@
-function ActivityLogTable({ activities }) {
+function ActivityLogTable({ activities, isLoading = false, errorMessage = "" }) {
+  const formatTimestamp = (value) => {
+    if (!value) {
+      return "--";
+    }
+
+    const parsedDate = new Date(value);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return String(value);
+    }
+
+    return parsedDate.toLocaleString();
+  };
+
   return (
     <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-sm">
       <div className="overflow-x-auto">
@@ -13,7 +27,22 @@ function ActivityLogTable({ activities }) {
             </tr>
           </thead>
           <tbody>
-            {activities.length ? (
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="py-10 text-center text-sm text-base-content/60"
+                >
+                  Loading activity logs...
+                </td>
+              </tr>
+            ) : errorMessage ? (
+              <tr>
+                <td colSpan={5} className="py-10 text-center text-sm text-error">
+                  {errorMessage}
+                </td>
+              </tr>
+            ) : activities.length ? (
               activities.map((activity) => (
                 <tr key={activity.id} className="hover:bg-base-200/50">
                   <td className="font-medium">{activity.id}</td>
@@ -25,7 +54,7 @@ function ActivityLogTable({ activities }) {
                   <td>{activity.user}</td>
                   <td className="text-base-content/70">{activity.details}</td>
                   <td className="text-sm text-base-content/60">
-                    {activity.timestamp}
+                    {formatTimestamp(activity.timestamp)}
                   </td>
                 </tr>
               ))

@@ -12,6 +12,8 @@ function ProfileFieldCard({ label, value, className = "" }) {
 }
 function AccountProfile({
   isEditing,
+  isLoadingProfile,
+  isSavingProfile,
   settings,
   handleChange,
   canSaveProfile,
@@ -46,15 +48,16 @@ function AccountProfile({
                   type="button"
                   className="btn btn-primary btn-sm"
                   onClick={handleSaveProfile}
-                  disabled={!canSaveProfile}
+                  disabled={!canSaveProfile || isSavingProfile}
                 >
-                  Save Changes
+                  {isSavingProfile ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
+                disabled={isLoadingProfile}
                 onClick={handleStartEditing}
               >
                 Edit Profile
@@ -97,6 +100,10 @@ function AccountProfile({
                     label="Email Address"
                     value={settings.email}
                   />
+                  <ProfileFieldCard
+                    label="Date Created"
+                    value={settings.dateCreated}
+                  />
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -131,13 +138,26 @@ function AccountProfile({
                       }
                     />
                   </label>
+
+                  <label className="form-control app-muted-panel w-full">
+                    <div className="label px-0 pt-0 pb-1">
+                      <span className="label-text font-semibold">
+                        Date Created
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      className="input input-bordered w-full input-disabled bg-base-200"
+                      value={settings.dateCreated || "--"}
+                      disabled
+                    />
+                  </label>
                 </div>
               )}
             </div>
           </div>
         </div>
       </section>
-      ;
     </div>
   );
 }

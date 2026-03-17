@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,107 +8,7 @@ import {
 } from "lucide-react";
 import ActivityLogTable from "./components/ActivityLogTable";
 import { DropdownMenu } from "../../layouts/helpers/Dropdown";
-
-const ACTIVITY_LOGS = [
-  {
-    id: 1,
-    action: "Login",
-    user: "Admin",
-    details: "Logged into the system",
-    timestamp: "2026-01-17 14:30:00",
-  },
-  {
-    id: 2,
-    action: "Create Event",
-    user: "Admin",
-    details: "Created new event: Regional Dance Competition",
-    timestamp: "2026-01-16 08:15:00",
-  },
-  {
-    id: 3,
-    action: "Update Score",
-    user: "Judge 1",
-    details: "Updated score for Contestant #5",
-    timestamp: "2026-01-18 11:45:00",
-  },
-  {
-    id: 4,
-    action: "Add Contestant",
-    user: "Admin",
-    details: "Added new contestant: Juan Dela Cruz",
-    timestamp: "2026-01-15 09:20:00",
-  },
-  {
-    id: 5,
-    action: "Export Results",
-    user: "Admin",
-    details: "Exported scoring results to PDF",
-    timestamp: "2026-01-19 16:00:00",
-  },
-  {
-    id: 6,
-    action: "Login",
-    user: "Judge 2",
-    details: "Logged into the system",
-    timestamp: "2026-01-16 12:00:00",
-  },
-  {
-    id: 7,
-    action: "Update Contestant",
-    user: "Admin",
-    details: "Updated contestant details: Marky Mark",
-    timestamp: "2026-01-17 08:30:00",
-  },
-  {
-    id: 8,
-    action: "Delete Event",
-    user: "Admin",
-    details: "Deleted event: Test Event 2025",
-    timestamp: "2026-01-15 14:00:00",
-  },
-  {
-    id: 9,
-    action: "Login",
-    user: "Judge 3",
-    details: "Logged into the system",
-    timestamp: "2026-01-18 07:00:00",
-  },
-  {
-    id: 10,
-    action: "Update Score",
-    user: "Judge 1",
-    details: "Updated score for Contestant #12",
-    timestamp: "2026-01-16 15:30:00",
-  },
-  {
-    id: 11,
-    action: "Create Event",
-    user: "Admin",
-    details: "Created new event: Swimming Competition 2026",
-    timestamp: "2026-01-19 10:00:00",
-  },
-  {
-    id: 12,
-    action: "Add Contestant",
-    user: "Admin",
-    details: "Added new contestant: Maria Garcia",
-    timestamp: "2026-01-15 11:15:00",
-  },
-  {
-    id: 13,
-    action: "Login",
-    user: "Judge 1",
-    details: "Logged into the system",
-    timestamp: "2026-01-18 13:00:00",
-  },
-  {
-    id: 14,
-    action: "Update Score",
-    user: "Judge 2",
-    details: "Updated score for Contestant #8",
-    timestamp: "2026-01-17 09:30:00",
-  },
-];
+import { getActivityLogs } from "../../api/activityLogApi";
 
 const FILTER_OPTIONS = [
   { value: "all", label: "All activity" },
@@ -127,17 +27,60 @@ const ACTION_GROUPS = {
   "Update Contestant": "contestant",
   "Update Score": "scoring",
   "Export Results": "reports",
+  "Sign Up": "auth",
+  "Update Profile": "auth",
+  "Change Password": "auth",
 };
 
 const sortByNewest = (left, right) =>
   new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime();
 
 function ActivityLog() {
+  const [activities, setActivities] = useState([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+  const [activityLoadError, setActivityLoadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const filterDropdownRef = useRef(null);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadActivityLogs = async () => {
+      setIsLoadingActivities(true);
+      setActivityLoadError("");
+
+      try {
+        const fetchedActivityLogs = await getActivityLogs();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setActivities(Array.isArray(fetchedActivityLogs) ? fetchedActivityLogs : []);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setActivityLoadError(
+          error?.response?.data?.message ?? "Failed to load activity logs.",
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoadingActivities(false);
+        }
+      }
+    };
+
+    void loadActivityLogs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const currentFilterLabel =
     FILTER_OPTIONS.find((option) => option.value === selectedFilter)?.label ||
@@ -146,7 +89,7 @@ function ActivityLog() {
   const filteredActivities = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return ACTIVITY_LOGS.filter((activity) => {
+    return activities.filter((activity) => {
       const matchesFilter =
         selectedFilter === "all" ||
         ACTION_GROUPS[activity.action] === selectedFilter;
@@ -169,7 +112,7 @@ function ActivityLog() {
         .toLowerCase()
         .includes(normalizedQuery);
     }).sort(sortByNewest);
-  }, [searchQuery, selectedFilter]);
+  }, [activities, searchQuery, selectedFilter]);
 
   const filteredCount = filteredActivities.length;
   const totalPages = Math.max(1, Math.ceil(filteredCount / itemsPerPage));
@@ -198,14 +141,18 @@ function ActivityLog() {
     }
   };
 
-  const totalActivities = ACTIVITY_LOGS.length;
+  const totalActivities = activities.length;
   const hasSearch = searchQuery.trim().length > 0;
   const countLabel =
-    filteredCount === totalActivities
+    isLoadingActivities
+      ? "Loading activity..."
+      : filteredCount === totalActivities
       ? `${totalActivities} activities`
       : `${filteredCount} of ${totalActivities} activities`;
   const countCaption =
-    hasSearch || selectedFilter !== "all"
+    activityLoadError
+      ? activityLoadError
+      : hasSearch || selectedFilter !== "all"
       ? "Matching your current search and filter."
       : "Newest activity appears first.";
   const visibleStart = filteredCount ? indexOfFirstItem + 1 : 0;
@@ -300,7 +247,11 @@ function ActivityLog() {
           </section>
 
           <div className="app-surface">
-            <ActivityLogTable activities={currentActivities} />
+            <ActivityLogTable
+              activities={currentActivities}
+              isLoading={isLoadingActivities}
+              errorMessage={activityLoadError}
+            />
           </div>
 
           {showPagination && (

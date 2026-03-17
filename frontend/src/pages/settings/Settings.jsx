@@ -8,6 +8,7 @@ function Settings() {
     canSaveProfile,
     handleCancelEditing,
     handleChange,
+    handleSaveNewPassword,
     handleSavePreferences,
     handleSaveProfile,
     handleStartEditing,
@@ -15,6 +16,10 @@ function Settings() {
     hasPreferencesChanged,
     isChangingPassword,
     isEditing,
+    isLoadingProfile,
+    isSavingPassword,
+    isSavingProfile,
+    passwordNotice,
     setShowConfirmPassword,
     setShowCurrentPassword,
     setShowNewPassword,
@@ -41,6 +46,8 @@ function Settings() {
             settings={settings}
             isEditing={isEditing}
             canSaveProfile={canSaveProfile}
+            isLoadingProfile={isLoadingProfile}
+            isSavingProfile={isSavingProfile}
             handleChange={handleChange}
             handleCancelEditing={handleCancelEditing}
             handleSaveProfile={handleSaveProfile}
@@ -48,14 +55,19 @@ function Settings() {
           />
           <div className="mb-5 grid gap-5 xl:grid-cols-2">
             <ChangePassword
-              showCurrentPassword={showCurrentPassword}
-              isChangingPassword={isChangingPassword}
               settings={settings}
+              showCurrentPassword={showCurrentPassword}
+              showNewPassword={showNewPassword}
+              showConfirmPassword={showConfirmPassword}
+              isChangingPassword={isChangingPassword}
               handleChange={handleChange}
+              handleSaveNewPassword={handleSaveNewPassword}
+              handleToggleChangePassword={handleToggleChangePassword}
               setShowCurrentPassword={setShowCurrentPassword}
               setShowNewPassword={setShowNewPassword}
               setShowConfirmPassword={setShowConfirmPassword}
-              handleToggleChangePassword={handleToggleChangePassword}
+              isSavingPassword={isSavingPassword}
+              passwordNotice={passwordNotice}
             />
             <Preferences
               settings={settings}

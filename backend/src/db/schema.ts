@@ -24,6 +24,9 @@ export const user = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     profilePic: text("profile_pic"),
+    passwordUpdatedAt: timestamp("password_updated_at", { mode: "date" })
+      .notNull()
+      .defaultNow(),
 
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
@@ -32,6 +35,16 @@ export const user = pgTable(
     emailUnique: uniqueIndex("users_email_unique").on(table.email),
   }),
 );
+
+export const activityLog = pgTable("activity_log", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  action: text("action").notNull(),
+  details: text("details").notNull(),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+});
 
 /*
   Template
@@ -540,6 +553,14 @@ export const templateOptionDependencyRelations = relations(
 
 export const userRelations = relations(user, ({ many }) => ({
   events: many(event),
+  activityLogs: many(activityLog),
+}));
+
+export const activityLogRelations = relations(activityLog, ({ one }) => ({
+  user: one(user, {
+    fields: [activityLog.userId],
+    references: [user.id],
+  }),
 }));
 
 export const eventRelations = relations(event, ({ one, many }) => ({

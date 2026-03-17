@@ -1,14 +1,53 @@
-import React from "react";
+import { Eye, EyeOff } from "lucide-react";
+
+function PasswordInput({
+  label,
+  value,
+  onChange,
+  isVisible,
+  onToggleVisibility,
+  placeholder,
+}) {
+  return (
+    <label className="form-control w-full">
+      <span className="label">
+        <span className="label-text">{label}</span>
+      </span>
+      <div className="relative">
+        <input
+          type={isVisible ? "text" : "password"}
+          className="input input-bordered w-full pr-10"
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60"
+          onClick={onToggleVisibility}
+          aria-label={isVisible ? `Hide ${label}` : `Show ${label}`}
+        >
+          {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+    </label>
+  );
+}
 
 function ChangePassword({
-  showCurrentPassword,
-  isChangingPassword,
   settings,
+  showCurrentPassword,
+  showNewPassword,
+  showConfirmPassword,
+  isChangingPassword,
   handleChange,
+  handleSaveNewPassword,
+  handleToggleChangePassword,
   setShowCurrentPassword,
   setShowNewPassword,
   setShowConfirmPassword,
-  handleToggleChangePassword,
+  isSavingPassword,
+  passwordNotice,
 }) {
   return (
     <section className="app-surface">
@@ -17,119 +56,114 @@ function ChangePassword({
           <h2 className="text-xl font-semibold">Change Password</h2>
         </div>
         <p className="mt-1 text-sm text-base-content/60">
-          Update your credentials and review when the password was last changed.
+          Update your password and review when it was last changed.
         </p>
 
-        <div className="mt-6 space-y-4">
-          <label className="form-control w-full">
-            <span className="label">
-              <span className="label-text">Current Password</span>
-            </span>
-            <div className="relative mb-4">
+        {!isChangingPassword ? (
+          <div className="mt-6 space-y-4">
+            <label className="form-control w-full">
+              <span className="label">
+                <span className="label-text">Current Password</span>
+              </span>
               <input
-                type={showCurrentPassword ? "text" : "password"}
-                className={`input input-bordered w-full pr-10 ${!isChangingPassword ? "input-disabled bg-base-200" : ""}`}
-                value={settings.currentPassword}
-                onChange={(event) =>
-                  handleChange("currentPassword", event.target.value)
-                }
-                placeholder="Enter current password"
-                disabled={!isChangingPassword}
+                type="password"
+                className="input input-bordered w-full cursor-not-allowed bg-base-200"
+                value="********"
+                disabled
+                readOnly
               />
-              {isChangingPassword ? (
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                >
-                  {showCurrentPassword ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
-                </button>
-              ) : null}
-            </div>
-          </label>
+            </label>
 
-          {!isChangingPassword ? (
             <label className="form-control w-full">
               <span className="label">
                 <span className="label-text">Last Updated</span>
               </span>
               <input
                 type="text"
-                className="input input-bordered mb-4 w-full input-disabled bg-base-200"
-                value={settings.lastPasswordUpdated}
+                className="input input-bordered w-full cursor-not-allowed bg-base-200"
+                value={settings.lastPasswordUpdated || "--"}
                 disabled
+                readOnly
               />
             </label>
-          ) : null}
 
-          {isChangingPassword ? (
-            <>
-              <label className="form-control w-full">
-                <span className="label">
-                  <span className="label-text">New Password</span>
-                </span>
-                <div className="relative mb-4">
-                  <input
-                    type={showNewPassword ? "text" : "password"}
-                    className="input input-bordered w-full pr-10"
-                    placeholder="Enter new password"
-                    value={settings.newPassword}
-                    onChange={(event) =>
-                      handleChange("newPassword", event.target.value)
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                  >
-                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </label>
+            <button
+              type="button"
+              className="btn btn-primary w-full"
+              onClick={handleToggleChangePassword}
+            >
+              Change Password
+            </button>
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            <PasswordInput
+              label="Current Password"
+              value={settings.currentPassword}
+              onChange={(event) =>
+                handleChange("currentPassword", event.target.value)
+              }
+              isVisible={showCurrentPassword}
+              onToggleVisibility={() =>
+                setShowCurrentPassword((current) => !current)
+              }
+              placeholder="Enter current password"
+            />
 
-              <label className="form-control w-full">
-                <span className="label">
-                  <span className="label-text">Confirm Password</span>
-                </span>
-                <div className="relative mb-4">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    className="input input-bordered w-full pr-10"
-                    placeholder="Confirm new password"
-                    value={settings.confirmPassword}
-                    onChange={(event) =>
-                      handleChange("confirmPassword", event.target.value)
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={18} />
-                    ) : (
-                      <Eye size={18} />
-                    )}
-                  </button>
-                </div>
-              </label>
-            </>
-          ) : null}
+            <PasswordInput
+              label="New Password"
+              value={settings.newPassword}
+              onChange={(event) => handleChange("newPassword", event.target.value)}
+              isVisible={showNewPassword}
+              onToggleVisibility={() => setShowNewPassword((current) => !current)}
+              placeholder="Enter new password"
+            />
 
-          <button
-            type="button"
-            className="btn btn-primary w-full"
-            onClick={handleToggleChangePassword}
-          >
-            {isChangingPassword ? "Update Password" : "Change Password"}
-          </button>
-        </div>
+            <PasswordInput
+              label="Confirm New Password"
+              value={settings.confirmPassword}
+              onChange={(event) =>
+                handleChange("confirmPassword", event.target.value)
+              }
+              isVisible={showConfirmPassword}
+              onToggleVisibility={() =>
+                setShowConfirmPassword((current) => !current)
+              }
+              placeholder="Confirm new password"
+            />
+
+            {passwordNotice.message ? (
+              <p
+                className={`text-sm ${
+                  passwordNotice.type === "error"
+                    ? "text-error"
+                    : "text-success"
+                }`}
+              >
+                {passwordNotice.message}
+              </p>
+            ) : null}
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                className="btn btn-primary flex-1"
+                onClick={handleSaveNewPassword}
+                disabled={isSavingPassword}
+              >
+                {isSavingPassword ? "Saving..." : "Save New Password"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline flex-1"
+                onClick={handleToggleChangePassword}
+                disabled={isSavingPassword}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
