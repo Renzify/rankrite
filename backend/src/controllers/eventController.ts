@@ -28,6 +28,7 @@ import {
   type UpdateEventInput,
 } from "../services/eventService.ts";
 import type { AuthenticatedRequest } from "../middlewares/authMiddleware.ts";
+import { createActivityLogEntry } from "../services/activityLogService.ts";
 
 function getRouteParamId(req: Request) {
   const rawId = req.params.id;
@@ -45,6 +46,14 @@ function getAuthenticatedUserId(req: Request) {
   return userId;
 }
 
+async function logActivity(userId: string, action: string, details: string) {
+  await createActivityLogEntry({
+    userId,
+    action,
+    details,
+  });
+}
+
 export async function createEventDraftController(req: Request, res: Response) {
   try {
     const userId = getAuthenticatedUserId(req);
@@ -54,6 +63,11 @@ export async function createEventDraftController(req: Request, res: Response) {
 
     const payload = req.body as CreateEventDraftInput;
     const draftEvent = await createEventDraft(payload, userId);
+    await logActivity(
+      userId,
+      "Create Event",
+      "Created event \"" + draftEvent.title + "\" (ID: " + draftEvent.id + ")",
+    );
     res.status(201).json(draftEvent);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_CONTESTANT_GENDER") {
@@ -167,6 +181,12 @@ export async function updateCurrentEventPhaseController(
       });
     }
 
+    await logActivity(
+      userId,
+      "Update Event",
+      "Updated current phase for event \"" + details.title + "\" (ID: " + details.id + ")",
+    );
+
     return res.status(200).json(details);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_EVENT_PHASE") {
@@ -208,6 +228,12 @@ export async function setEventActiveContestantController(
         message: "Event not found",
       });
     }
+
+    await logActivity(
+      userId,
+      "Update Event",
+      "Changed active contestant for event \"" + details.title + "\" (ID: " + details.id + ") to contestant ID: " + payload.contestantId,
+    );
 
     return res.status(200).json(details);
   } catch (error) {
@@ -494,6 +520,12 @@ export async function updateEventController(req: Request, res: Response) {
       });
     }
 
+    await logActivity(
+      userId,
+      "Update Event",
+      "Updated event \"" + details.title + "\" (ID: " + details.id + ")",
+    );
+
     res.status(200).json(details);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
@@ -547,6 +579,8 @@ export async function deleteEventController(req: Request, res: Response) {
       });
     }
 
+    await logActivity(userId, "Delete Event", "Deleted event ID: " + eventId);
+
     res.status(204).send();
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
@@ -585,6 +619,12 @@ export async function addEventJudgeController(req: Request, res: Response) {
         message: "Event not found",
       });
     }
+
+    await logActivity(
+      userId,
+      "Add Judge",
+      "Added judge \"" + createdJudge.fullName + "\" (ID: " + createdJudge.id + ") to event ID: " + eventId,
+    );
 
     res.status(201).json(createdJudge);
   } catch (error) {
@@ -633,6 +673,12 @@ export async function updateEventJudgeController(req: Request, res: Response) {
       });
     }
 
+    await logActivity(
+      userId,
+      "Update Judge",
+      "Updated judge \"" + updatedJudge.fullName + "\" (ID: " + updatedJudge.id + ") in event ID: " + eventId,
+    );
+
     res.status(200).json(updatedJudge);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
@@ -679,6 +725,12 @@ export async function deleteEventJudgeController(req: Request, res: Response) {
       });
     }
 
+    await logActivity(
+      userId,
+      "Delete Judge",
+      "Deleted judge ID: " + judgeId + " from event ID: " + eventId,
+    );
+
     res.status(204).send();
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
@@ -717,6 +769,12 @@ export async function addEventContestantController(req: Request, res: Response) 
         message: "Event not found",
       });
     }
+
+    await logActivity(
+      userId,
+      "Add Contestant",
+      "Added contestant \"" + createdContestant.fullName + "\" (ID: " + createdContestant.id + ") to event ID: " + eventId,
+    );
 
     res.status(201).json(createdContestant);
   } catch (error) {
@@ -781,6 +839,12 @@ export async function updateEventContestantController(
       });
     }
 
+    await logActivity(
+      userId,
+      "Update Contestant",
+      "Updated contestant \"" + updatedContestant.fullName + "\" (ID: " + updatedContestant.id + ") in event ID: " + eventId,
+    );
+
     res.status(200).json(updatedContestant);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_CONTESTANT_GENDER") {
@@ -842,6 +906,12 @@ export async function deleteEventContestantController(
       });
     }
 
+    await logActivity(
+      userId,
+      "Delete Contestant",
+      "Deleted contestant ID: " + contestantId + " from event ID: " + eventId,
+    );
+
     res.status(204).send();
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
@@ -883,6 +953,12 @@ export async function importEventContestantsController(
         message: "Event not found",
       });
     }
+
+    await logActivity(
+      userId,
+      "Add Contestant",
+      "Imported " + createdContestants.length + " contestant(s) to event ID: " + eventId,
+    );
 
     res.status(201).json(createdContestants);
   } catch (error) {

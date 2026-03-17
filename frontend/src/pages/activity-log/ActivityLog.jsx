@@ -59,7 +59,9 @@ function ActivityLog() {
           return;
         }
 
-        setActivities(Array.isArray(fetchedActivityLogs) ? fetchedActivityLogs : []);
+        setActivities(
+          Array.isArray(fetchedActivityLogs) ? fetchedActivityLogs : [],
+        );
       } catch (error) {
         if (!isMounted) {
           return;
@@ -89,29 +91,31 @@ function ActivityLog() {
   const filteredActivities = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return activities.filter((activity) => {
-      const matchesFilter =
-        selectedFilter === "all" ||
-        ACTION_GROUPS[activity.action] === selectedFilter;
+    return activities
+      .filter((activity) => {
+        const matchesFilter =
+          selectedFilter === "all" ||
+          ACTION_GROUPS[activity.action] === selectedFilter;
 
-      if (!matchesFilter) {
-        return false;
-      }
+        if (!matchesFilter) {
+          return false;
+        }
 
-      if (!normalizedQuery) {
-        return true;
-      }
+        if (!normalizedQuery) {
+          return true;
+        }
 
-      return [
-        activity.action,
-        activity.user,
-        activity.details,
-        activity.timestamp,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedQuery);
-    }).sort(sortByNewest);
+        return [
+          activity.action,
+          activity.user,
+          activity.details,
+          activity.timestamp,
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery);
+      })
+      .sort(sortByNewest);
   }, [activities, searchQuery, selectedFilter]);
 
   const filteredCount = filteredActivities.length;
@@ -143,16 +147,14 @@ function ActivityLog() {
 
   const totalActivities = activities.length;
   const hasSearch = searchQuery.trim().length > 0;
-  const countLabel =
-    isLoadingActivities
-      ? "Loading activity..."
-      : filteredCount === totalActivities
+  const countLabel = isLoadingActivities
+    ? "Loading activity..."
+    : filteredCount === totalActivities
       ? `${totalActivities} activities`
       : `${filteredCount} of ${totalActivities} activities`;
-  const countCaption =
-    activityLoadError
-      ? activityLoadError
-      : hasSearch || selectedFilter !== "all"
+  const countCaption = activityLoadError
+    ? activityLoadError
+    : hasSearch || selectedFilter !== "all"
       ? "Matching your current search and filter."
       : "Newest activity appears first.";
   const visibleStart = filteredCount ? indexOfFirstItem + 1 : 0;
