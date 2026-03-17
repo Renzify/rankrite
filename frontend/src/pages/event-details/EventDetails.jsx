@@ -14,7 +14,6 @@ import {
   updateEventJudge,
   updateEventContestant,
 } from "../../api/eventApi";
-import StatusBadge from "../../shared/utils/StatusBadge";
 import { buildEventPayload } from "../../shared/lib/eventPayload";
 import { MoveLeft } from "lucide-react";
 
@@ -25,6 +24,20 @@ const TAB_LINKS = [
   { to: "scoring", label: "Scoring" },
   { to: "display-control", label: "Display Control" },
 ];
+
+const EVENT_STATUS_OPTIONS = [
+  { value: "draft", label: "Draft" },
+  { value: "to_be_held", label: "To Be Held" },
+  { value: "live", label: "Live" },
+  { value: "finished", label: "Finished" },
+];
+
+const EVENT_STATUS_LABEL_BY_VALUE = {
+  draft: "Draft",
+  to_be_held: "To Be Held",
+  live: "Live",
+  finished: "Finished",
+};
 
 function applyLoadedEventDetails(data, actions) {
   actions.setEventDetails(data);
@@ -61,6 +74,65 @@ function getApiErrorMessage(error, fallbackMessage) {
   return fallbackMessage;
 }
 
+function formatEventStatusLabel(status) {
+  if (!status) return "Unknown";
+
+  return (
+    EVENT_STATUS_LABEL_BY_VALUE[status] ??
+    status
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
+  );
+}
+
+function isConditionMet(condition, fields, values) {
+  const parentField = fields.find(
+    (field) => field.id === condition.parentFieldId,
+  );
+  if (!parentField) return false;
+
+  const selectedParentValue = values[parentField.key];
+  if (!selectedParentValue) return false;
+
+  const requiredOption = parentField.options?.find(
+    (option) => option.id === condition.parentOptionId,
+  );
+  if (!requiredOption) return false;
+
+  return selectedParentValue === requiredOption.value;
+}
+
+function isEventInfoComplete(eventDetails) {
+  if (!eventDetails) return false;
+
+  const eventTitle = eventDetails.event?.title ?? "";
+  if (!eventTitle.trim()) return false;
+
+  const templateFields = eventDetails.template?.fields ?? [];
+  const formValues = eventDetails.formValues ?? {};
+
+  if (!formValues.sport) return false;
+
+  return templateFields.every((field) => {
+    if (field.isActive === false || !field.isRequired) return true;
+
+    if (field.key === "sport") {
+      return Boolean(formValues.sport);
+    }
+
+    if (field.conditions?.length) {
+      const isVisible = field.conditions.some((condition) =>
+        isConditionMet(condition, templateFields, formValues),
+      );
+      if (!isVisible) return true;
+    }
+
+    const value = formValues[field.key];
+    return value !== undefined && value !== null && value !== "";
+  });
+}
+
 export default function EventDetails() {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -94,6 +166,7 @@ export default function EventDetails() {
   const [isSavingJudge, setIsSavingJudge] = useState(false);
   const [isSavingContestant, setIsSavingContestant] = useState(false);
   const [isUpdatingCurrentPhase, setIsUpdatingCurrentPhase] = useState(false);
+  const [isUpdatingEventStatus, setIsUpdatingEventStatus] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -159,6 +232,16 @@ export default function EventDetails() {
   const eventPhases = eventDetails?.eventPhases ?? [];
   const currentEventPhaseId =
     eventDetails?.currentEventPhaseId ?? eventPhases[0]?.id ?? "";
+  const currentEventStatus = eventDetails?.event?.status ?? "";
+  const canSetToBeHeld = useMemo(
+    () =>
+      isEventInfoComplete(eventDetails) &&
+      judges.length > 0 &&
+      contestants.length > 0,
+    [eventDetails, judges.length, contestants.length],
+  );
+  const isDraftToBeHeldRestricted =
+    currentEventStatus === "draft" && !canSetToBeHeld;
 
   const selectableFields = useMemo(
     () =>
@@ -536,6 +619,88 @@ export default function EventDetails() {
     }
   };
 
+  const handleEventStatusChange = async (nextStatus) => {
+    if (!eventId || !eventDetails) {
+      toast.error("Missing event details.");
+      return;
+    }
+
+    const currentStatus = eventDetails.event?.status;
+
+    if (!nextStatus || !currentStatus || nextStatus === currentStatus) {
+      return;
+    }
+
+    if (
+      currentStatus === "draft" &&
+      (nextStatus === "to_be_held" ||
+        nextStatus === "live" ||
+        nextStatus === "finished") &&
+      !canSetToBeHeld
+    ) {
+      toast.error(
+        "To change Draft Status, complete event details and add at least 1 judge and 1 contestant.",
+      );
+      return;
+    }
+
+    if (
+      currentStatus === "draft" &&
+      (nextStatus === "live" || nextStatus === "finished")
+    ) {
+      toast.error("Draft status can only be changed to To Be Held.");
+      return;
+    }
+
+    if (nextStatus === "finished" && currentStatus !== "live") {
+      toast.error("Event can only be set to Finished when status is Live.");
+      return;
+    }
+
+    try {
+      const payload = {
+        ...buildEventPayload({
+          template: eventDetails.template,
+          formValues: eventDetails.formValues ?? {},
+          eventTitle: eventDetails.event.title,
+        }),
+        status: nextStatus,
+      };
+
+      setIsUpdatingEventStatus(true);
+      const updatedDetails = await updateEvent(eventId, payload);
+
+      applyLoadedEventDetails(updatedDetails, {
+        setEventDetails,
+        setSelectedEventType,
+        setSelectedSport,
+        setJudges,
+        setContestants,
+        setPendingFormValues,
+        setDidHydrate,
+      });
+
+      toast.success(`Status updated to ${formatEventStatusLabel(nextStatus)}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "NO_TEMPLATE_SELECTED") {
+          toast.error("No template selected.");
+          return;
+        }
+        if (error.message === "NO_EVENT_TITLE") {
+          toast.error("Please enter an event title.");
+          return;
+        }
+      }
+
+      const message = getApiErrorMessage(error, "Failed to update event status.");
+      console.error("Failed to update event status:", error);
+      toast.error(message);
+    } finally {
+      setIsUpdatingEventStatus(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="app-page app-page-wide">
@@ -607,13 +772,49 @@ export default function EventDetails() {
               ) : null}
             </div>
 
-            {eventDetails?.event?.status ? (
-              <StatusBadge
-                status={eventDetails.event.status
-                  .split("_")
-                  .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-                  .join(" ")}
-              />
+            {currentEventStatus ? (
+              <div className="w-full md:max-w-[260px]">
+                <label className="form-control w-full">
+                  <div className="label pb-1">
+                    <span className="label-text font-semibold">
+                      Event Status
+                    </span>
+                  </div>
+                  <select
+                    className="select select-bordered w-full"
+                    value={currentEventStatus}
+                    onChange={(event) =>
+                      handleEventStatusChange(event.target.value)
+                    }
+                    disabled={isUpdatingEventStatus}
+                  >
+                    {EVENT_STATUS_OPTIONS.map((statusOption) => (
+                      <option
+                        key={statusOption.value}
+                        value={statusOption.value}
+                        disabled={
+                          (isDraftToBeHeldRestricted &&
+                            statusOption.value !== "draft") ||
+                          (statusOption.value === "finished" &&
+                            currentEventStatus !== "live" &&
+                            currentEventStatus !== "finished") ||
+                          (currentEventStatus === "draft" &&
+                            (statusOption.value === "live" ||
+                              statusOption.value === "finished"))
+                        }
+                      >
+                        {statusOption.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {isDraftToBeHeldRestricted ? (
+                  <p className="mt-2 text-xs text-warning">
+                    To change Draft Status, complete event details and add at
+                    least 1 judge and 1 contestant.
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
