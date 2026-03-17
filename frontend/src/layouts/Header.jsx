@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { Menu, X } from "lucide-react";
-import { DropdownMenu } from "./helpers/Dropdown";
 import toast from "react-hot-toast";
+import { DropdownMenu } from "./helpers/Dropdown";
 import { useAuthStore } from "../stores/authStore";
+
+import logo from "../assets/images/rankrite-logo-1.png";
 
 function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const authUser = useAuthStore((state) => state.authUser);
   const logout = useAuthStore((state) => state.logout);
   const isLoggingOut = useAuthStore((state) => state.isLoggingOut);
@@ -14,17 +17,36 @@ function Header() {
   const headerRef = useRef(null);
   const profileDropdownRef = useRef(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isHeaderStuck, setIsHeaderStuck] = useState(false);
+
+  const isLoginPage = location.pathname === "/auth/login";
+  const isLoginButtonAccent = isLoginPage;
+  const isGetStartedButtonAccent = !isLoginPage;
+
+  const desktopAccentButtonClass =
+    "rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-[0_14px_30px_-22px_rgba(15,23,42,0.95)] transition hover:bg-slate-800";
+  const desktopNormalButtonClass =
+    "rounded-full px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-900";
+
+  const mobileAccentButtonClass =
+    "w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800";
+  const mobileNormalButtonClass =
+    "w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50";
 
   const closeAllDropdowns = useCallback(() => {
     profileDropdownRef.current?.close();
   }, []);
 
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
+
   const closeAllMenus = useCallback(() => {
     closeAllDropdowns();
-    setIsMobileMenuOpen(false);
-  }, [closeAllDropdowns]);
+    closeMobileMenu();
+  }, [closeAllDropdowns, closeMobileMenu]);
 
-  const navigateTo = useCallback(
+  const handleRouteNavigation = useCallback(
     (path) => {
       closeAllMenus();
       navigate(path);
@@ -41,13 +63,13 @@ function Header() {
     try {
       await logout();
       toast.success("Logged out successfully");
-      navigateTo("/auth/login");
+      handleRouteNavigation("/auth/login");
     } catch (error) {
       const message =
         error?.response?.data?.message ?? "Failed to log out. Please try again.";
       toast.error(message);
     }
-  }, [logout, navigateTo]);
+  }, [logout, handleRouteNavigation]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -63,8 +85,8 @@ function Header() {
     };
 
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMobileMenuOpen(false);
+      if (window.innerWidth >= 1024) {
+        closeMobileMenu();
       }
     };
 
@@ -77,55 +99,66 @@ function Header() {
       document.removeEventListener("keydown", handleEscape);
       window.removeEventListener("resize", handleResize);
     };
-  }, [closeAllMenus]);
+  }, [closeAllMenus, closeMobileMenu]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsHeaderStuck(window.scrollY > 20);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   return (
     <header
       ref={headerRef}
-      className="navbar flex justify-center border border-base-300 bg-base-100/95 px-4 shadow-sm"
+      className={`z-40 flex justify-center border border-base-300 bg-base-100/95 px-4 backdrop-blur transition-shadow duration-300 sticky top-0 ${
+        isHeaderStuck
+          ? "landing-navbar-stuck shadow-[0_16px_35px_-28px_rgba(31,26,22,0.75)]"
+          : "shadow-sm"
+      }`}
     >
-      <div className="flex w-full max-w-6/7 flex-col py-3">
-        <div className="flex items-center justify-between gap-4">
+      <div className="w-full max-w-[1240px] py-4">
+        <div className="flex items-center justify-between gap-4 lg:gap-8">
           <button
             type="button"
-            className="flex items-center gap-3 text-left"
-            onClick={() => navigateTo("/dashboard")}
+            className="relative flex shrink-0 items-center"
+            onClick={() => handleRouteNavigation("/")}
           >
+            <span
+              aria-hidden="true"
+              className="absolute -inset-x-4 -inset-y-3 rounded-full bg-[radial-gradient(circle,_rgba(245,154,35,0.22)_0%,_rgba(245,154,35,0.08)_40%,_transparent_74%)] blur-xl"
+            />
             <img
-              src="/src/assets/images/rankrite-logo-1.png"
+              src={logo}
               alt="Rankrite"
-              className="h-10 w-auto"
+              className="relative h-10 w-auto sm:h-11"
             />
           </button>
 
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              type="button"
-              className="btn btn-ghost hidden md:inline-flex"
-              onClick={() => navigateTo("/dashboard")}
-            >
-              Home
-            </button>
-
-            <div className="hidden md:block">
+          <div className="hidden shrink-0 items-center gap-2 lg:flex">
+            {authUser ? (
               <DropdownMenu
                 ref={profileDropdownRef}
-                menuClassName="menu mt-2 w-44 rounded-box border border-base-300 bg-base-100 shadow-lg"
+                menuClassName="menu mt-2 w-48 rounded-box border border-slate-200 bg-white p-1 shadow-lg"
                 trigger={({ toggle }) => (
                   <button
                     type="button"
-                    className="btn btn-ghost gap-2 px-2"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                     onClick={() => {
                       toggle();
-                      setIsMobileMenuOpen(false);
+                      closeMobileMenu();
                     }}
                   >
                     <div className="avatar placeholder">
-                      <div className="w-8 rounded-full bg-neutral text-neutral-content" />
+                      <div className="w-8 rounded-full bg-slate-900 text-white" />
                     </div>
-                    <span className="text-sm font-medium">
-                      {authUser?.fullName || "Admin"}
-                    </span>
+                    <span>{authUser?.fullName || "Admin"}</span>
                   </button>
                 )}
               >
@@ -133,7 +166,15 @@ function Header() {
                   <li>
                     <button
                       type="button"
-                      onClick={() => navigateTo("/settings")}
+                      onClick={() => handleRouteNavigation("/dashboard")}
+                    >
+                      Dashboard
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => handleRouteNavigation("/settings")}
                     >
                       Settings
                     </button>
@@ -141,7 +182,7 @@ function Header() {
                   <li>
                     <button
                       type="button"
-                      onClick={() => navigateTo("/activity-log")}
+                      onClick={() => handleRouteNavigation("/activity-log")}
                     >
                       Activity Log
                     </button>
@@ -158,68 +199,120 @@ function Header() {
                   </li>
                 </ul>
               </DropdownMenu>
-            </div>
-
-            <button
-              type="button"
-              className="btn btn-ghost btn-circle md:hidden"
-              aria-expanded={isMobileMenuOpen}
-              aria-label={
-                isMobileMenuOpen
-                  ? "Close navigation menu"
-                  : "Open navigation menu"
-              }
-              onClick={handleToggleMobileMenu}
-            >
-              {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={
+                    isLoginButtonAccent
+                      ? desktopAccentButtonClass
+                      : desktopNormalButtonClass
+                  }
+                  onClick={() => handleRouteNavigation("/auth/login")}
+                >
+                  Log in
+                </button>
+                <button
+                  type="button"
+                  className={
+                    isGetStartedButtonAccent
+                      ? desktopAccentButtonClass
+                      : desktopNormalButtonClass
+                  }
+                  onClick={() => handleRouteNavigation("/auth/signup")}
+                >
+                  Get Started
+                </button>
+              </>
+            )}
           </div>
+
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 lg:hidden"
+            aria-controls="landing-mobile-menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-label={
+              isMobileMenuOpen
+                ? "Close navigation menu"
+                : "Open navigation menu"
+            }
+            onClick={handleToggleMobileMenu}
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
 
         {isMobileMenuOpen ? (
-          <div className="mt-4 border-t border-base-300 pt-4 md:hidden">
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                className="btn btn-ghost justify-start"
-                onClick={() => navigateTo("/dashboard")}
-              >
-                Home
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost justify-start"
-                onClick={() => navigateTo("/settings")}
-              >
-                Settings
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost justify-start"
-                onClick={() => navigateTo("/activity-log")}
-              >
-                Activity Log
-              </button>
-              <button
-                type="button"
-                disabled={isLoggingOut}
-                className="btn btn-ghost justify-start text-error hover:bg-error hover:text-error-content"
-                onClick={handleLogout}
-              >
-                {isLoggingOut ? "Logging out..." : "Log out"}
-              </button>
-            </div>
-
-            <div className="mt-4 flex items-center gap-3 rounded-xl border border-base-300 bg-base-200/40 px-4 py-3">
-              <div className="avatar placeholder">
-                <div className="w-10 rounded-full bg-neutral text-neutral-content" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">
-                  {authUser?.fullName || "Admin"}
-                </p>
-                <p className="text-xs text-base-content/60">Administrator</p>
-              </div>
+          <div
+            id="landing-mobile-menu"
+            className="mt-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_24px_50px_-28px_rgba(15,23,42,0.4)] lg:hidden"
+          >
+            <div className="flex flex-col gap-3">
+              {authUser ? (
+                <>
+                  <button
+                    type="button"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    onClick={() => handleRouteNavigation("/dashboard")}
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    onClick={() => handleRouteNavigation("/settings")}
+                  >
+                    Settings
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    onClick={() => handleRouteNavigation("/activity-log")}
+                  >
+                    Activity Log
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isLoggingOut}
+                    className="w-full rounded-2xl border border-error/40 px-4 py-3 text-sm font-medium text-error transition hover:bg-error hover:text-error-content"
+                    onClick={handleLogout}
+                  >
+                    {isLoggingOut ? "Logging out..." : "Log out"}
+                  </button>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="text-sm font-semibold text-slate-800">
+                      {authUser?.fullName || "Admin"}
+                    </p>
+                    <p className="text-xs text-slate-500">Signed in</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className={
+                      isLoginButtonAccent
+                        ? mobileAccentButtonClass
+                        : mobileNormalButtonClass
+                    }
+                    onClick={() => handleRouteNavigation("/auth/login")}
+                  >
+                    Log in
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      isGetStartedButtonAccent
+                        ? mobileAccentButtonClass
+                        : mobileNormalButtonClass
+                    }
+                    onClick={() => handleRouteNavigation("/auth/signup")}
+                  >
+                    Get Started
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : null}

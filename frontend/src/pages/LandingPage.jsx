@@ -1,7 +1,7 @@
 import React from "react";
 import { ArrowRight, Play } from "lucide-react";
 
-import Header2 from "../layouts/Header2";
+import Header from "../layouts/Header";
 import Footer from "../layouts/Footer";
 import heroImage from "../assets/images/hero-img-1.png";
 import feature1Image from "../assets/images/feature-1-img.png";
@@ -82,7 +82,7 @@ const professionalPlanFeatures = [
 function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Header2 />
+      <Header />
       <main className="flex-1">
         <section id="hero" className="app-page pb-14 pt-8 md:pb-18 md:pt-12">
           <div className="px-4 py-10 sm:px-6 md:px-8 md:py-14 lg:px-10">
