@@ -4,14 +4,21 @@ import {
   updateSettingsPassword,
   updateSettingsProfile,
 } from "../../../api/settingsApi";
+import {
+  applyTheme,
+  getStoredTheme,
+  persistTheme,
+} from "../../../shared/lib/theme";
 import { useAuthStore } from "../../../stores/authStore";
+
+const INITIAL_THEME = getStoredTheme();
 
 const INITIAL_SETTINGS = {
   username: "",
   email: "",
   dateCreated: "--",
   lastPasswordUpdated: "--",
-  theme: "light",
+  theme: INITIAL_THEME,
   currentPassword: "",
   newPassword: "",
   confirmPassword: "",
@@ -143,9 +150,17 @@ export function useSettingsPage() {
   );
 
   const handleSavePreferences = useCallback(() => {
+    const savedTheme = persistTheme(settings.theme);
+    applyTheme(savedTheme);
+
+    setSettings((prev) => ({
+      ...prev,
+      theme: savedTheme,
+    }));
+
     setOriginalSettings((prev) => ({
       ...prev,
-      theme: settings.theme,
+      theme: savedTheme,
     }));
   }, [settings.theme]);
 

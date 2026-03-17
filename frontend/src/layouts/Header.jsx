@@ -171,6 +171,7 @@ function Header() {
                   <li>
                     <button
                       type="button"
+                      className="text-base font-medium text-slate-800 hover:bg-slate-100"
                       onClick={() => handleRouteNavigation("/dashboard")}
                     >
                       Dashboard
@@ -179,6 +180,7 @@ function Header() {
                   <li>
                     <button
                       type="button"
+                      className="text-base font-medium text-slate-800 hover:bg-slate-100"
                       onClick={() => handleRouteNavigation("/settings")}
                     >
                       Settings
@@ -187,6 +189,7 @@ function Header() {
                   <li>
                     <button
                       type="button"
+                      className="text-base font-medium text-slate-800 hover:bg-slate-100"
                       onClick={() => handleRouteNavigation("/activity-log")}
                     >
                       Activity Log

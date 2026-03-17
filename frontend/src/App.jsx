@@ -22,6 +22,7 @@ import ContestantsTab from "./pages/event-details/components/contestant-tab/Cont
 import Settings from "./pages/settings/Settings";
 import LandingPage from "./pages/LandingPage";
 import { useAuthStore } from "./stores/authStore";
+import { applyStoredTheme } from "./shared/lib/theme";
 
 function AppLayout() {
   return (
@@ -75,6 +76,10 @@ function AuthOnlyRoute() {
 
 function App() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
+
+  useEffect(() => {
+    applyStoredTheme();
+  }, []);
 
   useEffect(() => {
     checkAuth();
