@@ -249,7 +249,7 @@ function LandingPage() {
               </a>
             </div>
 
-            <div className="order-1 lg:order-2">
+            <div className="order-1 hidden lg:order-2 lg:block">
               <div className="mx-auto w-full max-w-[560px] rounded-[42px] border border-[#d6d8dc] bg-[#f8f9fa] p-3 shadow-[0_28px_60px_-42px_rgba(33,39,55,0.6)] sm:p-4">
                 <img
                   src={feature1Image}
@@ -266,7 +266,7 @@ function LandingPage() {
           className="app-page app-page-wide pb-16 pt-4 md:pb-20 md:pt-6 my-50 reveal-on-scroll"
         >
           <div className="mx-auto grid w-full max-w-[1240px] items-center gap-10 lg:grid-cols-[minmax(0,560px)_minmax(0,1.08fr)] lg:gap-20">
-            <div>
+            <div className="hidden lg:block">
               <div className="mx-auto w-full max-w-[560px] rounded-[42px] border border-[#d6d8dc] bg-[#f8f9fa] p-3 shadow-[0_28px_60px_-42px_rgba(33,39,55,0.6)] sm:p-4">
                 <img
                   src={feature2Image}
@@ -373,7 +373,7 @@ function LandingPage() {
               </a>
             </div>
 
-            <div className="order-1 lg:order-2">
+            <div className="order-1 hidden lg:order-2 lg:block">
               <div className="mx-auto w-full max-w-[560px] rounded-[42px] border border-[#d6d8dc] bg-[#f8f9fa] p-3 shadow-[0_28px_60px_-42px_rgba(33,39,55,0.6)] sm:p-4">
                 <img
                   src={feature3Image}
@@ -390,7 +390,7 @@ function LandingPage() {
           className="app-page app-page-wide pb-16 pt-4 md:pb-20 md:pt-6 my-50 reveal-on-scroll"
         >
           <div className="mx-auto grid w-full max-w-[1280px] items-center gap-10 lg:grid-cols-[minmax(0,560px)_minmax(0,1.08fr)] lg:gap-20">
-            <div>
+            <div className="hidden lg:block">
               <div className="mx-auto w-full max-w-[560px]">
                 <div className="relative md:pb-24">
                   <div className="relative z-10 w-full rounded-[42px] border border-[#d6d8dc] bg-[#f8f9fa] p-3 shadow-[0_28px_60px_-42px_rgba(33,39,55,0.6)] sm:p-4">
@@ -570,7 +570,7 @@ function LandingPage() {
 
         <section
           id="signup-login"
-          className="app-page app-page-wide pb-20 pt-8 md:pb-24 md:pt-10 my-50 reveal-on-scroll"
+          className="app-page app-page-wide pb-20 pt-8 md:pb-24 md:pt-10 my-50"
         >
           <div className="mx-auto w-full max-w-[1280px]">
             <div className="rounded-[34px] bg-[linear-gradient(135deg,#10223f_0%,#0d1a30_55%,#0b1629_100%)] px-6 py-14 text-center shadow-[0_28px_60px_-38px_rgba(9,20,42,0.9)] sm:px-10 md:py-18">
