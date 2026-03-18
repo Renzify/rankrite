@@ -133,7 +133,7 @@ function JudgeScore() {
                 <h3 className="text-lg font-semibold"> {currentJudge.name}</h3>
                 <p className="text-sm text-base-content/70">
                   {" "}
-                  {currentJudge.specialization} Judge
+                  {currentJudge.specialization}
                 </p>
               </div>
             </div>
