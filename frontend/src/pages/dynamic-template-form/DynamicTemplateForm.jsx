@@ -266,7 +266,10 @@ function DynamicTemplateForm() {
             )}
 
             {currentTab === "judges" && (
-              <JudgesTab showLinkGeneration={false} />
+              <JudgesTab
+                showLinkGeneration={false}
+                showActiveContestantControl={false}
+              />
             )}
             {currentTab === "contestants" && <ContestantsTab />}
           </div>
