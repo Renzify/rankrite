@@ -40,53 +40,6 @@ const EVENT_ROOM_PREFIX = "event:";
 
 let io: SocketIOServer | null = null;
 
-function normalizeOrigin(origin: string) {
-  return origin.trim().replace(/\/+$/, "");
-}
-
-function buildAllowedOrigins() {
-  const configuredOrigins = (ENV.CLIENT_URL ?? "")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-  const allowedOrigins = new Set(configuredOrigins.map(normalizeOrigin));
-
-  for (const origin of configuredOrigins) {
-    try {
-      const parsedUrl = new URL(origin);
-      const hostName = parsedUrl.hostname;
-      const port = parsedUrl.port;
-
-      if (hostName === "localhost") {
-        const localhostVariant = `http://127.0.0.1${port ? `:${port}` : ""}`;
-        const localhostVariantSecure = `https://127.0.0.1${port ? `:${port}` : ""}`;
-        allowedOrigins.add(localhostVariant);
-        allowedOrigins.add(localhostVariantSecure);
-      }
-
-      if (hostName === "127.0.0.1") {
-        const loopbackVariant = `http://localhost${port ? `:${port}` : ""}`;
-        const loopbackVariantSecure = `https://localhost${port ? `:${port}` : ""}`;
-        allowedOrigins.add(loopbackVariant);
-        allowedOrigins.add(loopbackVariantSecure);
-      }
-    } catch {
-      // Ignore invalid CLIENT_URL entries.
-    }
-  }
-
-  return allowedOrigins;
-}
-
-const ALLOWED_ORIGINS = buildAllowedOrigins();
-
-function isSocketOriginAllowed(origin: string | undefined) {
-  if (!origin) return true;
-  if (ALLOWED_ORIGINS.size === 0) return true;
-
-  return ALLOWED_ORIGINS.has(normalizeOrigin(origin));
-}
-
 function getCookieValue(cookieHeader: string | undefined, key: string) {
   if (!cookieHeader) return null;
 
@@ -170,13 +123,7 @@ export function initSocketServer(httpServer: HttpServer) {
 
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: (origin, callback) => {
-        if (isSocketOriginAllowed(origin)) {
-          return callback(null, true);
-        }
-
-        return callback(new Error("Socket CORS blocked for origin: " + origin));
-      },
+      origin: ENV.CLIENT_URL ?? true,
       credentials: true,
     },
   });

@@ -42,11 +42,6 @@ export function getSocket() {
     transports: ["websocket", "polling"],
   });
 
-  socketInstance.on("connect_error", (error) => {
-    // Helps diagnose why updates fall back to polling.
-    console.error("Socket connection error:", error?.message ?? error);
-  });
-
   socketInstance.on("connect", () => {
     for (const [eventId, subscriberCount] of roomSubscriberCount.entries()) {
       if (subscriberCount <= 0) continue;
