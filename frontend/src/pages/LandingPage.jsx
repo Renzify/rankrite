@@ -144,20 +144,11 @@ function LandingPage() {
 
               <div className="mt-10 flex w-full max-w-xl flex-col items-center justify-center gap-4 sm:flex-row">
                 <a
-                  href="#features"
+                  href="#feature-1st"
                   className="inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-900 px-7 py-4 text-base font-semibold text-white shadow-[0_20px_35px_-22px_rgba(15,23,42,0.85)] transition hover:bg-slate-800 sm:w-auto sm:min-w-[235px]"
                 >
                   Explore Features
                   <ArrowRight size={20} />
-                </a>
-                <a
-                  href="#documentation"
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-7 py-4 text-base font-medium text-slate-400 shadow-[0_14px_30px_-26px_rgba(15,23,42,0.35)] backdrop-blur transition hover:border-slate-300 hover:text-slate-700 sm:w-auto sm:min-w-[198px]"
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-[#ff7d20]">
-                    <Play size={12} fill="currentColor" />
-                  </span>
-                  Watch Demo
                 </a>
               </div>
 

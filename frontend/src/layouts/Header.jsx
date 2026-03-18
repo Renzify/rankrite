@@ -201,7 +201,7 @@ function Header() {
                       className="text-base font-medium text-slate-800 hover:bg-slate-100"
                       onClick={() => handleRouteNavigation("/settings")}
                     >
-                      Settings
+                      Account Settings
                     </button>
                   </li>
                   <li>
