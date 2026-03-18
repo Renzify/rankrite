@@ -24,6 +24,11 @@ async function ensureSettingsAndActivityLogSchema() {
   try {
     await pool.query(`
       ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS gender TEXT
+    `);
+
+    await pool.query(`
+      ALTER TABLE users
       ADD COLUMN IF NOT EXISTS password_updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     `);
 
