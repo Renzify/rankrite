@@ -124,20 +124,16 @@ function JudgeScore() {
             </p>
             <div className="mb-4 flex items-center gap-2">
               <hr className="flex-1 border-base-300" />
-              <span className="text-sm font-medium whitespace-nowrap">
-                Assigned Judge:
-              </span>
-              <hr className="flex-1 border-base-300" />
             </div>
-            <div className="flex items-center gap-4 rounded-lg bg-base-200 p-4 transition-colors ring-2 ring-primary">
+            <div className="flex items-center gap-4 rounded-lg bg-base-200 p-4 transition-colors">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-content">
                 <User size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">{currentJudge.name}</h3>
-                <p className="text-sm text-base-content/70">Judge</p>
-                <p className="text-xs text-base-content/60">
-                  {currentJudge.specialization}
+                <h3 className="text-lg font-semibold"> {currentJudge.name}</h3>
+                <p className="text-sm text-base-content/70">
+                  {" "}
+                  {currentJudge.specialization} Judge
                 </p>
               </div>
             </div>
@@ -146,8 +142,11 @@ function JudgeScore() {
           <div className="rounded-lg border border-base-300 bg-base-100 p-6 shadow-sm">
             <h2 className="mb-2 text-xl font-semibold">Current Contestant</h2>
             <p className="mb-4 text-base-content/70">
-              Representing delegation or team.
+              Contestant selection is controlled by the admin.
             </p>
+            <div className="mb-4 flex items-center gap-2">
+              <hr className="flex-1 border-base-300" />
+            </div>
 
             {selectedContestantData ? (
               <div className="mb-4 flex items-center gap-4 rounded-lg bg-base-200 p-4">
@@ -164,89 +163,9 @@ function JudgeScore() {
                 </div>
               </div>
             ) : null}
-
-            <div className="mb-4 flex items-center gap-2">
-              <hr className="flex-1 border-base-300" />
-              <span className="text-sm font-medium whitespace-nowrap">
-                Active Contestant:
-              </span>
-              <hr className="flex-1 border-base-300" />
-            </div>
-            <div className="rounded-lg border border-base-300 bg-base-200 px-4 py-3">
-              <p className="text-sm text-base-content/70">
-                Contestant selection is controlled by the admin.
-              </p>
-              <p className="mt-1 text-sm font-medium">
-                {selectedContestantData
-                  ? "Contestant #" + selectedContestantData.entryNo + " - " + selectedContestantData.name
-                  : "Waiting for an active contestant."}
-              </p>
-            </div>
           </div>
         </div>
-
         <div className="rounded-lg border border-base-300 bg-base-100 p-6 shadow-sm">
-          <h2 className="mb-2 text-xl font-semibold">Score Table</h2>
-          <p className="mb-4 text-base-content/70">
-            Record the judge entry for the current contestant.
-          </p>
-
-          <div className="mb-6 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-bold text-primary-content">
-                  {currentJudge.name
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((part) => part.charAt(0))
-                    .join("")
-                    .toUpperCase() || "J"}
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-base-content/60">
-                    Judge
-                  </p>
-                  <p className="font-semibold">{currentJudge.name}</p>
-                  <p className="text-xs text-base-content/60">
-                    {currentJudge.specialization}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {selectedContestantData ? (
-              <div className="rounded-lg border border-secondary/20 bg-gradient-to-r from-secondary/10 to-secondary/5 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary font-bold text-secondary-content">
-                    {selectedContestantData.entryNo}
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-base-content/60">
-                      Contestant
-                    </p>
-                    <p className="font-semibold">
-                      {selectedContestantData.name}
-                    </p>
-                    <p className="text-xs text-base-content/60">
-                      {selectedContestantData.delegation}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-base-200 bg-base-200 p-4">
-                <div className="flex h-full flex-col items-center justify-center py-4">
-                  <p className="text-sm text-base-content/50">
-                    Waiting for Active Contestant
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <hr className="mb-6 border-base-300" />
-
           <div className="mb-6">{scoreInputContent}</div>
 
           <div className="mt-4 flex justify-center">
