@@ -25,7 +25,7 @@ function Header() {
   const isGetStartedButtonAccent = !isLoginPage;
 
   const desktopAccentButtonClass =
-    "rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-[0_14px_30px_-22px_rgba(15,23,42,0.95)] transition hover:bg-slate-800";
+    "rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-[0_14px_30px_-22px_rgba(15,23,42,0.95)] transition hover:bg-slate-800";
   const desktopNormalButtonClass =
     "rounded-full px-4 py-2.5 text-sm font-medium text-slate-500 transition hover:text-slate-900";
 
@@ -67,7 +67,8 @@ function Header() {
       handleRouteNavigation("/auth/login");
     } catch (error) {
       const message =
-        error?.response?.data?.message ?? "Failed to log out. Please try again.";
+        error?.response?.data?.message ??
+        "Failed to log out. Please try again.";
       toast.error(message);
     }
   }, [logout, handleRouteNavigation]);
