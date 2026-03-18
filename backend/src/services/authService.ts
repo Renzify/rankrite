@@ -9,7 +9,6 @@ const PROFILE_PIC_MAX_LENGTH = 2_500_000;
 export type AuthUser = {
   id: string;
   fullName: string;
-  gender: string | null;
   email: string;
   profilePic: string | null;
 };
@@ -19,7 +18,6 @@ export type SignupInput = {
   email: string;
   password: string;
   confirmPassword: string;
-  gender?: string;
   profilePic?: string | null;
 };
 
@@ -31,7 +29,6 @@ export type LoginInput = {
 export type SettingsProfile = {
   id: string;
   fullName: string;
-  gender: string | null;
   email: string;
   profilePic: string | null;
   passwordUpdatedAt: Date;
@@ -61,15 +58,6 @@ function normalizeEmail(value: string | undefined) {
   return (value ?? "").trim().toLowerCase();
 }
 
-function normalizeGender(value: string | undefined) {
-  const normalized = (value ?? "").trim().toLowerCase();
-
-  if (normalized === "male") return "Male";
-  if (normalized === "female") return "Female";
-
-  return null;
-}
-
 function normalizeProfilePic(value: string | null | undefined) {
   if (value === undefined) {
     return undefined;
@@ -92,11 +80,8 @@ function normalizeProfilePic(value: string | null | undefined) {
   return normalized;
 }
 
-function buildDefaultProfilePic(gender: "Male" | "Female") {
-  const avatarSvg =
-    gender === "Male"
-      ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' role='img' aria-label='Male silhouette'><rect width='128' height='128' rx='20' fill='#1d4ed8'/><circle cx='64' cy='46' r='20' fill='#f8d7c8'/><path d='M44 43c1-11 9-18 20-18s19 7 20 18c-5-5-12-8-20-8s-15 3-20 8z' fill='#111827'/><path d='M26 110c4-23 19-34 38-34s34 11 38 34H26z' fill='#60a5fa'/></svg>`
-      : `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' role='img' aria-label='Female silhouette'><rect width='128' height='128' rx='20' fill='#be185d'/><circle cx='64' cy='46' r='19' fill='#f8d7c8'/><path d='M40 60c0-19 11-30 24-30s24 11 24 30v5H40v-5z' fill='#4c1d95'/><path d='M24 110c5-23 20-34 40-34s35 11 40 34H24z' fill='#f472b6'/></svg>`;
+function buildDefaultProfilePic() {
+  const avatarSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' role='img' aria-label='User silhouette'><rect width='128' height='128' rx='20' fill='#0f766e'/><circle cx='64' cy='44' r='20' fill='#f8d7c8'/><path d='M24 108c5-23 20-34 40-34s35 11 40 34H24z' fill='#5eead4'/><path d='M40 40c4-10 13-16 24-16s20 6 24 16c-5-4-12-6-24-6s-19 2-24 6z' fill='#134e4a'/></svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(avatarSvg)}`;
 }
@@ -112,12 +97,11 @@ function isUndefinedColumnError(error: unknown): boolean {
 
 function mapToAuthUser(record: Pick<
   typeof user.$inferSelect,
-  "id" | "fullName" | "gender" | "email" | "profilePic"
+  "id" | "fullName" | "email" | "profilePic"
 >): AuthUser {
   return {
     id: record.id,
     fullName: record.fullName,
-    gender: record.gender,
     email: record.email,
     profilePic: record.profilePic,
   };
@@ -127,7 +111,6 @@ function mapToSettingsProfile(record: Pick<
   typeof user.$inferSelect,
   | "id"
   | "fullName"
-  | "gender"
   | "email"
   | "profilePic"
   | "passwordUpdatedAt"
@@ -137,7 +120,6 @@ function mapToSettingsProfile(record: Pick<
   return {
     id: record.id,
     fullName: record.fullName,
-    gender: record.gender,
     email: record.email,
     profilePic: record.profilePic,
     passwordUpdatedAt: record.passwordUpdatedAt,
@@ -151,15 +133,10 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
   const email = normalizeEmail(input.email);
   const password = input.password ?? "";
   const confirmPassword = input.confirmPassword ?? "";
-  const normalizedGender = normalizeGender(input.gender);
   const providedProfilePic = normalizeProfilePic(input.profilePic);
 
   if (!fullName || !email || !password || !confirmPassword) {
     throw new Error("INVALID_AUTH_INPUT");
-  }
-
-  if (!normalizedGender) {
-    throw new Error("INVALID_GENDER");
   }
 
   if (password !== confirmPassword) {
@@ -174,8 +151,7 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
     throw new Error("PASSWORD_TOO_SHORT");
   }
 
-  const profilePic =
-    providedProfilePic ?? buildDefaultProfilePic(normalizedGender);
+  const profilePic = providedProfilePic ?? buildDefaultProfilePic();
 
   const existingUser = await db.query.user.findFirst({
     where: eq(user.email, email),
@@ -190,7 +166,6 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
     .insert(user)
     .values({
       fullName,
-      gender: normalizedGender,
       email,
       passwordHash,
       profilePic,
@@ -198,7 +173,6 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
     .returning({
       id: user.id,
       fullName: user.fullName,
-      gender: user.gender,
       email: user.email,
       profilePic: user.profilePic,
     });
@@ -247,7 +221,6 @@ export async function getAuthUserById(userId: string): Promise<AuthUser | null> 
     columns: {
       id: true,
       fullName: true,
-      gender: true,
       email: true,
       profilePic: true,
     },
@@ -272,7 +245,6 @@ export async function getSettingsProfileById(
   let existingUser: {
     id: string;
     fullName: string;
-    gender: string | null;
     email: string;
     profilePic: string | null;
     passwordUpdatedAt: Date;
@@ -286,7 +258,6 @@ export async function getSettingsProfileById(
       columns: {
         id: true,
         fullName: true,
-        gender: true,
         email: true,
         profilePic: true,
         passwordUpdatedAt: true,
@@ -318,7 +289,6 @@ export async function getSettingsProfileById(
     if (fallbackUser) {
       existingUser = {
         ...fallbackUser,
-        gender: null,
         passwordUpdatedAt: fallbackUser.updatedAt,
       };
     }
@@ -367,7 +337,6 @@ export async function updateSettingsProfile(
     | {
         id: string;
         fullName: string;
-        gender: string | null;
         email: string;
         profilePic: string | null;
         passwordUpdatedAt: Date;
@@ -398,7 +367,6 @@ export async function updateSettingsProfile(
       .returning({
         id: user.id,
         fullName: user.fullName,
-        gender: user.gender,
         email: user.email,
         profilePic: user.profilePic,
         passwordUpdatedAt: user.passwordUpdatedAt,
@@ -428,7 +396,6 @@ export async function updateSettingsProfile(
     if (fallbackUpdatedUser) {
       updatedUser = {
         ...fallbackUpdatedUser,
-        gender: null,
         passwordUpdatedAt: fallbackUpdatedUser.updatedAt,
       };
     }

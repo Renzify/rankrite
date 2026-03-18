@@ -14,7 +14,6 @@ function SignupCard() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [gender, setGender] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -29,11 +28,6 @@ function SignupCard() {
       return;
     }
 
-    if (!gender) {
-      toast.error("Please select your gender");
-      return;
-    }
-
     if (!agreedToTerms) {
       toast.error("Please agree to the Terms of Service");
       return;
@@ -43,7 +37,6 @@ function SignupCard() {
       await signup({
         fullName: fullName.trim(),
         email: email.trim(),
-        gender,
         password,
         confirmPassword,
       });
@@ -89,22 +82,6 @@ function SignupCard() {
               onChange={(event) => setEmail(event.target.value)}
               required
             />
-          </div>
-
-          <div className="form-control">
-            <label className="label pb-1">
-              <span className="label-text font-medium">Gender</span>
-            </label>
-            <select
-              className="select select-bordered w-full"
-              value={gender}
-              onChange={(event) => setGender(event.target.value)}
-              required
-            >
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
           </div>
 
           <div className="form-control">
@@ -162,7 +139,7 @@ function SignupCard() {
                 onChange={(event) => setAgreedToTerms(event.target.checked)}
               />
               <span className="label-text">
-                I agree to the{" "}
+                I agree to the {" "}
                 <a href="/terms" className="link link-primary">
                   Terms of Service
                 </a>
@@ -180,7 +157,7 @@ function SignupCard() {
         </form>
 
         <p className="pt-2 text-center text-sm text-base-content/80">
-          Already have an account?{" "}
+          Already have an account? {" "}
           <Link to="/auth/login" className="link link-primary font-medium">
             Login
           </Link>

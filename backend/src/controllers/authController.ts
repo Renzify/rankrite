@@ -23,7 +23,6 @@ function serializeAuthUser(user: AuthUser) {
     id: user.id,
     _id: user.id,
     fullName: user.fullName,
-    gender: user.gender,
     email: user.email,
     profilePic: user.profilePic,
   };
@@ -33,7 +32,6 @@ function serializeSettingsProfile(profile: SettingsProfile) {
   return {
     id: profile.id,
     fullName: profile.fullName,
-    gender: profile.gender,
     email: profile.email,
     profilePic: profile.profilePic,
     passwordUpdatedAt: profile.passwordUpdatedAt,
@@ -76,12 +74,6 @@ export async function signupController(req: Request, res: Response) {
     if (error instanceof Error && error.message === "PASSWORD_TOO_SHORT") {
       return res.status(400).json({
         message: "Password must be at least 6 characters",
-      });
-    }
-
-    if (error instanceof Error && error.message === "INVALID_GENDER") {
-      return res.status(400).json({
-        message: "Please select gender",
       });
     }
 

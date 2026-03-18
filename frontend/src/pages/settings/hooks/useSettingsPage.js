@@ -19,7 +19,6 @@ const MAX_PROFILE_PHOTO_SIZE_BYTES = 2 * 1024 * 1024;
 
 const INITIAL_SETTINGS = {
   username: "",
-  gender: "--",
   email: "",
   profilePic: null,
   dateCreated: "--",
@@ -100,7 +99,6 @@ export function useSettingsPage() {
   const syncProfileToState = useCallback((profile) => {
     const mappedProfile = {
       username: profile?.fullName ?? "",
-      gender: profile?.gender ?? "--",
       email: profile?.email ?? "",
       profilePic: profile?.profilePic ?? null,
       dateCreated: formatDateLabel(profile?.createdAt),
@@ -110,7 +108,6 @@ export function useSettingsPage() {
     setSettings((prev) => ({
       ...prev,
       username: mappedProfile.username,
-      gender: mappedProfile.gender,
       email: mappedProfile.email,
       profilePic: mappedProfile.profilePic,
       dateCreated: mappedProfile.dateCreated,
@@ -120,7 +117,6 @@ export function useSettingsPage() {
     setOriginalSettings((prev) => ({
       ...prev,
       username: mappedProfile.username,
-      gender: mappedProfile.gender,
       email: mappedProfile.email,
       profilePic: mappedProfile.profilePic,
       dateCreated: mappedProfile.dateCreated,
@@ -139,7 +135,6 @@ export function useSettingsPage() {
       setSettings((prev) => ({
         ...prev,
         username: authUser?.fullName ?? prev.username,
-        gender: authUser?.gender ?? prev.gender,
         email: authUser?.email ?? prev.email,
         profilePic: authUser?.profilePic ?? prev.profilePic,
       }));
@@ -149,7 +144,6 @@ export function useSettingsPage() {
   }, [
     authUser?.email,
     authUser?.fullName,
-    authUser?.gender,
     authUser?.profilePic,
     syncProfileToState,
   ]);
@@ -247,14 +241,12 @@ export function useSettingsPage() {
     setSettings((prev) => ({
       ...prev,
       username: originalSettings.username,
-      gender: originalSettings.gender,
       email: originalSettings.email,
       profilePic: originalSettings.profilePic,
     }));
     setIsEditing(false);
   }, [
     originalSettings.email,
-    originalSettings.gender,
     originalSettings.profilePic,
     originalSettings.username,
   ]);
@@ -280,7 +272,6 @@ export function useSettingsPage() {
         id: updatedProfile.id ?? authUser?.id,
         _id: updatedProfile.id ?? authUser?._id,
         fullName: updatedProfile.fullName,
-        gender: updatedProfile.gender ?? authUser?.gender ?? null,
         email: updatedProfile.email,
         profilePic: updatedProfile.profilePic ?? authUser?.profilePic ?? null,
       });
