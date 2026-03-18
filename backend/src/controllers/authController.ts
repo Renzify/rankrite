@@ -23,6 +23,7 @@ function serializeAuthUser(user: AuthUser) {
     id: user.id,
     _id: user.id,
     fullName: user.fullName,
+    gender: user.gender,
     email: user.email,
     profilePic: user.profilePic,
   };
@@ -32,6 +33,7 @@ function serializeSettingsProfile(profile: SettingsProfile) {
   return {
     id: profile.id,
     fullName: profile.fullName,
+    gender: profile.gender,
     email: profile.email,
     profilePic: profile.profilePic,
     passwordUpdatedAt: profile.passwordUpdatedAt,

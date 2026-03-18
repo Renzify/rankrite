@@ -9,6 +9,7 @@ const PROFILE_PIC_MAX_LENGTH = 2_500_000;
 export type AuthUser = {
   id: string;
   fullName: string;
+  gender: string | null;
   email: string;
   profilePic: string | null;
 };
@@ -30,6 +31,7 @@ export type LoginInput = {
 export type SettingsProfile = {
   id: string;
   fullName: string;
+  gender: string | null;
   email: string;
   profilePic: string | null;
   passwordUpdatedAt: Date;
@@ -110,11 +112,12 @@ function isUndefinedColumnError(error: unknown): boolean {
 
 function mapToAuthUser(record: Pick<
   typeof user.$inferSelect,
-  "id" | "fullName" | "email" | "profilePic"
+  "id" | "fullName" | "gender" | "email" | "profilePic"
 >): AuthUser {
   return {
     id: record.id,
     fullName: record.fullName,
+    gender: record.gender,
     email: record.email,
     profilePic: record.profilePic,
   };
@@ -124,6 +127,7 @@ function mapToSettingsProfile(record: Pick<
   typeof user.$inferSelect,
   | "id"
   | "fullName"
+  | "gender"
   | "email"
   | "profilePic"
   | "passwordUpdatedAt"
@@ -133,6 +137,7 @@ function mapToSettingsProfile(record: Pick<
   return {
     id: record.id,
     fullName: record.fullName,
+    gender: record.gender,
     email: record.email,
     profilePic: record.profilePic,
     passwordUpdatedAt: record.passwordUpdatedAt,
@@ -185,6 +190,7 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
     .insert(user)
     .values({
       fullName,
+      gender: normalizedGender,
       email,
       passwordHash,
       profilePic,
@@ -192,6 +198,7 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
     .returning({
       id: user.id,
       fullName: user.fullName,
+      gender: user.gender,
       email: user.email,
       profilePic: user.profilePic,
     });
@@ -240,6 +247,7 @@ export async function getAuthUserById(userId: string): Promise<AuthUser | null> 
     columns: {
       id: true,
       fullName: true,
+      gender: true,
       email: true,
       profilePic: true,
     },
@@ -264,6 +272,7 @@ export async function getSettingsProfileById(
   let existingUser: {
     id: string;
     fullName: string;
+    gender: string | null;
     email: string;
     profilePic: string | null;
     passwordUpdatedAt: Date;
@@ -277,6 +286,7 @@ export async function getSettingsProfileById(
       columns: {
         id: true,
         fullName: true,
+        gender: true,
         email: true,
         profilePic: true,
         passwordUpdatedAt: true,
@@ -308,6 +318,7 @@ export async function getSettingsProfileById(
     if (fallbackUser) {
       existingUser = {
         ...fallbackUser,
+        gender: null,
         passwordUpdatedAt: fallbackUser.updatedAt,
       };
     }
@@ -356,6 +367,7 @@ export async function updateSettingsProfile(
     | {
         id: string;
         fullName: string;
+        gender: string | null;
         email: string;
         profilePic: string | null;
         passwordUpdatedAt: Date;
@@ -386,6 +398,7 @@ export async function updateSettingsProfile(
       .returning({
         id: user.id,
         fullName: user.fullName,
+        gender: user.gender,
         email: user.email,
         profilePic: user.profilePic,
         passwordUpdatedAt: user.passwordUpdatedAt,
@@ -415,6 +428,7 @@ export async function updateSettingsProfile(
     if (fallbackUpdatedUser) {
       updatedUser = {
         ...fallbackUpdatedUser,
+        gender: null,
         passwordUpdatedAt: fallbackUpdatedUser.updatedAt,
       };
     }

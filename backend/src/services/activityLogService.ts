@@ -38,7 +38,16 @@ export async function createActivityLogEntry(
   }
 }
 
-export async function listActivityLogs(limit = 200): Promise<ActivityLogItem[]> {
+export async function listActivityLogsByUser(
+  userId: string,
+  limit = 200,
+): Promise<ActivityLogItem[]> {
+  const normalizedUserId = (userId ?? "").trim();
+
+  if (!normalizedUserId) {
+    return [];
+  }
+
   try {
     const rows = await db
       .select({
@@ -51,6 +60,7 @@ export async function listActivityLogs(limit = 200): Promise<ActivityLogItem[]> 
       })
       .from(activityLog)
       .leftJoin(user, eq(activityLog.userId, user.id))
+      .where(eq(activityLog.userId, normalizedUserId))
       .orderBy(desc(activityLog.createdAt))
       .limit(limit);
 
@@ -78,6 +88,7 @@ export async function listActivityLogs(limit = 200): Promise<ActivityLogItem[]> 
       })
       .from(event)
       .leftJoin(user, eq(event.createdByUserId, user.id))
+      .where(eq(event.createdByUserId, normalizedUserId))
       .orderBy(desc(event.createdAt))
       .limit(limit);
 
