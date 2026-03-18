@@ -13,7 +13,7 @@ import {
   writeLiveDisplayState,
 } from "../helpers/liveDisplaySync";
 
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS = 30000;
 
 export default function useDisplayControlEffects({
   eventId,

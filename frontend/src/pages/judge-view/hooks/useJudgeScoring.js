@@ -15,6 +15,7 @@ import {
 } from "../../../shared/lib/socket";
 
 const DEFAULT_SCORE_VALUE = "5.00";
+const POLL_INTERVAL_MS = 30000;
 
 function buildFallbackJudge(judgeId, judgeName, judgeType) {
   return {
@@ -390,7 +391,7 @@ export function useJudgeScoring() {
 
     const pollId = window.setInterval(() => {
       syncJudgeContext();
-    }, 3000);
+    }, POLL_INTERVAL_MS);
 
     const handleWindowFocus = () => {
       syncJudgeContext();

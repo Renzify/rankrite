@@ -11,6 +11,8 @@ import {
   formatEnteredValue,
 } from "../helpers/scoringTabHelpers";
 
+const POLL_INTERVAL_MS = 30000;
+
 export function useScoringTabEffects({
   contestants,
   judges,
@@ -181,7 +183,7 @@ export function useScoringTabEffects({
 
     const pollId = window.setInterval(() => {
       syncSubmittedScores();
-    }, 3000);
+    }, POLL_INTERVAL_MS);
 
     const handleWindowFocus = () => {
       syncSubmittedScores();
