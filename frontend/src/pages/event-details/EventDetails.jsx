@@ -184,7 +184,6 @@ export default function EventDetails() {
     useState(false);
   const [isUpdatingEventStatus, setIsUpdatingEventStatus] = useState(false);
 
-
   useEffect(() => {
     let isMounted = true;
 
@@ -744,7 +743,10 @@ export default function EventDetails() {
         }
       }
 
-      const message = getApiErrorMessage(error, "Failed to update event status.");
+      const message = getApiErrorMessage(
+        error,
+        "Failed to update event status.",
+      );
       console.error("Failed to update event status:", error);
       toast.error(message);
     } finally {
@@ -782,7 +784,7 @@ export default function EventDetails() {
       <div>
         <button
           className="btn btn-neutral btn-soft w-full text-sm hover:bg-neutral/80 sm:w-auto"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/dashboard")}
         >
           <MoveLeft /> Back to Events
         </button>
