@@ -15,7 +15,7 @@ import {
 } from "../../../shared/lib/socket";
 
 const DEFAULT_SCORE_VALUE = "5.00";
-const POLL_INTERVAL_MS = 30000;
+const POLL_INTERVAL_MS = 3000;
 
 function buildFallbackJudge(judgeId, judgeName, judgeType) {
   return {
