@@ -17,7 +17,7 @@ const app = express();
 const { PORT, CLIENT_URL, NODE_ENV } = ENV;
 
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 
 app.use("/api", authRoutes);

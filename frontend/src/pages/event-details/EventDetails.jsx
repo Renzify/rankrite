@@ -781,7 +781,7 @@ export default function EventDetails() {
     <div className="app-page app-page-wide space-y-5">
       <div>
         <button
-          className="btn btn-neutral btn-soft text-sm hover:bg-neutral/80"
+          className="btn btn-neutral btn-soft w-full text-sm hover:bg-neutral/80 sm:w-auto"
           onClick={() => navigate("/")}
         >
           <MoveLeft /> Back to Events
@@ -871,22 +871,24 @@ export default function EventDetails() {
         </div>
       </section>
 
-      <div
-        className="tabs tabs-boxed w-full gap-2 bg-base-200/50 p-1"
-        role="tablist"
-      >
-        {TAB_LINKS.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            role="tab"
-            className={({ isActive }) =>
-              `tab rounded-lg px-4 ${isActive ? "tab-active" : ""}`
-            }
-          >
-            {tab.label}
-          </NavLink>
-        ))}
+      <div className="overflow-x-auto pb-1">
+        <div
+          className="tabs tabs-boxed w-max min-w-max gap-2 bg-base-200/50 p-1 sm:w-full sm:min-w-0"
+          role="tablist"
+        >
+          {TAB_LINKS.map((tab) => (
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              role="tab"
+              className={({ isActive }) =>
+                `tab whitespace-nowrap rounded-lg px-3 sm:px-4 ${isActive ? "tab-active" : ""}`
+              }
+            >
+              {tab.label}
+            </NavLink>
+          ))}
+        </div>
       </div>
 
       <section className="app-surface">

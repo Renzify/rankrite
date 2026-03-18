@@ -8,7 +8,7 @@ function ContestantList({
 }) {
   return (
     <div>
-      <table className="table table-zebra">
+      <table className="table table-zebra min-w-[680px]">
         <thead>
           <tr>
             <th>#</th>

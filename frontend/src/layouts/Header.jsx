@@ -7,6 +7,16 @@ import { useAuthStore } from "../stores/authStore";
 
 import logo from "../assets/images/rankrite-logo-1.png";
 
+function getInitials(value) {
+  return String(value ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,6 +33,7 @@ function Header() {
   const isLoginPage = location.pathname === "/auth/login";
   const isLoginButtonAccent = isLoginPage;
   const isGetStartedButtonAccent = !isLoginPage;
+  const userInitials = getInitials(authUser?.fullName) || "A";
 
   const desktopAccentButtonClass =
     "rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-[0_14px_30px_-22px_rgba(15,23,42,0.95)] transition hover:bg-slate-800";
@@ -116,10 +127,6 @@ function Header() {
     };
   }, []);
 
-  useEffect(() => {
-    closeAllMenus();
-  }, [location.pathname, closeAllMenus]);
-
   return (
     <header
       ref={headerRef}
@@ -161,8 +168,18 @@ function Header() {
                       closeMobileMenu();
                     }}
                   >
-                    <div className="avatar placeholder">
-                      <div className="w-8 rounded-full bg-slate-900 text-white" />
+                    <div className="avatar">
+                      <div className="w-8 overflow-hidden rounded-full bg-slate-900 text-xs font-semibold text-white">
+                        {authUser?.profilePic ? (
+                          <img
+                            src={authUser.profilePic}
+                            alt={`${authUser?.fullName || "Admin"} avatar`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span>{userInitials}</span>
+                        )}
+                      </div>
                     </div>
                     <span>{authUser?.fullName || "Admin"}</span>
                   </button>

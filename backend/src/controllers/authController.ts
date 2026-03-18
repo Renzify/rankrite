@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  deleteAccountById,
   getSettingsProfileById,
   login as loginUser,
   updateSettingsPassword,
@@ -73,6 +74,18 @@ export async function signupController(req: Request, res: Response) {
     if (error instanceof Error && error.message === "PASSWORD_TOO_SHORT") {
       return res.status(400).json({
         message: "Password must be at least 6 characters",
+      });
+    }
+
+    if (error instanceof Error && error.message === "INVALID_GENDER") {
+      return res.status(400).json({
+        message: "Please select gender",
+      });
+    }
+
+    if (error instanceof Error && error.message === "PROFILE_PIC_TOO_LARGE") {
+      return res.status(413).json({
+        message: "Profile photo is too large",
       });
     }
 
@@ -216,6 +229,12 @@ export async function updateSettingsProfileController(
       });
     }
 
+    if (error instanceof Error && error.message === "PROFILE_PIC_TOO_LARGE") {
+      return res.status(413).json({
+        message: "Profile photo is too large",
+      });
+    }
+
     console.error("Error in update settings profile controller:", error);
     res.status(500).json({
       message: "Internal server error",
@@ -281,6 +300,46 @@ export async function updateSettingsPasswordController(
     }
 
     console.error("Error in update settings password controller:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function deleteSettingsAccountController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+
+    await createActivityLogEntry({
+      userId,
+      action: "Delete Account",
+      details: "Deleted account",
+    });
+
+    await deleteAccountById(userId);
+    clearTokenCookie(res);
+
+    res.status(200).json({
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "USER_NOT_FOUND") {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    console.error("Error in delete account controller:", error);
     res.status(500).json({
       message: "Internal server error",
     });

@@ -9,6 +9,7 @@ import {
 import ActivityLogTable from "./components/ActivityLogTable";
 import { DropdownMenu } from "../../layouts/helpers/Dropdown";
 import { getActivityLogs } from "../../api/activityLogApi";
+import InfoTooltip from "../../shared/components/InfoTooltip";
 
 const FILTER_OPTIONS = [
   { value: "all", label: "All activity" },
@@ -169,14 +170,9 @@ function ActivityLog() {
         <div className="w-full max-w-7xl">
           <section className="app-surface mb-5">
             <div className="app-section">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="app-page-title">Activity Log</h1>
-                <div
-                  className="ml-1 tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
-                  data-tip="Activity Log: View the record of actions made in the system. It helps you track recent activity and review important changes."
-                >
-                  ?
-                </div>
+                <InfoTooltip content="Activity Log: View the record of actions made in the system. It helps you track recent activity and review important changes." />
               </div>
               <p className="app-page-subtitle">
                 Review actions across sign-ins, event management, scoring, and
@@ -257,16 +253,16 @@ function ActivityLog() {
           </div>
 
           {showPagination && (
-            <div className="mt-4 flex items-center justify-between px-2">
-              <div className="text-sm text-base-content/60">
+            <div className="mt-4 flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-center text-sm text-base-content/60 sm:text-left">
                 Showing {visibleStart}-{visibleEnd} of {filteredCount}
               </div>
-              <div className="flex gap-1">
+              <div className="flex w-full gap-2 sm:w-auto sm:gap-1">
                 <button
                   type="button"
                   onClick={() => handlePageChange(safeCurrentPage - 1)}
                   disabled={safeCurrentPage === 1}
-                  className="btn btn-sm btn-outline gap-1"
+                  className="btn btn-sm btn-outline gap-1 flex-1 sm:flex-none"
                 >
                   <ChevronLeft size={16} />
                   Previous
@@ -275,7 +271,7 @@ function ActivityLog() {
                   type="button"
                   onClick={() => handlePageChange(safeCurrentPage + 1)}
                   disabled={safeCurrentPage === totalPages}
-                  className="btn btn-sm btn-outline gap-1"
+                  className="btn btn-sm btn-outline gap-1 flex-1 sm:flex-none"
                 >
                   Next
                   <ChevronRight size={16} />

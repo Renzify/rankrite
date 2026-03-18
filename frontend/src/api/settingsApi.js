@@ -14,3 +14,8 @@ export const updateSettingsPassword = async (payload) => {
   const res = await axiosInstance.put("/auth/settings/password", payload);
   return res.data;
 };
+
+export const deleteSettingsAccount = async () => {
+  const res = await axiosInstance.delete("/auth/settings/account");
+  return res.data;
+};

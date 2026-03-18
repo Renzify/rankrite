@@ -154,7 +154,7 @@ function DynamicTemplateForm() {
     <div className="app-page app-page-wide space-y-5">
       <div>
         <button
-          className="btn btn-neutral btn-soft text-sm hover:bg-neutral/80"
+          className="btn btn-neutral btn-soft w-full text-sm hover:bg-neutral/80 sm:w-auto"
           onClick={() => navigate("/")}
         >
           <MoveLeft /> Back to Events
@@ -166,7 +166,7 @@ function DynamicTemplateForm() {
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-black opacity-80">
             Event Setup
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-black md:text-4xl">
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-black sm:text-3xl md:text-4xl">
             Dynamic Template Form
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-black opacity-95 md:text-base">

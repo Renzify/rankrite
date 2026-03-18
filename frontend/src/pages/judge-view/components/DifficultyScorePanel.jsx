@@ -20,7 +20,7 @@ function DifficultyScorePanel({
         <button
           type="button"
           onClick={onDecrease}
-          className="btn btn-circle btn-lg btn-outline"
+          className="btn btn-circle btn-md btn-outline sm:btn-lg"
           disabled={isDisabled}
         >
           -
@@ -31,7 +31,7 @@ function DifficultyScorePanel({
             {SCORE_RANGE.map((num) => {
               const isSelected = num === selectedWholeNumber;
               const distance = Math.abs(num - selectedWholeNumber);
-              const offset = (num - selectedWholeNumber) * 60;
+              const offset = (num - selectedWholeNumber) * 48;
 
               return (
                 <button
@@ -63,7 +63,7 @@ function DifficultyScorePanel({
         <button
           type="button"
           onClick={onIncrease}
-          className="btn btn-circle btn-lg btn-outline"
+          className="btn btn-circle btn-md btn-outline sm:btn-lg"
           disabled={isDisabled}
         >
           +
@@ -75,7 +75,7 @@ function DifficultyScorePanel({
           <input
             type="text"
             placeholder={finalScore}
-            className="input input-bordered input-lg w-40 text-center text-3xl font-bold"
+            className="input input-bordered input-lg w-32 text-center text-2xl font-bold sm:w-40 sm:text-3xl"
             value={scoreValue}
             disabled={isDisabled}
             onChange={onScoreInputChange}

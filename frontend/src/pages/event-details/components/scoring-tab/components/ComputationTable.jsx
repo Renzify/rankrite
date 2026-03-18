@@ -27,7 +27,7 @@ function ComputationTable({
 
   return (
     <div>
-      <table className="table">
+      <table className="table min-w-[860px]">
         <thead>
           <tr>
             <th>Contestant</th>

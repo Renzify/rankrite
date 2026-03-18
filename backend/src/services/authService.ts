@@ -1,9 +1,10 @@
 import bcrypt from "bcrypt";
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "../db/index.ts";
-import { user } from "../db/schema.ts";
+import { event, user } from "../db/schema.ts";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PROFILE_PIC_MAX_LENGTH = 2_500_000;
 
 export type AuthUser = {
   id: string;
@@ -17,6 +18,7 @@ export type SignupInput = {
   email: string;
   password: string;
   confirmPassword: string;
+  gender?: string;
   profilePic?: string | null;
 };
 
@@ -38,6 +40,7 @@ export type SettingsProfile = {
 export type UpdateProfileInput = {
   fullName: string;
   email: string;
+  profilePic?: string | null;
 };
 
 export type UpdatePasswordInput = {
@@ -46,8 +49,54 @@ export type UpdatePasswordInput = {
   confirmNewPassword: string;
 };
 
+export type DeletedAccount = {
+  id: string;
+  fullName: string;
+  email: string;
+};
+
 function normalizeEmail(value: string | undefined) {
   return (value ?? "").trim().toLowerCase();
+}
+
+function normalizeGender(value: string | undefined) {
+  const normalized = (value ?? "").trim().toLowerCase();
+
+  if (normalized === "male") return "Male";
+  if (normalized === "female") return "Female";
+
+  return null;
+}
+
+function normalizeProfilePic(value: string | null | undefined) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  const normalized = String(value).trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.length > PROFILE_PIC_MAX_LENGTH) {
+    throw new Error("PROFILE_PIC_TOO_LARGE");
+  }
+
+  return normalized;
+}
+
+function buildDefaultProfilePic(gender: "Male" | "Female") {
+  const avatarSvg =
+    gender === "Male"
+      ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' role='img' aria-label='Male silhouette'><rect width='128' height='128' rx='20' fill='#1d4ed8'/><circle cx='64' cy='46' r='20' fill='#f8d7c8'/><path d='M44 43c1-11 9-18 20-18s19 7 20 18c-5-5-12-8-20-8s-15 3-20 8z' fill='#111827'/><path d='M26 110c4-23 19-34 38-34s34 11 38 34H26z' fill='#60a5fa'/></svg>`
+      : `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' role='img' aria-label='Female silhouette'><rect width='128' height='128' rx='20' fill='#be185d'/><circle cx='64' cy='46' r='19' fill='#f8d7c8'/><path d='M40 60c0-19 11-30 24-30s24 11 24 30v5H40v-5z' fill='#4c1d95'/><path d='M24 110c5-23 20-34 40-34s35 11 40 34H24z' fill='#f472b6'/></svg>`;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(avatarSvg)}`;
 }
 
 function isUndefinedColumnError(error: unknown): boolean {
@@ -97,10 +146,15 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
   const email = normalizeEmail(input.email);
   const password = input.password ?? "";
   const confirmPassword = input.confirmPassword ?? "";
-  const profilePic = (input.profilePic ?? "").trim() || null;
+  const normalizedGender = normalizeGender(input.gender);
+  const providedProfilePic = normalizeProfilePic(input.profilePic);
 
   if (!fullName || !email || !password || !confirmPassword) {
     throw new Error("INVALID_AUTH_INPUT");
+  }
+
+  if (!normalizedGender) {
+    throw new Error("INVALID_GENDER");
   }
 
   if (password !== confirmPassword) {
@@ -114,6 +168,9 @@ export async function signup(input: SignupInput): Promise<AuthUser> {
   if (password.length < 6) {
     throw new Error("PASSWORD_TOO_SHORT");
   }
+
+  const profilePic =
+    providedProfilePic ?? buildDefaultProfilePic(normalizedGender);
 
   const existingUser = await db.query.user.findFirst({
     where: eq(user.email, email),
@@ -270,6 +327,11 @@ export async function updateSettingsProfile(
   const normalizedUserId = (userId ?? "").trim();
   const fullName = (input.fullName ?? "").trim();
   const email = normalizeEmail(input.email);
+  const hasProfilePicInput = Object.prototype.hasOwnProperty.call(
+    input,
+    "profilePic",
+  );
+  const profilePic = normalizeProfilePic(input.profilePic);
 
   if (!normalizedUserId || !fullName || !email) {
     throw new Error("INVALID_AUTH_INPUT");
@@ -301,15 +363,25 @@ export async function updateSettingsProfile(
         updatedAt: Date;
       }
     | undefined;
+  const updatePayload: {
+    fullName: string;
+    email: string;
+    updatedAt: Date;
+    profilePic?: string | null;
+  } = {
+    fullName,
+    email,
+    updatedAt: new Date(),
+  };
+
+  if (hasProfilePicInput) {
+    updatePayload.profilePic = profilePic ?? null;
+  }
 
   try {
     const [result] = await db
       .update(user)
-      .set({
-        fullName,
-        email,
-        updatedAt: new Date(),
-      })
+      .set(updatePayload)
       .where(eq(user.id, normalizedUserId))
       .returning({
         id: user.id,
@@ -329,11 +401,7 @@ export async function updateSettingsProfile(
 
     const [fallbackUpdatedUser] = await db
       .update(user)
-      .set({
-        fullName,
-        email,
-        updatedAt: new Date(),
-      })
+      .set(updatePayload)
       .where(eq(user.id, normalizedUserId))
       .returning({
         id: user.id,
@@ -452,4 +520,51 @@ export async function updateSettingsPassword(
   }
 
   return updatedUser.passwordUpdatedAt;
+}
+
+export async function deleteAccountById(userId: string): Promise<DeletedAccount> {
+  const normalizedUserId = (userId ?? "").trim();
+
+  if (!normalizedUserId) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  return db.transaction(async (tx) => {
+    const [existingUser] = await tx
+      .select({
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+      })
+      .from(user)
+      .where(eq(user.id, normalizedUserId))
+      .limit(1);
+
+    if (!existingUser) {
+      throw new Error("USER_NOT_FOUND");
+    }
+
+    await tx
+      .update(event)
+      .set({
+        createdByUserId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(event.createdByUserId, normalizedUserId));
+
+    const [deletedUser] = await tx
+      .delete(user)
+      .where(eq(user.id, normalizedUserId))
+      .returning({
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+      });
+
+    if (!deletedUser) {
+      throw new Error("USER_NOT_FOUND");
+    }
+
+    return deletedUser;
+  });
 }

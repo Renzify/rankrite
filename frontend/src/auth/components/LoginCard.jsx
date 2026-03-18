@@ -37,7 +37,7 @@ function LoginCard() {
 
   return (
     <div className="app-auth-card">
-      <div className="card-body p-6 md:p-7">
+      <div className="card-body p-5 sm:p-6 md:p-7">
         <h2 className="app-auth-title">Login</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,7 +78,7 @@ function LoginCard() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
             <label className="label cursor-pointer gap-2 p-0">
               <input
                 type="checkbox"

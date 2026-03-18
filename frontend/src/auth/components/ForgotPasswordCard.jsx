@@ -8,7 +8,7 @@ function ForgotPasswordCard() {
 
   return (
     <div className="app-auth-card">
-      <div className="card-body p-6 md:p-7">
+      <div className="card-body p-5 sm:p-6 md:p-7">
         <h2 className="app-auth-title">Forgot Password</h2>
 
         <p className="mb-1 text-center text-sm text-base-content/70">
@@ -34,7 +34,10 @@ function ForgotPasswordCard() {
         </form>
 
         <div className="pt-1">
-          <Link to="/auth/login" className="btn btn-ghost btn-sm gap-2 px-2">
+          <Link
+            to="/auth/login"
+            className="btn btn-ghost btn-sm w-full gap-2 px-2 sm:w-auto"
+          >
             <ArrowLeft size={16} />
             Back to Login
           </Link>

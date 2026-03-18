@@ -35,8 +35,6 @@ export const useAuthStore = create((set) => ({
 
     try {
       return await signupRequest(payload);
-    } catch (error) {
-      throw error;
     } finally {
       set({ isSigningUp: false });
     }
@@ -49,8 +47,6 @@ export const useAuthStore = create((set) => ({
       const authUser = await loginRequest(payload);
       set({ authUser });
       return authUser;
-    } catch (error) {
-      throw error;
     } finally {
       set({ isLoggingIn: false });
     }
@@ -62,8 +58,6 @@ export const useAuthStore = create((set) => ({
     try {
       await logoutRequest();
       set({ authUser: null });
-    } catch (error) {
-      throw error;
     } finally {
       set({ isLoggingOut: false });
     }

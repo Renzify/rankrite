@@ -1,3 +1,5 @@
+import InfoTooltip from "../../../../../shared/components/InfoTooltip";
+
 const VIEW_MODE_OPTIONS = [
   {
     value: "manual",
@@ -59,12 +61,7 @@ function ViewingControls({
         <div className="app-muted-panel">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Viewing Mode</h3>
-            <div
-              className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
-              data-tip="Viewing Mode: Controls how contestants are shown on the live display. It lets you choose between manual navigation or automatic rotation."
-            >
-              ?
-            </div>
+            <InfoTooltip content="Viewing Mode: Controls how contestants are shown on the live display. It lets you choose between manual navigation or automatic rotation." />
           </div>
 
           <fieldset className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -136,8 +133,8 @@ function ViewingControls({
           </fieldset>
 
           {viewMode === "manual" ? (
-            <div className="mt-10 flex flex-wrap gap-2 items-start">
-              <div className="grid grid-cols-2 gap-2 w-full">
+            <div className="mt-10 flex flex-wrap items-start gap-2">
+              <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
                 <button
                   type="button"
                   className="btn btn-sm btn-outline flex items-center gap-2"
@@ -257,12 +254,10 @@ function ViewingControls({
         <div className="app-muted-panel">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Emergency Controls</h3>
-            <div
-              className="tooltip tooltip-error tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-error bg-transparent text-error flex items-center justify-center text-sm font-medium cursor-help hover:bg-error hover:text-error-content transition-all duration-200"
-              data-tip="Emergency Controls: Manage urgent display actions during interruptions or issues. Changes apply immediately to the live display."
-            >
-              ?
-            </div>
+            <InfoTooltip
+              tone="error"
+              content="Emergency Controls: Manage urgent display actions during interruptions or issues. Changes apply immediately to the live display."
+            />
           </div>
           <div className="mt-3 space-y-4">
             <fieldset className="space-y-2">
@@ -290,7 +285,7 @@ function ViewingControls({
                       onChange={() => handleFreezeStateChange(option.value)}
                     />
                     <span className="space-y-1">
-                      <span className="block truncate text-sm font-semibold">
+                      <span className="block text-sm font-semibold">
                         {option.label}
                       </span>
                       <span className="block overflow-hidden text-xs text-base-content/70 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
@@ -327,7 +322,7 @@ function ViewingControls({
                       onChange={() => handleOutputStateChange(option.value)}
                     />
                     <span className="space-y-1">
-                      <span className="block truncate text-sm font-semibold">
+                      <span className="block text-sm font-semibold">
                         {option.label}
                       </span>
                       <span className="block overflow-hidden text-xs text-base-content/70 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
