@@ -246,6 +246,10 @@ export default function EventDetails() {
   const currentEventPhaseId =
     eventDetails?.currentEventPhaseId ?? eventPhases[0]?.id ?? "";
   const currentEventStatus = eventDetails?.event?.status ?? "";
+  const canManageSetup =
+    currentEventStatus === "draft" || currentEventStatus === "to_be_held";
+  const canGenerateJudgeLinks =
+    currentEventStatus !== "draft" && currentEventStatus !== "to_be_held";
   const canSetToBeHeld = useMemo(
     () =>
       isEventInfoComplete(eventDetails) &&
@@ -916,6 +920,9 @@ export default function EventDetails() {
               eventTitle,
               eventPhases,
               currentEventPhaseId,
+              currentEventStatus,
+              canManageSetup,
+              canGenerateJudgeLinks,
               judges,
               setJudges,
               onCreateJudge: handleCreateJudge,

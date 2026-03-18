@@ -10,6 +10,9 @@ export function useJudgesTabContext() {
 
   return {
     activeContestantId: outletContext.activeContestantId ?? "",
+    canGenerateJudgeLinks: outletContext.canGenerateJudgeLinks ?? false,
+    canManageSetup: outletContext.canManageSetup ?? true,
+    currentEventStatus: outletContext.currentEventStatus ?? "",
     contestants: outletContext.contestants ?? [],
     eventDetails: outletContext.eventDetails,
     eventTitle: outletContext.eventTitle ?? "",

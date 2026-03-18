@@ -21,6 +21,7 @@ export default function ContestantsTab() {
   const onDeleteContestant = outletContext.onDeleteContestant;
   const onImportContestants = outletContext.onImportContestants;
   const isSavingContestant = outletContext.isSavingContestant ?? false;
+  const canManageSetup = outletContext.canManageSetup ?? true;
   const [contestantPendingDelete, setContestantPendingDelete] = useState(null);
 
   const {
@@ -112,7 +113,7 @@ export default function ContestantsTab() {
             type="button"
             className="btn btn-outline btn-sm w-full sm:w-auto"
             onClick={handleImportClick}
-            disabled={isSavingContestant || isImportingCsv}
+            disabled={!canManageSetup || isSavingContestant || isImportingCsv}
           >
             {isImportingCsv ? "Importing..." : "Import CSV"}
           </button>
@@ -133,6 +134,14 @@ export default function ContestantsTab() {
         </div>
       </div>
 
+      {!canManageSetup ? (
+        <div className="alert border border-base-300 bg-base-200/60 text-base-content">
+          <span>
+            Setup changes are only available while the event is Draft or To Be Held.
+          </span>
+        </div>
+      ) : null}
+
       <form
         className="grid gap-4 lg:grid-cols-[1.4fr_1fr_0.8fr_auto]"
         onSubmit={handleContestantSubmit}
@@ -148,6 +157,7 @@ export default function ContestantsTab() {
             placeholder="e.g. Alex Cruz"
             value={formData.fullName}
             onChange={handleInputChange}
+            disabled={!canManageSetup || isSavingContestant}
           />
         </label>
 
@@ -162,6 +172,7 @@ export default function ContestantsTab() {
             placeholder="Team or delegation"
             value={formData.delegation}
             onChange={handleInputChange}
+            disabled={!canManageSetup || isSavingContestant}
           />
         </label>
 
@@ -174,6 +185,7 @@ export default function ContestantsTab() {
             className="select select-bordered w-full"
             value={formData.gender}
             onChange={handleInputChange}
+            disabled={!canManageSetup || isSavingContestant}
           >
             <option value="">-- Select Gender --</option>
             {CONTESTANT_GENDER_OPTIONS.map((option) => (
@@ -198,7 +210,7 @@ export default function ContestantsTab() {
           <button
             type="submit"
             className="btn btn-neutral w-full sm:w-auto"
-            disabled={!formData.fullName.trim() || isSavingContestant}
+            disabled={!canManageSetup || !formData.fullName.trim() || isSavingContestant}
           >
             {isSavingContestant
               ? editingContestantId
@@ -255,7 +267,7 @@ export default function ContestantsTab() {
                         type="button"
                         className="btn btn-sm btn-outline"
                         onClick={() => handleStartEditing(contestant)}
-                        disabled={isSavingContestant}
+                        disabled={!canManageSetup || isSavingContestant}
                       >
                         Edit
                       </button>
@@ -263,7 +275,7 @@ export default function ContestantsTab() {
                         type="button"
                         className="btn btn-sm btn-outline btn-error"
                         onClick={() => handleOpenDeleteModal(contestant)}
-                        disabled={isSavingContestant}
+                        disabled={!canManageSetup || isSavingContestant}
                       >
                         Delete
                       </button>

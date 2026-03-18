@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useJudgesTabContext } from "./useJudgesTabContext";
 
 export function useJudgeLinkModal(showLinkGeneration) {
-  const { eventDetails, eventTitle, selectedSport } = useJudgesTabContext();
+  const { eventDetails, eventTitle, selectedSport, canGenerateJudgeLinks } =
+    useJudgesTabContext();
 
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [linkModalTab, setLinkModalTab] = useState("qr");
@@ -30,7 +31,7 @@ export function useJudgeLinkModal(showLinkGeneration) {
   };
 
   const handleGenerateLink = (judge) => {
-    if (!eventId) return;
+    if (!eventId || !canGenerateJudgeLinks) return;
 
     setActiveJudgeName(judge.fullName);
     setActiveJudgeLink(createJudgeScoringLink(judge));
@@ -64,6 +65,7 @@ export function useJudgeLinkModal(showLinkGeneration) {
     handleCopyLink,
     handleGenerateLink,
     isLinkModalOpen,
+    canGenerateJudgeLinks,
     linkModalTab,
     setLinkModalTab,
     shouldShowLinkGeneration,
