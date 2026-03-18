@@ -1,6 +1,12 @@
 import { useEffect } from "react";
 import { getEventJudgeScores } from "../../../../../api/eventApi";
 import {
+  getSocket,
+  SOCKET_EVENT_JUDGE_SCORE_UPDATED,
+  subscribeToEventRoom,
+  unsubscribeFromEventRoom,
+} from "../../../../../shared/lib/socket";
+import {
   createEmptyScoreEntry,
   formatEnteredValue,
 } from "../helpers/scoringTabHelpers";
@@ -181,12 +187,31 @@ export function useScoringTabEffects({
       syncSubmittedScores();
     };
 
+    const socket = getSocket();
+    const handleRealtimeScoreUpdate = (payload) => {
+      if (payload?.eventId && payload.eventId !== eventId) return;
+
+      const payloadContestantId = payload?.contestantId
+        ? String(payload.contestantId)
+        : "";
+
+      if (payloadContestantId && payloadContestantId !== selectedContestantId) {
+        return;
+      }
+
+      syncSubmittedScores();
+    };
+
+    subscribeToEventRoom(eventId);
     window.addEventListener("focus", handleWindowFocus);
+    socket.on(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeScoreUpdate);
 
     return () => {
       isMounted = false;
       window.clearInterval(pollId);
       window.removeEventListener("focus", handleWindowFocus);
+      socket.off(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeScoreUpdate);
+      unsubscribeFromEventRoom(eventId);
     };
   }, [
     eventId,

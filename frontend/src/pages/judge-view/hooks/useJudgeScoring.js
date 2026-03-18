@@ -6,6 +6,13 @@ import {
   getEventJudgeScores,
   submitJudgeScore,
 } from "../../../api/eventApi";
+import {
+  getSocket,
+  SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED,
+  SOCKET_EVENT_JUDGE_SCORE_UPDATED,
+  subscribeToEventRoom,
+  unsubscribeFromEventRoom,
+} from "../../../shared/lib/socket";
 
 const DEFAULT_SCORE_VALUE = "5.00";
 
@@ -389,12 +396,24 @@ export function useJudgeScoring() {
       syncJudgeContext();
     };
 
+    const socket = getSocket();
+    const handleRealtimeUpdate = (payload) => {
+      if (payload?.eventId && payload.eventId !== eventId) return;
+      syncJudgeContext();
+    };
+
+    subscribeToEventRoom(eventId);
     window.addEventListener("focus", handleWindowFocus);
+    socket.on(SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, handleRealtimeUpdate);
+    socket.on(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeUpdate);
 
     return () => {
       isMounted = false;
       window.clearInterval(pollId);
       window.removeEventListener("focus", handleWindowFocus);
+      socket.off(SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, handleRealtimeUpdate);
+      socket.off(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeUpdate);
+      unsubscribeFromEventRoom(eventId);
     };
   }, [currentJudge.id, eventId, isLoading, loadError]);
 

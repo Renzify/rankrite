@@ -1,6 +1,13 @@
 import { useEffect, useRef } from "react";
 import { getEventDetails } from "../../../../../api/eventApi";
 import {
+  getSocket,
+  SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED,
+  SOCKET_EVENT_JUDGE_SCORE_UPDATED,
+  subscribeToEventRoom,
+  unsubscribeFromEventRoom,
+} from "../../../../../shared/lib/socket";
+import {
   LIVE_DISPLAY_CHANNEL_NAME,
   LIVE_DISPLAY_MESSAGE_TYPE,
   writeLiveDisplayState,
@@ -78,12 +85,24 @@ export default function useDisplayControlEffects({
       refreshContestantScores();
     };
 
+    const socket = getSocket();
+    const handleRealtimeRefresh = (payload) => {
+      if (payload?.eventId && payload.eventId !== eventId) return;
+      refreshContestantScores();
+    };
+
+    subscribeToEventRoom(eventId);
     window.addEventListener("focus", onWindowFocus);
+    socket.on(SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, handleRealtimeRefresh);
+    socket.on(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeRefresh);
 
     return () => {
       isMounted = false;
       window.clearInterval(pollId);
       window.removeEventListener("focus", onWindowFocus);
+      socket.off(SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, handleRealtimeRefresh);
+      socket.off(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeRefresh);
+      unsubscribeFromEventRoom(eventId);
     };
   }, [eventId, setContestants]);
 
