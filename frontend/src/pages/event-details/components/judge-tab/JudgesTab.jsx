@@ -23,7 +23,10 @@ function formatContestantLabel(contestant) {
     : `${entryLabel} - ${fullName}`;
 }
 
-export default function JudgesTab({ showLinkGeneration }) {
+export default function JudgesTab({
+  showLinkGeneration,
+  showActiveContestantControl = true,
+}) {
   const {
     activeContestantId,
     contestants,
@@ -141,68 +144,74 @@ export default function JudgesTab({ showLinkGeneration }) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
-        <div>
-          <h3 className="text-base font-semibold">Active Contestant Control</h3>
-          <p className="text-sm text-base-content/70">
-            Judges cannot pick contestants. Admin controls who is currently
-            active.
-          </p>
-        </div>
-
-        <div className="mt-3 grid gap-3 md:grid-cols-[1.2fr_1.2fr_auto]">
+      {showActiveContestantControl ? (
+        <div className="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
           <div>
-            <p className="text-sm font-semibold tracking-wide text-base-content/60">
-              Current Active
+            <h3 className="text-base font-semibold">
+              Active Contestant Control
+            </h3>
+            <p className="text-sm text-base-content/70">
+              Judges cannot pick contestants. Admin controls who is currently
+              active.
             </p>
-            <div className="mt-1 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm font-medium ">
-              {activeContestant
-                ? formatContestantLabel(activeContestant)
-                : "No contestants available yet."}
-            </div>
           </div>
 
-          <label className="form-control w-full">
-            <div className="label rounded-sm">
-              <span className="label-text font-semibold">Switch To</span>
+          <div className="mt-3 grid gap-3 md:grid-cols-[1.2fr_1.2fr_auto]">
+            <div>
+              <p className="text-sm font-semibold tracking-wide text-base-content/60">
+                Current Active
+              </p>
+              <div className="mt-1 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm font-medium ">
+                {activeContestant
+                  ? formatContestantLabel(activeContestant)
+                  : "No contestants available yet."}
+              </div>
             </div>
-            <select
-              className="select select-bordered w-full"
-              value={pendingActiveContestantId}
-              onChange={(event) =>
-                setSelectedCandidateContestantId(event.target.value)
-              }
-              disabled={
-                !hasContestants || isSavingJudge || isSwitchingActiveContestant
-              }
-            >
-              <option value="">-- Select Contestant --</option>
-              {sortedContestants.map((contestant) => (
-                <option key={contestant.id} value={contestant.id}>
-                  {formatContestantLabel(contestant)}
-                </option>
-              ))}
-            </select>
-          </label>
 
-          <div className="flex items-end">
-            <button
-              type="button"
-              className="btn btn-neutral w-full md:w-auto"
-              onClick={handleSwitchRequest}
-              disabled={
-                !canSwitchActiveContestant ||
-                isSavingJudge ||
-                isSwitchingActiveContestant
-              }
-            >
-              {isSwitchingActiveContestant
-                ? "Switching..."
-                : "Switch Active Contestant"}
-            </button>
+            <label className="form-control w-full">
+              <div className="label rounded-sm">
+                <span className="label-text font-semibold">Switch To</span>
+              </div>
+              <select
+                className="select select-bordered w-full"
+                value={pendingActiveContestantId}
+                onChange={(event) =>
+                  setSelectedCandidateContestantId(event.target.value)
+                }
+                disabled={
+                  !hasContestants ||
+                  isSavingJudge ||
+                  isSwitchingActiveContestant
+                }
+              >
+                <option value="">-- Select Contestant --</option>
+                {sortedContestants.map((contestant) => (
+                  <option key={contestant.id} value={contestant.id}>
+                    {formatContestantLabel(contestant)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="flex items-end">
+              <button
+                type="button"
+                className="btn btn-neutral w-full md:w-auto"
+                onClick={handleSwitchRequest}
+                disabled={
+                  !canSwitchActiveContestant ||
+                  isSavingJudge ||
+                  isSwitchingActiveContestant
+                }
+              >
+                {isSwitchingActiveContestant
+                  ? "Switching..."
+                  : "Switch Active Contestant"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       <form
         className="grid gap-4 sm:grid-cols-[1.4fr_1fr_0.8fr_auto]"
@@ -380,7 +389,9 @@ export default function JudgesTab({ showLinkGeneration }) {
         onTabChange={setLinkModalTab}
       />
 
-      <SwitchContestantConfirmModal ref={switchContestantModalRef} />
+      {showActiveContestantControl ? (
+        <SwitchContestantConfirmModal ref={switchContestantModalRef} />
+      ) : null}
     </div>
   );
 }
