@@ -3,6 +3,7 @@ import { useDashboardPage } from "./hooks/useDashboardPage";
 import Statistics from "./components/Statistics";
 import AddEvent from "./components/AddEvent";
 import EventList from "./components/EventList";
+import InfoTooltip from "../../shared/components/InfoTooltip";
 
 function Dashboard() {
   const {
@@ -25,14 +26,9 @@ function Dashboard() {
   return (
     <div className="app-page space-y-6">
       <section>
-        <div className="mb-2 flex items-center justify-start">
+        <div className="mb-2 flex flex-wrap items-center justify-start gap-2">
           <h1 className="app-page-title">Manage Events</h1>
-          <div
-            className="t3 tooltip tooltip-warning tooltip-right z-[100] ml-2 flex h-[25px] w-[25px] cursor-help items-center justify-center rounded-full border-2 border-warning bg-transparent text-sm font-medium text-warning transition-all duration-200 hover:bg-warning hover:text-warning-content"
-            data-tip="Page Overview: This page helps you manage events and access their main functions. It is the starting point for creating, opening, and managing event records."
-          >
-            ?
-          </div>
+          <InfoTooltip content="Page Overview: This page helps you manage events and access their main functions. It is the starting point for creating, opening, and managing event records." />
         </div>
         <p className="app-page-subtitle">
           Review event lifecycle, monitor status, and manage actions in one

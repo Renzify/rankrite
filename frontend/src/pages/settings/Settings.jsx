@@ -2,12 +2,18 @@ import { useSettingsPage } from "./hooks/useSettingsPage";
 import AccountProfile from "./components/AccountProfile";
 import ChangePassword from "./components/ChangePassword";
 import Preferences from "./components/Preferences";
+import ConfirmDeleteModal from "../../shared/components/ConfirmDeleteModal";
+import { useState } from "react";
 
 function Settings() {
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const {
     canSaveProfile,
     handleCancelEditing,
     handleChange,
+    handleDeleteAccount,
+    handleLogout,
+    handleProfilePhotoSelect,
     handleSaveNewPassword,
     handleSavePreferences,
     handleSaveProfile,
@@ -15,8 +21,10 @@ function Settings() {
     handleToggleChangePassword,
     hasPreferencesChanged,
     isChangingPassword,
+    isDeletingAccount,
     isEditing,
     isLoadingProfile,
+    isLoggingOut,
     isSavingPassword,
     isSavingProfile,
     passwordNotice,
@@ -52,6 +60,7 @@ function Settings() {
             handleCancelEditing={handleCancelEditing}
             handleSaveProfile={handleSaveProfile}
             handleStartEditing={handleStartEditing}
+            handleProfilePhotoSelect={handleProfilePhotoSelect}
           />
           <div className="mb-5 grid gap-5 xl:grid-cols-2">
             <ChangePassword
@@ -76,16 +85,45 @@ function Settings() {
               hasPreferencesChanged={hasPreferencesChanged}
             />
           </div>
-          <AccountActions />
+          <AccountActions
+            isDeletingAccount={isDeletingAccount}
+            isLoggingOut={isLoggingOut}
+            onDeleteAccount={() => setIsDeleteModalOpen(true)}
+            onLogout={handleLogout}
+          />
         </div>
       </div>
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        title="Delete Account"
+        name={settings.username || settings.email}
+        descriptionLines={[
+          "This will permanently remove your account and cannot be undone.",
+          "You will be signed out immediately after deletion.",
+        ]}
+        confirmLabel="Delete Account"
+        isDeleting={isDeletingAccount}
+        onClose={() => {
+          if (isDeletingAccount) return;
+          setIsDeleteModalOpen(false);
+        }}
+        onConfirm={async () => {
+          await handleDeleteAccount();
+          setIsDeleteModalOpen(false);
+        }}
+      />
     </div>
   );
 }
 
 export default Settings;
 
-function AccountActions() {
+function AccountActions({
+  isDeletingAccount,
+  isLoggingOut,
+  onDeleteAccount,
+  onLogout,
+}) {
   return (
     <section className="app-surface">
       <div className="app-section flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -97,11 +135,21 @@ function AccountActions() {
         </div>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row">
-          <button type="button" className="btn btn-error btn-outline">
-            Delete Account
+          <button
+            type="button"
+            className="btn btn-error btn-outline w-full sm:w-auto"
+            onClick={onDeleteAccount}
+            disabled={isDeletingAccount || isLoggingOut}
+          >
+            {isDeletingAccount ? "Deleting Account..." : "Delete Account"}
           </button>
-          <button type="button" className="btn btn-neutral">
-            Log Out
+          <button
+            type="button"
+            className="btn btn-neutral w-full sm:w-auto"
+            onClick={onLogout}
+            disabled={isDeletingAccount || isLoggingOut}
+          >
+            {isLoggingOut ? "Logging Out..." : "Log Out"}
           </button>
         </div>
       </div>

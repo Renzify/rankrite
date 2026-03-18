@@ -10,7 +10,7 @@ function EventList({
 }) {
   return (
     <section className="app-table-wrap relative">
-      <table className="table table-zebra">
+      <table className="table table-zebra min-w-[760px]">
         <thead>
           <tr>
             <th>#</th>

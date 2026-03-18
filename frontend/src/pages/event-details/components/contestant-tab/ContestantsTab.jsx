@@ -7,6 +7,7 @@ import {
 import ConfirmDeleteModal from "../../../../shared/components/ConfirmDeleteModal";
 import { useContestantsTabHandlers } from "./hooks/useContestantsTabHandlers";
 import { useTemplateStore } from "../../../../stores/templateStore";
+import InfoTooltip from "../../../../shared/components/InfoTooltip";
 
 export default function ContestantsTab() {
   const outletContext = useOutletContext() ?? {};
@@ -87,12 +88,10 @@ export default function ContestantsTab() {
             <h2 className="text-xl font-semibold tracking-tight">
               Manage Contestants
             </h2>
-            <div
-              className="tooltip tooltip-warning tooltip-bottom z-[100] mt-1 flex h-[25px] w-[25px] cursor-help items-center justify-center rounded-full border-2 border-warning bg-transparent text-sm font-medium text-warning transition-all duration-200 hover:bg-warning hover:text-warning-content"
-              data-tip="Contestants Tab: Manage the list of event contestants. It supports contestant entry, bulk import, and list export."
-            >
-              ?
-            </div>
+            <InfoTooltip
+              className="mt-1"
+              content="Contestants Tab: Manage the list of event contestants. It supports contestant entry, bulk import, and list export."
+            />
           </div>
           {editingContestantId ? (
             <span className="badge badge-outline badge-lg">
@@ -111,7 +110,7 @@ export default function ContestantsTab() {
           />
           <button
             type="button"
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline btn-sm w-full sm:w-auto"
             onClick={handleImportClick}
             disabled={isSavingContestant || isImportingCsv}
           >
@@ -119,14 +118,14 @@ export default function ContestantsTab() {
           </button>
           <button
             type="button"
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline btn-sm w-full sm:w-auto"
             onClick={handleCsvExport}
           >
             Export CSV
           </button>
           <button
             type="button"
-            className="btn btn-neutral btn-sm"
+            className="btn btn-neutral btn-sm w-full sm:w-auto"
             onClick={handleCsvTemplateDownload}
           >
             Download Template
@@ -135,7 +134,7 @@ export default function ContestantsTab() {
       </div>
 
       <form
-        className="grid gap-4 sm:grid-cols-[1.4fr_1fr_0.8fr_auto]"
+        className="grid gap-4 lg:grid-cols-[1.4fr_1fr_0.8fr_auto]"
         onSubmit={handleContestantSubmit}
       >
         <label className="form-control w-full">
@@ -225,7 +224,7 @@ export default function ContestantsTab() {
       ) : null}
 
       <div className="app-table-wrap">
-        <table className="table">
+        <table className="table min-w-[760px]">
           <thead>
             <tr>
               <th>Contestant Name</th>

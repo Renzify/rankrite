@@ -11,7 +11,7 @@ function JudgeList({
 }) {
   return (
     <div>
-      <table className="table">
+      <table className="table min-w-[760px]">
         <thead>
           <tr>
             <th>Judge Name</th>

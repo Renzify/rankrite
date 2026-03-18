@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router";
+import InfoTooltip from "../../../shared/components/InfoTooltip";
 
 function isConditionMet(condition, fields, values) {
   const parentField = fields.find(
@@ -135,18 +136,13 @@ export default function EventInfoTab() {
           <h2 className="text-xl font-semibold tracking-tight">
             {isEditing ? "Edit Event Info" : "Event Info"}
           </h2>
-          <div
-            className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
-            data-tip="Event Info: View and manage the event’s core details and configuration. It contains the basic information that defines the event."
-          >
-            ?
-          </div>
+          <InfoTooltip content="Event Info: View and manage the event's core details and configuration. It contains the basic information that defines the event." />
         </div>
         {isEditing ? (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <button
               type="button"
-              className="btn btn-sm btn-outline"
+              className="btn btn-sm btn-outline w-full sm:w-auto"
               onClick={handleCancelEditing}
               disabled={isSavingEventInfo}
             >
@@ -154,7 +150,7 @@ export default function EventInfoTab() {
             </button>
             <button
               type="button"
-              className="btn btn-sm btn-primary"
+              className="btn btn-sm btn-primary w-full sm:w-auto"
               onClick={handleConfirmEdit}
               disabled={!canConfirmEdit || isSavingEventInfo}
             >
@@ -167,7 +163,7 @@ export default function EventInfoTab() {
         ) : (
           <button
             type="button"
-            className="btn btn-sm btn-primary"
+            className="btn btn-sm btn-primary w-full sm:w-auto"
             onClick={handleStartEditing}
           >
             Edit

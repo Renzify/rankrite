@@ -1,4 +1,5 @@
-import React from "react";
+import { useRef } from "react";
+import InfoTooltip from "../../../shared/components/InfoTooltip";
 
 function ProfileFieldCard({ label, value, className = "" }) {
   return (
@@ -10,6 +11,17 @@ function ProfileFieldCard({ label, value, className = "" }) {
     </div>
   );
 }
+
+function getInitials(value) {
+  return String(value ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
 function AccountProfile({
   isEditing,
   isLoadingProfile,
@@ -20,7 +32,24 @@ function AccountProfile({
   handleCancelEditing,
   handleSaveProfile,
   handleStartEditing,
+  handleProfilePhotoSelect,
 }) {
+  const photoInputRef = useRef(null);
+  const profileInitials = getInitials(settings.username) || "U";
+
+  const handleOpenPhotoPicker = () => {
+    photoInputRef.current?.click();
+  };
+
+  const handlePhotoInputChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      void handleProfilePhotoSelect(file);
+    }
+
+    event.target.value = "";
+  };
+
   return (
     <div>
       <section className="app-surface mb-5">
@@ -28,12 +57,7 @@ function AccountProfile({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-semibold">Account Profile</h2>
-              <div
-                className="tooltip tooltip-warning tooltip-bottom z-[100] w-[25px] h-[25px] rounded-full border-2 border-warning bg-transparent text-warning flex items-center justify-center text-sm font-medium cursor-help hover:bg-warning hover:text-warning-content transition-all duration-200"
-                data-tip="Account Profile: View and manage your account information. It lets you update your personal details and profile settings."
-              >
-                ?
-              </div>
+              <InfoTooltip content="Account Profile: View and manage your account information. It lets you update your personal details and profile settings." />
             </div>
             {isEditing ? (
               <div className="flex flex-wrap items-center gap-2">
@@ -67,8 +91,18 @@ function AccountProfile({
 
           <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
             <div className="app-muted-panel flex flex-col items-center justify-center gap-4 text-center">
-              <div className="avatar placeholder">
-                <div className="w-24 rounded-full bg-neutral text-neutral-content" />
+              <div className="avatar">
+                <div className="w-24 overflow-hidden rounded-full bg-neutral text-2xl font-semibold text-neutral-content">
+                  {settings.profilePic ? (
+                    <img
+                      src={settings.profilePic}
+                      alt={`${settings.username || "User"} profile`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>{profileInitials}</span>
+                  )}
+                </div>
               </div>
               <div>
                 <h3 className="text-2xl font-semibold tracking-tight">
@@ -79,9 +113,22 @@ function AccountProfile({
                 </p>
               </div>
               {isEditing ? (
-                <button type="button" className="btn btn-outline btn-sm">
-                  Change Photo
-                </button>
+                <>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handlePhotoInputChange}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={handleOpenPhotoPicker}
+                  >
+                    Change Photo
+                  </button>
+                </>
               ) : null}
             </div>
 
@@ -92,14 +139,8 @@ function AccountProfile({
 
               {!isEditing ? (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <ProfileFieldCard
-                    label="Full Name"
-                    value={settings.username}
-                  />
-                  <ProfileFieldCard
-                    label="Email Address"
-                    value={settings.email}
-                  />
+                  <ProfileFieldCard label="Full Name" value={settings.username} />
+                  <ProfileFieldCard label="Email Address" value={settings.email} />
                   <ProfileFieldCard
                     label="Date Created"
                     value={settings.dateCreated}
@@ -108,7 +149,7 @@ function AccountProfile({
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <label className="form-control app-muted-panel w-full">
-                    <div className="label px-0 pt-0 pb-1">
+                    <div className="label px-0 pb-1 pt-0">
                       <span className="label-text font-semibold">
                         Full Name
                       </span>
@@ -124,7 +165,7 @@ function AccountProfile({
                   </label>
 
                   <label className="form-control app-muted-panel w-full">
-                    <div className="label px-0 pt-0 pb-1">
+                    <div className="label px-0 pb-1 pt-0">
                       <span className="label-text font-semibold">
                         Email Address
                       </span>
@@ -140,14 +181,14 @@ function AccountProfile({
                   </label>
 
                   <label className="form-control app-muted-panel w-full">
-                    <div className="label px-0 pt-0 pb-1">
+                    <div className="label px-0 pb-1 pt-0">
                       <span className="label-text font-semibold">
                         Date Created
                       </span>
                     </div>
                     <input
                       type="text"
-                      className="input input-bordered w-full input-disabled bg-base-200"
+                      className="input input-bordered input-disabled w-full bg-base-200"
                       value={settings.dateCreated || "--"}
                       disabled
                     />

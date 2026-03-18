@@ -572,7 +572,7 @@ function LandingPage() {
 
         <section
           id="signup-login"
-          className="app-page app-page-wide pb-20 pt-8 md:pb-24 md:pt-10 my-50"
+          className="app-page app-page-wide pb-20 pt-8 md:pb-24 md:pt-10 mt-50 mb-35"
         >
           <div className="mx-auto w-full max-w-[1280px]">
             <div className="rounded-[34px] bg-[linear-gradient(135deg,#10223f_0%,#0d1a30_55%,#0b1629_100%)] px-6 py-14 text-center shadow-[0_28px_60px_-38px_rgba(9,20,42,0.9)] sm:px-10 md:py-18">
@@ -603,7 +603,7 @@ function LandingPage() {
           </div>
         </section>
       </main>
-      <div className="reveal-on-scroll">
+      <div className="">
         <Footer />
       </div>
     </div>

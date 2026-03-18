@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   checkAuthController,
+  deleteSettingsAccountController,
   getSettingsProfileController,
   loginController,
   logoutController,
@@ -20,6 +21,7 @@ router.put(
   protectRoute,
   updateSettingsPasswordController,
 );
+router.delete("/auth/settings/account", protectRoute, deleteSettingsAccountController);
 router.post("/auth/signup", signupController);
 router.post("/auth/login", loginController);
 router.post("/auth/logout", logoutController);

@@ -31,7 +31,7 @@ function InfoItem({ label, value, isPreview = false }) {
       </p>
       <p
         className={`mt-1 font-bold leading-tight text-slate-100 ${
-          isPreview ? "text-sm md:text-base" : "text-2xl md:text-3xl"
+          isPreview ? "text-sm md:text-base" : "text-xl sm:text-2xl md:text-3xl"
         }`}
       >
         {value}
@@ -170,7 +170,7 @@ function DisplayView() {
               className={`mt-4 font-extrabold leading-[0.95] tracking-tight text-white ${
                 isPreview
                   ? "text-[clamp(2.25rem,7vw,4.75rem)]"
-                  : "text-[clamp(4rem,8vw,12rem)]"
+                  : "text-[clamp(2.2rem,10vw,6rem)] md:text-[clamp(4rem,8vw,12rem)]"
               }`}
             >
               {liveState.contestant.name}
@@ -217,7 +217,7 @@ function DisplayView() {
               className={`mt-2 font-extrabold leading-none tracking-tight text-cyan-300 ${
                 isPreview
                   ? "text-[clamp(2.4rem,6.5vw,5rem)]"
-                  : "text-[clamp(3.75rem,10vw,10rem)]"
+                  : "text-[clamp(2.4rem,11vw,6rem)] md:text-[clamp(3.75rem,10vw,10rem)]"
               }`}
             >
               {liveState.contestant.score}

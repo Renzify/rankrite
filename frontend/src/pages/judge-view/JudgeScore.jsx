@@ -93,7 +93,7 @@ function JudgeScore() {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
             Judge Scoring
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
             Official Judging Panel
           </h1>
         </div>
@@ -117,7 +117,7 @@ function JudgeScore() {
         ) : null}
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-lg border border-base-300 bg-base-100 p-6 shadow-sm">
+          <div className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm sm:p-6">
             <h2 className="mb-2 text-xl font-semibold">Authorized Judge</h2>
             <p className="mb-4 text-base-content/70">
               Reserved for accredited judges to record contestant scores.
@@ -143,7 +143,7 @@ function JudgeScore() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-base-300 bg-base-100 p-6 shadow-sm">
+          <div className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm sm:p-6">
             <h2 className="mb-2 text-xl font-semibold">Current Contestant</h2>
             <p className="mb-4 text-base-content/70">
               Representing delegation or team.
@@ -185,7 +185,7 @@ function JudgeScore() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-base-300 bg-base-100 p-6 shadow-sm">
+        <div className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm sm:p-6">
           <h2 className="mb-2 text-xl font-semibold">Score Table</h2>
           <p className="mb-4 text-base-content/70">
             Record the judge entry for the current contestant.

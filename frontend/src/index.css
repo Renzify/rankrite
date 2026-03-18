@@ -158,7 +158,7 @@ textarea {
   }
 
   .app-page {
-    @apply mx-auto w-3/4 max-w-6xl px-4 py-6 md:px-6 md:py-8;
+    @apply mx-auto w-full max-w-6xl px-3 py-5 sm:px-4 sm:py-6 md:px-6 md:py-8 lg:w-[92%] xl:w-3/4;
   }
 
   .app-page-wide {
@@ -182,7 +182,7 @@ textarea {
   }
 
   .app-section {
-    @apply p-4 md:p-6;
+    @apply p-4 sm:p-5 md:p-6;
   }
 
   .app-table-wrap {
@@ -194,7 +194,7 @@ textarea {
   }
 
   .app-auth-shell {
-    @apply relative flex min-h-[calc(100vh-220px)] items-center justify-center px-4 py-10;
+    @apply relative flex min-h-[calc(100vh-220px)] items-center justify-center px-3 py-8 sm:px-4 sm:py-10;
   }
 
   .app-auth-card {

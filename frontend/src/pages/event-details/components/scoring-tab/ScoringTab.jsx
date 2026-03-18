@@ -12,6 +12,7 @@ import { useScoringTabHandlers } from "./hooks/useScoringTabHandlers";
 import JudgeList from "./components/JudgeList";
 import ComputationTable from "./components/ComputationTable";
 import ConfirmScoreModal from "./components/ConfirmScoreModal";
+import InfoTooltip from "../../../../shared/components/InfoTooltip";
 
 export default function ScoringTab() {
   const {
@@ -126,16 +127,11 @@ export default function ScoringTab() {
   return (
     <div className="w-full space-y-5">
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-xl font-semibold tracking-tight">
             Scoring Monitor
           </h2>
-          <div
-            className="tooltip tooltip-warning tooltip-bottom z-[100] flex h-[25px] w-[25px] cursor-help items-center justify-center rounded-full border-2 border-warning bg-transparent text-sm font-medium text-warning transition-all duration-200 hover:bg-warning hover:text-warning-content"
-            data-tip="Scoring Tab: Monitor live score submissions and scoring progress during the event. It also handles score confirmation and result computation."
-          >
-            ?
-          </div>
+          <InfoTooltip content="Scoring Tab: Monitor live score submissions and scoring progress during the event. It also handles score confirmation and result computation." />
         </div>
         <p className="text-sm text-base-content/70">
           Click a contestant in the computation table to view that entry&apos;s

@@ -16,7 +16,10 @@ function DeductionScorePanel({
 
       <div className="space-y-3">
         {deductionValues.map((value, index) => (
-          <div key={`deduction_${index}`} className="flex items-end gap-2">
+          <div
+            key={`deduction_${index}`}
+            className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-end"
+          >
             <label className="form-control flex-1">
               <div className="label pb-1">
                 <span className="label-text font-semibold">
@@ -39,7 +42,7 @@ function DeductionScorePanel({
             </label>
             <button
               type="button"
-              className="btn btn-outline btn-sm"
+              className="btn btn-outline btn-sm w-full sm:w-auto"
               onClick={() => onRemoveDeductionInput(index)}
               disabled={isDisabled || deductionValues.length === 1}
             >

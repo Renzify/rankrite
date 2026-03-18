@@ -48,7 +48,7 @@ function ActivityLogTable({
   return (
     <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-sm">
       <div className="overflow-x-auto">
-        <table className="table w-full">
+        <table className="table w-full min-w-[720px]">
           <thead>
             <tr className="bg-base-200">
               <th className="text-base-content/70">Action</th>

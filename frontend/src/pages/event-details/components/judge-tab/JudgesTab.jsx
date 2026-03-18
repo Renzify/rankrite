@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import ConfirmDeleteModal from "../../../../shared/components/ConfirmDeleteModal";
+import InfoTooltip from "../../../../shared/components/InfoTooltip";
 import JudgeLinkModal from "./components/JudgeLinkModal";
 import SwitchContestantConfirmModal from "./components/SwitchContestantConfirmModal";
 import { useJudgeForm } from "./hooks/useJudgeForm";
@@ -128,12 +129,7 @@ export default function JudgesTab({ showLinkGeneration }) {
             <h2 className="text-xl font-semibold tracking-tight">
               Manage Judges
             </h2>
-            <div
-              className="tooltip tooltip-warning tooltip-bottom z-[100] flex h-[25px] w-[25px] cursor-help items-center justify-center rounded-full border-2 border-warning bg-transparent text-sm font-medium text-warning transition-all duration-200 hover:bg-warning hover:text-warning-content"
-              data-tip="Judges Tab: Manage the event's judges and their scoring access. It supports judge assignment, role setup, and score page access."
-            >
-              ?
-            </div>
+            <InfoTooltip content="Judges Tab: Manage the event's judges and their scoring access. It supports judge assignment, role setup, and score page access." />
           </div>
           {editingJudgeId ? (
             <span className="badge badge-outline badge-lg">Editing Judge</span>
@@ -205,7 +201,7 @@ export default function JudgesTab({ showLinkGeneration }) {
       </div>
 
       <form
-        className="grid gap-4 sm:grid-cols-[1.4fr_1fr_0.8fr_auto]"
+        className="grid gap-4 lg:grid-cols-[1.4fr_1fr_0.8fr_auto]"
         onSubmit={handleJudgeSubmit}
       >
         <label className="form-control w-full">
@@ -278,7 +274,7 @@ export default function JudgesTab({ showLinkGeneration }) {
       </form>
 
       <div className="app-table-wrap">
-        <table className="table">
+        <table className="table min-w-[780px]">
           <thead>
             <tr>
               <th>Full Name</th>
