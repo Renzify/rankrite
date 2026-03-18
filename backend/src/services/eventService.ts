@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne, or } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import {
   contestant,
@@ -568,6 +568,30 @@ async function resolveJudgeAssignmentForScoring(
   return candidateAssignments.find((assignment) => assignment.eventPhaseId === null) ?? null;
 }
 
+async function ensureUniqueJudgeSeat(
+  tx: typeof db,
+  eventId: string,
+  judgeNumber: number,
+  excludedJudgeId?: string,
+) {
+  const existingAssignment = await tx.query.eventJudgeAssignment.findFirst({
+    where: excludedJudgeId
+      ? and(
+          eq(eventJudgeAssignment.eventId, eventId),
+          eq(eventJudgeAssignment.judgeNumber, judgeNumber),
+          ne(eventJudgeAssignment.judgeId, excludedJudgeId),
+        )
+      : and(
+          eq(eventJudgeAssignment.eventId, eventId),
+          eq(eventJudgeAssignment.judgeNumber, judgeNumber),
+        ),
+  });
+
+  if (existingAssignment) {
+    throw new Error("DUPLICATE_JUDGE_NUMBER");
+  }
+}
+
 export async function createEventDraft(
   input: CreateEventDraftInput,
   ownerUserId: string,
@@ -959,6 +983,8 @@ export async function addEventJudge(
       throw new Error("INVALID_EVENT_INPUT");
     }
 
+    await ensureUniqueJudgeSeat(tx, normalizedEventId, judgeNumber);
+
     const [createdJudge] = await tx
       .insert(judge)
       .values({
@@ -1061,6 +1087,13 @@ export async function updateEventJudge(
     if (!judgeTypeId) {
       throw new Error("INVALID_EVENT_INPUT");
     }
+
+    await ensureUniqueJudgeSeat(
+      tx,
+      normalizedEventId,
+      judgeNumber,
+      normalizedJudgeId,
+    );
 
     await tx
       .update(judge)

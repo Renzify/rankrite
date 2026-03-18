@@ -51,6 +51,7 @@ export default function JudgesTab({
     isSavingJudge,
     judgePendingDelete,
     judges,
+    suggestedJudgeNumber,
   } = useJudgeForm();
   const {
     activeJudgeLink,
@@ -255,7 +256,7 @@ export default function JudgesTab({
             name="judgeNumber"
             min="1"
             className="input input-bordered w-full"
-            placeholder="1"
+            placeholder={String(suggestedJudgeNumber)}
             value={formData.judgeNumber}
             onChange={handleInputChange}
           />
