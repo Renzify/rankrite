@@ -138,9 +138,8 @@ function AccountProfile({
               </h3>
 
               {!isEditing ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <ProfileFieldCard label="Full Name" value={settings.username} />
-                  <ProfileFieldCard label="Gender" value={settings.gender} />
                   <ProfileFieldCard label="Email Address" value={settings.email} />
                   <ProfileFieldCard
                     label="Date Created"
@@ -148,7 +147,7 @@ function AccountProfile({
                   />
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <label className="form-control app-muted-panel w-full">
                     <div className="label px-0 pb-1 pt-0">
                       <span className="label-text font-semibold">
@@ -162,18 +161,6 @@ function AccountProfile({
                       onChange={(event) =>
                         handleChange("username", event.target.value)
                       }
-                    />
-                  </label>
-
-                  <label className="form-control app-muted-panel w-full">
-                    <div className="label px-0 pb-1 pt-0">
-                      <span className="label-text font-semibold">Gender</span>
-                    </div>
-                    <input
-                      type="text"
-                      className="input input-bordered input-disabled w-full bg-base-200"
-                      value={settings.gender || "--"}
-                      disabled
                     />
                   </label>
 

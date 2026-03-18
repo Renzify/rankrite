@@ -24,7 +24,7 @@ async function ensureSettingsAndActivityLogSchema() {
   try {
     await pool.query(`
       ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS gender TEXT
+      DROP COLUMN IF EXISTS gender
     `);
 
     await pool.query(`
