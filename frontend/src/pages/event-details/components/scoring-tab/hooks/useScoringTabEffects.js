@@ -11,7 +11,7 @@ import {
   formatEnteredValue,
 } from "../helpers/scoringTabHelpers";
 
-const POLL_INTERVAL_MS = 30000;
+const POLL_INTERVAL_MS = 3000;
 
 export function useScoringTabEffects({
   contestants,
