@@ -89,114 +89,122 @@ function AccountProfile({
             )}
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="app-muted-panel flex flex-col items-center justify-center gap-4 text-center">
-              <div className="avatar">
-                <div className="w-24 overflow-hidden rounded-full bg-neutral text-2xl font-semibold text-neutral-content">
-                  {settings.profilePic ? (
-                    <img
-                      src={settings.profilePic}
-                      alt={`${settings.username || "User"} profile`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span>{profileInitials}</span>
-                  )}
+          {isLoadingProfile && !isEditing ? (
+            <div className="app-muted-panel flex min-h-[280px] items-center justify-center rounded-xl text-center">
+              <p className="text-sm font-medium text-base-content/70">
+                Loading user details
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+              <div className="app-muted-panel flex flex-col items-center justify-center gap-4 text-center">
+                <div className="avatar">
+                  <div className="w-24 overflow-hidden rounded-full bg-neutral text-2xl font-semibold text-neutral-content">
+                    {settings.profilePic ? (
+                      <img
+                        src={settings.profilePic}
+                        alt={`${settings.username || "User"} profile`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span>{profileInitials}</span>
+                    )}
+                  </div>
                 </div>
+                <div>
+                  <h3 className="text-2xl font-semibold tracking-tight">
+                    {settings.username}
+                  </h3>
+                  <p className="mt-1 text-sm text-base-content/60">
+                    {settings.email}
+                  </p>
+                </div>
+                {isEditing ? (
+                  <>
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handlePhotoInputChange}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleOpenPhotoPicker}
+                    >
+                      Change Photo
+                    </button>
+                  </>
+                ) : null}
               </div>
-              <div>
-                <h3 className="text-2xl font-semibold tracking-tight">
-                  {settings.username}
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+                  Account Details
                 </h3>
-                <p className="mt-1 text-sm text-base-content/60">
-                  {settings.email}
-                </p>
+
+                {!isEditing ? (
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <ProfileFieldCard label="Full Name" value={settings.username} />
+                    <ProfileFieldCard label="Email Address" value={settings.email} />
+                    <ProfileFieldCard
+                      label="Date Created"
+                      value={settings.dateCreated}
+                    />
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <label className="form-control app-muted-panel w-full">
+                      <div className="label px-0 pb-1 pt-0">
+                        <span className="label-text font-semibold">
+                          Full Name
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        className="input input-bordered w-full"
+                        value={settings.username}
+                        onChange={(event) =>
+                          handleChange("username", event.target.value)
+                        }
+                      />
+                    </label>
+
+                    <label className="form-control app-muted-panel w-full">
+                      <div className="label px-0 pb-1 pt-0">
+                        <span className="label-text font-semibold">
+                          Email Address
+                        </span>
+                      </div>
+                      <input
+                        type="email"
+                        className="input input-bordered w-full"
+                        value={settings.email}
+                        onChange={(event) =>
+                          handleChange("email", event.target.value)
+                        }
+                      />
+                    </label>
+
+                    <label className="form-control app-muted-panel w-full">
+                      <div className="label px-0 pb-1 pt-0">
+                        <span className="label-text font-semibold">
+                          Date Created
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        className="input input-bordered input-disabled w-full bg-base-200"
+                        value={settings.dateCreated || "--"}
+                        disabled
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
-              {isEditing ? (
-                <>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif"
-                    className="hidden"
-                    onChange={handlePhotoInputChange}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={handleOpenPhotoPicker}
-                  >
-                    Change Photo
-                  </button>
-                </>
-              ) : null}
             </div>
-
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
-                Account Details
-              </h3>
-
-              {!isEditing ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <ProfileFieldCard label="Full Name" value={settings.username} />
-                  <ProfileFieldCard label="Email Address" value={settings.email} />
-                  <ProfileFieldCard
-                    label="Date Created"
-                    value={settings.dateCreated}
-                  />
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <label className="form-control app-muted-panel w-full">
-                    <div className="label px-0 pb-1 pt-0">
-                      <span className="label-text font-semibold">
-                        Full Name
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      className="input input-bordered w-full"
-                      value={settings.username}
-                      onChange={(event) =>
-                        handleChange("username", event.target.value)
-                      }
-                    />
-                  </label>
-
-                  <label className="form-control app-muted-panel w-full">
-                    <div className="label px-0 pb-1 pt-0">
-                      <span className="label-text font-semibold">
-                        Email Address
-                      </span>
-                    </div>
-                    <input
-                      type="email"
-                      className="input input-bordered w-full"
-                      value={settings.email}
-                      onChange={(event) =>
-                        handleChange("email", event.target.value)
-                      }
-                    />
-                  </label>
-
-                  <label className="form-control app-muted-panel w-full">
-                    <div className="label px-0 pb-1 pt-0">
-                      <span className="label-text font-semibold">
-                        Date Created
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      className="input input-bordered input-disabled w-full bg-base-200"
-                      value={settings.dateCreated || "--"}
-                      disabled
-                    />
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </section>
     </div>
