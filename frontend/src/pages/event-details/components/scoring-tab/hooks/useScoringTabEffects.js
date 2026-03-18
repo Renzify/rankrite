@@ -1,9 +1,17 @@
 import { useEffect } from "react";
 import { getEventJudgeScores } from "../../../../../api/eventApi";
 import {
+  getSocket,
+  SOCKET_EVENT_JUDGE_SCORE_UPDATED,
+  subscribeToEventRoom,
+  unsubscribeFromEventRoom,
+} from "../../../../../shared/lib/socket";
+import {
   createEmptyScoreEntry,
   formatEnteredValue,
 } from "../helpers/scoringTabHelpers";
+
+const POLL_INTERVAL_MS = 30000;
 
 export function useScoringTabEffects({
   contestants,
@@ -175,18 +183,37 @@ export function useScoringTabEffects({
 
     const pollId = window.setInterval(() => {
       syncSubmittedScores();
-    }, 3000);
+    }, POLL_INTERVAL_MS);
 
     const handleWindowFocus = () => {
       syncSubmittedScores();
     };
 
+    const socket = getSocket();
+    const handleRealtimeScoreUpdate = (payload) => {
+      if (payload?.eventId && payload.eventId !== eventId) return;
+
+      const payloadContestantId = payload?.contestantId
+        ? String(payload.contestantId)
+        : "";
+
+      if (payloadContestantId && payloadContestantId !== selectedContestantId) {
+        return;
+      }
+
+      syncSubmittedScores();
+    };
+
+    subscribeToEventRoom(eventId);
     window.addEventListener("focus", handleWindowFocus);
+    socket.on(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeScoreUpdate);
 
     return () => {
       isMounted = false;
       window.clearInterval(pollId);
       window.removeEventListener("focus", handleWindowFocus);
+      socket.off(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeScoreUpdate);
+      unsubscribeFromEventRoom(eventId);
     };
   }, [
     eventId,

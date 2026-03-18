@@ -1,4 +1,5 @@
 import express from "express";
+import { createServer } from "http";
 import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -8,6 +9,7 @@ import eventRoutes from "./routes/eventRoute.ts";
 import authRoutes from "./routes/authRoute.ts";
 import activityLogRoutes from "./routes/activityLogRoute.ts";
 import { protectRoute } from "./middlewares/authMiddleware.ts";
+import { initSocketServer } from "./realtime/socketServer.ts";
 
 import { ENV } from "./lib/env.ts";
 
@@ -31,6 +33,9 @@ if (NODE_ENV === "production") {
   });
 }
 
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+initSocketServer(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log("Server is running in port:", PORT);
 });

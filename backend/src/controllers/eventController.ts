@@ -29,6 +29,10 @@ import {
 } from "../services/eventService.ts";
 import type { AuthenticatedRequest } from "../middlewares/authMiddleware.ts";
 import { createActivityLogEntry } from "../services/activityLogService.ts";
+import {
+  emitActiveContestantUpdated,
+  emitJudgeScoreUpdated,
+} from "../realtime/socketServer.ts";
 
 function getRouteParamId(req: Request) {
   const rawId = req.params.id;
@@ -52,6 +56,15 @@ async function logActivity(userId: string, action: string, details: string) {
     action,
     details,
   });
+}
+
+function toIsoTimestamp(value: Date | string | null | undefined) {
+  if (!value) return null;
+
+  const normalizedDate = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(normalizedDate.getTime())) return null;
+
+  return normalizedDate.toISOString();
 }
 
 export async function createEventDraftController(req: Request, res: Response) {
@@ -235,6 +248,12 @@ export async function setEventActiveContestantController(
       "Changed active contestant for event \"" + details.title + "\" (ID: " + details.id + ") to contestant ID: " + payload.contestantId,
     );
 
+    emitActiveContestantUpdated({
+      eventId,
+      activeContestantId: details.event.activeContestantId ?? null,
+      updatedAt: toIsoTimestamp(details.event.updatedAt) ?? new Date().toISOString(),
+    });
+
     return res.status(200).json(details);
   } catch (error) {
     if (
@@ -348,6 +367,17 @@ export async function submitJudgeScoreController(req: Request, res: Response) {
       });
     }
 
+    emitJudgeScoreUpdated({
+      eventId,
+      judgeId: submittedScore.judgeId,
+      contestantId: submittedScore.contestantId ?? null,
+      contestantName: submittedScore.contestantName ?? null,
+      eventPhaseId: submittedScore.eventPhaseId ?? null,
+      rawScore: submittedScore.rawScore ?? null,
+      locked: Boolean(submittedScore.locked),
+      submittedAt: toIsoTimestamp(submittedScore.submittedAt),
+    });
+
     res.status(201).json(submittedScore);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_JUDGE_SCORE_INPUT") {
@@ -406,6 +436,17 @@ export async function lockJudgeScoreController(req: Request, res: Response) {
       });
     }
 
+    emitJudgeScoreUpdated({
+      eventId,
+      judgeId: lockedScore.judgeId,
+      contestantId: lockedScore.contestantId ?? null,
+      contestantName: lockedScore.contestantName ?? null,
+      eventPhaseId: lockedScore.eventPhaseId ?? null,
+      rawScore: lockedScore.rawScore ?? null,
+      locked: Boolean(lockedScore.locked),
+      submittedAt: toIsoTimestamp(lockedScore.submittedAt),
+    });
+
     res.status(200).json(lockedScore);
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_JUDGE_SCORE_LOCK_INPUT") {
@@ -462,6 +503,17 @@ export async function unlockJudgeScoreController(req: Request, res: Response) {
         message: "Event not found",
       });
     }
+
+    emitJudgeScoreUpdated({
+      eventId,
+      judgeId: unlockedScore.judgeId,
+      contestantId: unlockedScore.contestantId ?? null,
+      contestantName: unlockedScore.contestantName ?? null,
+      eventPhaseId: unlockedScore.eventPhaseId ?? null,
+      rawScore: unlockedScore.rawScore ?? null,
+      locked: Boolean(unlockedScore.locked),
+      submittedAt: toIsoTimestamp(unlockedScore.submittedAt),
+    });
 
     res.status(200).json(unlockedScore);
   } catch (error) {
