@@ -37,6 +37,7 @@ export const SOCKET_EVENT_JUDGE_SCORE_UPDATED = "event:judge-score-updated";
 
 const AUTH_COOKIE_NAME = "jwt";
 const EVENT_ROOM_PREFIX = "event:";
+const USER_ROOM_PREFIX = "user:";
 
 let io: SocketIOServer | null = null;
 
@@ -62,6 +63,10 @@ function normalizeEventId(rawEventId: string | undefined | null) {
 
 function getEventRoomName(eventId: string) {
   return `${EVENT_ROOM_PREFIX}${eventId}`;
+}
+
+function getUserRoomName(userId: string) {
+  return `${USER_ROOM_PREFIX}${userId}`;
 }
 
 async function authenticateSocket(
@@ -118,6 +123,17 @@ function emitToEventRoom(
   io.to(getEventRoomName(normalizedEventId)).emit(eventName, payload);
 }
 
+function emitToUserRoom(
+  userId: string,
+  eventName: string,
+  payload: Record<string, unknown>,
+) {
+  const normalizedUserId = (userId ?? "").toString().trim();
+  if (!io || !normalizedUserId) return;
+
+  io.to(getUserRoomName(normalizedUserId)).emit(eventName, payload);
+}
+
 export function initSocketServer(httpServer: HttpServer) {
   if (io) return io;
 
@@ -131,6 +147,11 @@ export function initSocketServer(httpServer: HttpServer) {
   io.use(authenticateSocket);
 
   io.on("connection", (socket) => {
+    const normalizedUserId = (socket.data.userId ?? "").toString().trim();
+    if (normalizedUserId) {
+      socket.join(getUserRoomName(normalizedUserId));
+    }
+
     socket.on(SOCKET_EVENT_JOIN_ROOM, (payload?: EventRoomPayload) => {
       const eventId = normalizeEventId(payload?.eventId);
       if (!eventId) return;
@@ -155,14 +176,26 @@ export function getSocketServer() {
 
 export function emitActiveContestantUpdated(
   payload: ActiveContestantUpdatedPayload,
+  userId?: string,
 ) {
   emitToEventRoom(
     payload.eventId,
     SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED,
     payload,
   );
+
+  if (userId) {
+    emitToUserRoom(userId, SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, payload);
+  }
 }
 
-export function emitJudgeScoreUpdated(payload: JudgeScoreUpdatedPayload) {
+export function emitJudgeScoreUpdated(
+  payload: JudgeScoreUpdatedPayload,
+  userId?: string,
+) {
   emitToEventRoom(payload.eventId, SOCKET_EVENT_JUDGE_SCORE_UPDATED, payload);
+
+  if (userId) {
+    emitToUserRoom(userId, SOCKET_EVENT_JUDGE_SCORE_UPDATED, payload);
+  }
 }
