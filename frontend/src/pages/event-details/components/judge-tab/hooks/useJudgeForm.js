@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { useJudgesTabContext } from "./useJudgesTabContext";
 
 const JUDGE_TYPE_OPTIONS = [
@@ -14,6 +15,21 @@ function createLocalId() {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `${Date.now()}_${Math.random()}`;
+}
+
+function getNextSuggestedJudgeNumber(judges) {
+  const usedSeatNumbers = new Set(
+    judges
+      .map((judge) => Number.parseInt(String(judge.judgeNumber ?? ""), 10))
+      .filter((judgeNumber) => Number.isInteger(judgeNumber) && judgeNumber > 0),
+  );
+
+  let suggestedJudgeNumber = 1;
+  while (usedSeatNumbers.has(suggestedJudgeNumber)) {
+    suggestedJudgeNumber += 1;
+  }
+
+  return suggestedJudgeNumber;
 }
 
 export function useJudgeForm() {
@@ -33,6 +49,10 @@ export function useJudgeForm() {
   });
   const [editingJudgeId, setEditingJudgeId] = useState(null);
   const [judgePendingDelete, setJudgePendingDelete] = useState(null);
+  const suggestedJudgeNumber = useMemo(
+    () => getNextSuggestedJudgeNumber(judges),
+    [judges],
+  );
 
   const canSubmitJudge = Boolean(
     formData.fullName.trim() &&
@@ -61,10 +81,20 @@ export function useJudgeForm() {
     event.preventDefault();
     if (!canSubmitJudge) return;
 
+    const judgeNumber = Number.parseInt(formData.judgeNumber, 10);
+    const duplicateSeatJudge = judges.find(
+      (judge) => judge.judgeNumber === judgeNumber && judge.id !== editingJudgeId,
+    );
+
+    if (duplicateSeatJudge) {
+      toast.error(`Judge seat ${judgeNumber} is already assigned.`);
+      return;
+    }
+
     const nextJudge = {
       fullName: formData.fullName.trim(),
       judgeType: formData.judgeType,
-      judgeNumber: Number.parseInt(formData.judgeNumber, 10),
+      judgeNumber,
     };
 
     if (editingJudgeId) {
@@ -171,5 +201,6 @@ export function useJudgeForm() {
     isSavingJudge,
     judgePendingDelete,
     judges,
+    suggestedJudgeNumber,
   };
 }

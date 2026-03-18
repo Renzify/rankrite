@@ -686,6 +686,12 @@ export async function addEventJudgeController(req: Request, res: Response) {
       });
     }
 
+    if (error instanceof Error && error.message === "DUPLICATE_JUDGE_NUMBER") {
+      return res.status(400).json({
+        message: "Judge seat number is already assigned",
+      });
+    }
+
     console.error(error);
     res.status(500).json({
       message: "Failed to add judge",
@@ -736,6 +742,12 @@ export async function updateEventJudgeController(req: Request, res: Response) {
     if (error instanceof Error && error.message === "INVALID_EVENT_INPUT") {
       return res.status(400).json({
         message: "Invalid judge input",
+      });
+    }
+
+    if (error instanceof Error && error.message === "DUPLICATE_JUDGE_NUMBER") {
+      return res.status(400).json({
+        message: "Judge seat number is already assigned",
       });
     }
 
