@@ -252,7 +252,7 @@ export async function setEventActiveContestantController(
       eventId,
       activeContestantId: details.event.activeContestantId ?? null,
       updatedAt: toIsoTimestamp(details.event.updatedAt) ?? new Date().toISOString(),
-    }, userId);
+    });
 
     return res.status(200).json(details);
   } catch (error) {
@@ -376,7 +376,7 @@ export async function submitJudgeScoreController(req: Request, res: Response) {
       rawScore: submittedScore.rawScore ?? null,
       locked: Boolean(submittedScore.locked),
       submittedAt: toIsoTimestamp(submittedScore.submittedAt),
-    }, userId);
+    });
 
     res.status(201).json(submittedScore);
   } catch (error) {
@@ -445,7 +445,7 @@ export async function lockJudgeScoreController(req: Request, res: Response) {
       rawScore: lockedScore.rawScore ?? null,
       locked: Boolean(lockedScore.locked),
       submittedAt: toIsoTimestamp(lockedScore.submittedAt),
-    }, userId);
+    });
 
     res.status(200).json(lockedScore);
   } catch (error) {
@@ -513,7 +513,7 @@ export async function unlockJudgeScoreController(req: Request, res: Response) {
       rawScore: unlockedScore.rawScore ?? null,
       locked: Boolean(unlockedScore.locked),
       submittedAt: toIsoTimestamp(unlockedScore.submittedAt),
-    }, userId);
+    });
 
     res.status(200).json(unlockedScore);
   } catch (error) {
