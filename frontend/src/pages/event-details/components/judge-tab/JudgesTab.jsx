@@ -30,7 +30,9 @@ export default function JudgesTab({
 }) {
   const {
     activeContestantId,
+    canManageSetup,
     contestants,
+    currentEventStatus,
     isSwitchingActiveContestant,
     onSetActiveContestant,
     setActiveContestantId,
@@ -65,6 +67,7 @@ export default function JudgesTab({
     linkModalTab,
     setLinkModalTab,
     shouldShowLinkGeneration,
+    canGenerateJudgeLinks,
   } = useJudgeLinkModal(showLinkGeneration);
 
   const switchContestantModalRef = useRef(null);
@@ -93,9 +96,12 @@ export default function JudgesTab({
     sortedContestants.find(
       (contestant) => contestant.id === pendingActiveContestantId,
     ) ?? null;
+  const canControlActiveContestant = currentEventStatus === "live";
 
   const canSwitchActiveContestant = Boolean(
-    pendingContestant && pendingContestant.id !== activeContestantId,
+    canControlActiveContestant &&
+      pendingContestant &&
+      pendingContestant.id !== activeContestantId,
   );
 
   const handleSwitchRequest = () => {
@@ -141,6 +147,14 @@ export default function JudgesTab({
         </div>
       </div>
 
+      {!canManageSetup ? (
+        <div className="alert border border-base-300 bg-base-200/60 text-base-content">
+          <span>
+            Setup changes are only available while the event is Draft or To Be Held.
+          </span>
+        </div>
+      ) : null}
+
       {showActiveContestantControl ? (
         <div className="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
           <div>
@@ -169,42 +183,59 @@ export default function JudgesTab({
               <div className="label rounded-sm">
                 <span className="label-text font-semibold">Switch To</span>
               </div>
-              <select
-                className="select select-bordered w-full"
-                value={pendingActiveContestantId}
-                onChange={(event) =>
-                  setSelectedCandidateContestantId(event.target.value)
-                }
-                disabled={
-                  !hasContestants ||
-                  isSavingJudge ||
-                  isSwitchingActiveContestant
+              <div
+                title={
+                  !canControlActiveContestant
+                    ? "Event must be live first."
+                    : undefined
                 }
               >
-                <option value="">-- Select Contestant --</option>
-                {sortedContestants.map((contestant) => (
-                  <option key={contestant.id} value={contestant.id}>
-                    {formatContestantLabel(contestant)}
-                  </option>
-                ))}
-              </select>
+                <select
+                  className="select select-bordered w-full"
+                  value={pendingActiveContestantId}
+                  onChange={(event) =>
+                    setSelectedCandidateContestantId(event.target.value)
+                  }
+                  disabled={
+                    !canControlActiveContestant ||
+                    !hasContestants ||
+                    isSavingJudge ||
+                    isSwitchingActiveContestant
+                  }
+                >
+                  <option value="">-- Select Contestant --</option>
+                  {sortedContestants.map((contestant) => (
+                    <option key={contestant.id} value={contestant.id}>
+                      {formatContestantLabel(contestant)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </label>
 
             <div className="flex items-end">
-              <button
-                type="button"
-                className="btn btn-neutral w-full md:w-auto"
-                onClick={handleSwitchRequest}
-                disabled={
-                  !canSwitchActiveContestant ||
-                  isSavingJudge ||
-                  isSwitchingActiveContestant
+              <div
+                title={
+                  !canControlActiveContestant
+                    ? "Event must be live first."
+                    : undefined
                 }
               >
-                {isSwitchingActiveContestant
-                  ? "Switching..."
-                  : "Switch Active Contestant"}
-              </button>
+                <button
+                  type="button"
+                  className="btn btn-neutral w-full md:w-auto"
+                  onClick={handleSwitchRequest}
+                  disabled={
+                    !canSwitchActiveContestant ||
+                    isSavingJudge ||
+                    isSwitchingActiveContestant
+                  }
+                >
+                  {isSwitchingActiveContestant
+                    ? "Switching..."
+                    : "Switch Active Contestant"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -225,6 +256,7 @@ export default function JudgesTab({
             placeholder="e.g. Maria Santos"
             value={formData.fullName}
             onChange={handleInputChange}
+            disabled={!canManageSetup || isSavingJudge}
           />
         </label>
 
@@ -237,6 +269,7 @@ export default function JudgesTab({
             className="select select-bordered w-full"
             value={formData.judgeType}
             onChange={handleInputChange}
+            disabled={!canManageSetup || isSavingJudge}
           >
             <option value="">-- Select Judge Type --</option>
             {JUDGE_TYPE_OPTIONS.map((option) => (
@@ -259,6 +292,7 @@ export default function JudgesTab({
             placeholder={String(suggestedJudgeNumber)}
             value={formData.judgeNumber}
             onChange={handleInputChange}
+            disabled={!canManageSetup || isSavingJudge}
           />
         </label>
 
@@ -276,7 +310,7 @@ export default function JudgesTab({
           <button
             type="submit"
             className="btn btn-neutral w-full sm:w-auto"
-            disabled={!canSubmitJudge || isSavingJudge}
+            disabled={!canManageSetup || !canSubmitJudge || isSavingJudge}
           >
             {actionButtonLabel}
           </button>
@@ -310,19 +344,25 @@ export default function JudgesTab({
                   <td>{judge.judgeNumber ?? "-"}</td>
                   {shouldShowLinkGeneration ? (
                     <td>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline"
-                        onClick={() => handleGenerateLink(judge)}
-                        disabled={!eventId}
+                      <div
+                        className="inline-block"
                         title={
-                          eventId
-                            ? "Generate judge scoring link"
-                            : "Available after the event is created."
+                          !eventId
+                            ? "Available after the event is created."
+                            : !canGenerateJudgeLinks
+                              ? "Event must be live first."
+                              : undefined
                         }
                       >
-                        Generate Link
-                      </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleGenerateLink(judge)}
+                          disabled={!eventId || !canGenerateJudgeLinks}
+                        >
+                          Generate Link
+                        </button>
+                      </div>
                     </td>
                   ) : null}
                   <td>
@@ -331,7 +371,7 @@ export default function JudgesTab({
                         type="button"
                         className="btn btn-sm btn-outline"
                         onClick={() => handleStartEditing(judge)}
-                        disabled={isSavingJudge}
+                        disabled={!canManageSetup || isSavingJudge}
                       >
                         Edit
                       </button>
@@ -339,7 +379,7 @@ export default function JudgesTab({
                         type="button"
                         className="btn btn-sm btn-outline btn-error"
                         onClick={() => handleOpenDeleteModal(judge)}
-                        disabled={isSavingJudge}
+                        disabled={!canManageSetup || isSavingJudge}
                       >
                         Delete
                       </button>

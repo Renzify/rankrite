@@ -41,6 +41,7 @@ export default function EventInfoTab() {
     isSavingEventInfo,
     onResetEventInfo,
     onSaveEventInfo,
+    canManageSetup,
   } = useOutletContext();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -100,6 +101,8 @@ export default function EventInfoTab() {
       });
   }, [eventDetails]);
 
+  const isEditingEventInfo = isEditing && canManageSetup;
+
   const canConfirmEdit =
     draftTitle.trim().length > 0 &&
     Boolean(selectedSport) &&
@@ -112,6 +115,8 @@ export default function EventInfoTab() {
     });
 
   const handleStartEditing = () => {
+    if (!canManageSetup) return;
+
     setDraftTitle(eventDetails?.event?.title ?? formValues.eventTitle ?? "");
     setIsEditing(true);
   };
@@ -134,11 +139,11 @@ export default function EventInfoTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold tracking-tight">
-            {isEditing ? "Edit Event Info" : "Event Info"}
+            {isEditingEventInfo ? "Edit Event Info" : "Event Info"}
           </h2>
           <InfoTooltip content="Event Info: View and manage the event's core details and configuration. It contains the basic information that defines the event." />
         </div>
-        {isEditing ? (
+        {isEditingEventInfo ? (
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <button
               type="button"
@@ -165,13 +170,27 @@ export default function EventInfoTab() {
             type="button"
             className="btn btn-sm btn-primary w-full sm:w-auto"
             onClick={handleStartEditing}
+            disabled={!canManageSetup}
+            title={
+              canManageSetup
+                ? "Edit event details"
+                : "Setup changes are only available while the event is Draft or To Be Held."
+            }
           >
             Edit
           </button>
         )}
       </div>
 
-      {!isEditing ? (
+      {!canManageSetup ? (
+        <div className="alert border border-base-300 bg-base-200/60 text-base-content">
+          <span>
+            Setup changes are only available while the event is Draft or To Be Held.
+          </span>
+        </div>
+      ) : null}
+
+      {!isEditingEventInfo ? (
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-base-300 bg-base-100 p-4">
@@ -235,7 +254,7 @@ export default function EventInfoTab() {
                 className={`select select-bordered w-full ${isCatalogLoading ? "select-disabled" : ""}`}
                 value={selectedEventType}
                 onChange={(event) => setSelectedEventType(event.target.value)}
-                disabled={isCatalogLoading}
+                disabled={!canManageSetup || isCatalogLoading}
               >
                 <option value="">-- Select Event Type --</option>
                 {eventTypeOptions.map((eventType) => (
@@ -254,7 +273,7 @@ export default function EventInfoTab() {
                 className={`select select-bordered w-full ${!selectedEventType || isCatalogLoading ? "select-disabled" : ""}`}
                 value={selectedSport}
                 onChange={(event) => setSelectedSport(event.target.value)}
-                disabled={!selectedEventType || isCatalogLoading}
+                disabled={!canManageSetup || !selectedEventType || isCatalogLoading}
               >
                 <option value="">-- Select Sport --</option>
                 {sportOptions.map((sport) => (
