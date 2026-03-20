@@ -1,4 +1,6 @@
-function LivePreview({ handleOpenLiveDisplay, isFrozen }) {
+import LiveDisplayCanvas from "./LiveDisplayCanvas";
+
+function LivePreview({ handleOpenLiveDisplay, isFrozen, liveDisplayPayload }) {
   return (
     <div>
       <div className="app-surface p-4 md:p-5">
@@ -25,10 +27,10 @@ function LivePreview({ handleOpenLiveDisplay, isFrozen }) {
             </div>
             <div className="overflow-hidden rounded-[1.25rem] border border-slate-800 bg-black">
               <div className="aspect-video w-full">
-                <iframe
-                  title="Live display preview"
-                  src="/live-display?preview=1"
-                  className="h-full w-full bg-slate-950"
+                <LiveDisplayCanvas
+                  liveState={liveDisplayPayload}
+                  isPreview
+                  fillContainer
                 />
               </div>
             </div>
@@ -42,7 +44,8 @@ function LivePreview({ handleOpenLiveDisplay, isFrozen }) {
         </div>
 
         <p className="mt-3 text-xs text-base-content/70">
-          This preview renders the live display and updates in real time.
+          This preview now renders directly in the tab, so it stays lighter than
+          loading a second page in an iframe.
         </p>
       </div>
     </div>

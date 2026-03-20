@@ -10,11 +10,14 @@ import InfoTooltip from "../../../../shared/components/InfoTooltip";
 
 export default function DisplayControlTab() {
   const {
+    currentEventPhaseId,
+    eventPhases = [],
     eventTitle,
+    formValues = {},
     selectedEventType,
     selectedSport,
     eventDetails,
-    contestants,
+    contestants = [],
     setContestants,
   } = useOutletContext();
 
@@ -38,40 +41,74 @@ export default function DisplayControlTab() {
     ? (safeActiveIndex + 1) % contestants.length
     : 0;
 
-  const liveDisplayPayload = useMemo(() => {
-    const scoreValue =
-      activeContestant?.score ??
+  const activeContestantName =
+    activeContestant?.fullName ||
+    activeContestant?.name ||
+    "Awaiting contestant";
+  const activeContestantDelegation =
+    activeContestant?.delegation || activeContestant?.teamName || "-";
+  const activeContestantScore = String(
+    activeContestant?.score ??
       activeContestant?.totalScore ??
       activeContestant?.finalScore ??
-      "--";
+      "--",
+  );
 
-    return {
+  const currentEventPhase = useMemo(
+    () =>
+      eventPhases.find((phase) => phase.id === currentEventPhaseId) ??
+      eventPhases[0] ??
+      null,
+    [currentEventPhaseId, eventPhases],
+  );
+
+  const divisionLevelLabel = formatLiveLabel(
+    formValues.competition_level || formValues.division_class,
+    "Division Level",
+  );
+  const currentApparatusLabel =
+    currentEventPhase?.optionLabel ||
+    currentEventPhase?.label ||
+    formatLiveLabel(formValues.apparatus, "Current Apparatus");
+  const eventCategoryLabel = formatLiveLabel(
+    selectedEventType,
+    "Event Category",
+  );
+  const eventDivisionLabel = formatLiveLabel(
+    formValues.division_class || selectedSport,
+    "Event Division",
+  );
+
+  const liveDisplayPayload = useMemo(
+    () => ({
       eventName: eventTitle || "Event Competition",
-      category: formatLiveLabel(selectedEventType, "Event Category"),
-      division: formatLiveLabel(selectedSport, "Event Division"),
+      category: eventCategoryLabel,
+      division: eventDivisionLabel,
+      divisionLevel: divisionLevelLabel,
+      apparatus: currentApparatusLabel,
       contestant: {
-        name:
-          activeContestant?.fullName ||
-          activeContestant?.name ||
-          "Awaiting contestant",
-        delegation:
-          activeContestant?.delegation || activeContestant?.teamName || "-",
-        score: String(scoreValue),
+        name: activeContestantName,
+        delegation: activeContestantDelegation,
+        score: activeContestantScore,
       },
       isBlackout,
       isFrozen,
       mode: viewMode,
-      updatedAt: new Date().toISOString(),
-    };
-  }, [
-    activeContestant,
-    eventTitle,
-    isBlackout,
-    isFrozen,
-    selectedEventType,
-    selectedSport,
-    viewMode,
-  ]);
+    }),
+    [
+      activeContestantDelegation,
+      activeContestantName,
+      activeContestantScore,
+      currentApparatusLabel,
+      divisionLevelLabel,
+      eventCategoryLabel,
+      eventDivisionLabel,
+      eventTitle,
+      isBlackout,
+      isFrozen,
+      viewMode,
+    ],
+  );
 
   useDisplayControlEffects({
     eventId,
@@ -132,6 +169,7 @@ export default function DisplayControlTab() {
         <LivePreview
           handleOpenLiveDisplay={handleOpenLiveDisplay}
           isFrozen={isFrozen}
+          liveDisplayPayload={liveDisplayPayload}
         />
         <ViewingControls
           viewMode={viewMode}
