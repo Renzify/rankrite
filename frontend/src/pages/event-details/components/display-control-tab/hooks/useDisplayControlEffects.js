@@ -28,6 +28,7 @@ export default function useDisplayControlEffects({
   setActiveIndex,
 }) {
   const channelRef = useRef(null);
+  const lastSyncedPayloadRef = useRef("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -42,6 +43,13 @@ export default function useDisplayControlEffects({
   }, []);
 
   useEffect(() => {
+    const serializedPayload = JSON.stringify(liveDisplayPayload);
+
+    if (serializedPayload === lastSyncedPayloadRef.current) {
+      return;
+    }
+
+    lastSyncedPayloadRef.current = serializedPayload;
     writeLiveDisplayState(liveDisplayPayload);
 
     channelRef.current?.postMessage({
@@ -75,20 +83,20 @@ export default function useDisplayControlEffects({
       }
     };
 
-    refreshContestantScores();
+    void refreshContestantScores();
 
     const pollId = window.setInterval(() => {
-      refreshContestantScores();
+      void refreshContestantScores();
     }, POLL_INTERVAL_MS);
 
     const onWindowFocus = () => {
-      refreshContestantScores();
+      void refreshContestantScores();
     };
 
     const socket = getSocket();
     const handleRealtimeRefresh = (payload) => {
       if (payload?.eventId && payload.eventId !== eventId) return;
-      refreshContestantScores();
+      void refreshContestantScores();
     };
 
     subscribeToEventRoom(eventId);
