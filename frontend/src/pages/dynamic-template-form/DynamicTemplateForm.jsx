@@ -59,7 +59,7 @@ function DynamicTemplateForm() {
     if (!isEventTitleFilled) return false;
 
     return visibleFields.every((field) => {
-      if (!field.isRequired) return true;
+      if (!field.isRequired || field.key === "apparatus") return true;
       const value = formValues[field.key];
       return value !== undefined && value !== null && value !== "";
     });

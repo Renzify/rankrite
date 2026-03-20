@@ -1,22 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useParams, useNavigate } from "react-router";
-import toast from "react-hot-toast";
-import { useDynamicTemplate } from "../dynamic-template-form/hooks/useDynamicTemplate";
-import {
-  addEventContestant,
-  addEventJudge,
-  deleteEventContestant,
-  deleteEventJudge,
-  getEventDetails,
-  importEventContestants,
-  setEventActiveContestant,
-  updateCurrentEventPhase,
-  updateEvent,
-  updateEventJudge,
-  updateEventContestant,
-} from "../../api/eventApi";
-import { buildEventPayload } from "../../shared/lib/eventPayload";
 import { MoveLeft } from "lucide-react";
+import { NavLink, Outlet } from "react-router";
+import { formatEventStatusLabel } from "./hooks/eventDetailsHelpers";
+import { useEventDetailsPage } from "./hooks/useEventDetailsPage";
 
 const TAB_LINKS = [
   { to: "event-info", label: "Event Info" },
@@ -26,737 +11,59 @@ const TAB_LINKS = [
   { to: "display-control", label: "Display Control" },
 ];
 
-const EVENT_STATUS_OPTIONS = [
-  { value: "draft", label: "Draft" },
-  { value: "to_be_held", label: "To Be Held" },
-  { value: "live", label: "Live" },
-  { value: "finished", label: "Finished" },
-];
-
-const EVENT_STATUS_LABEL_BY_VALUE = {
-  draft: "Draft",
-  to_be_held: "To Be Held",
-  live: "Live",
-  finished: "Finished",
-};
-
-function applyLoadedEventDetails(data, actions) {
-  const nextContestants = (data.contestants ?? []).map(mapContestantForForm);
-  const activeContestantId = data.event?.activeContestantId ?? "";
-
-  actions.setEventDetails(data);
-  actions.setSelectedEventType(data.template?.eventType ?? "");
-  actions.setSelectedSport(data.formValues?.sport ?? "");
-  actions.setJudges(data.judges ?? []);
-  actions.setContestants(nextContestants);
-  actions.setActiveContestantId?.(() => {
-    if (
-      activeContestantId &&
-      nextContestants.some((contestant) => contestant.id === activeContestantId)
-    ) {
-      return activeContestantId;
-    }
-
-    return "";
-  });
-  actions.setPendingFormValues({
-    ...data.formValues,
-    eventTitle: data.event.title,
-  });
-  actions.setDidHydrate(false);
-}
-
-function mapContestantForForm(contestant) {
-  return {
-    ...contestant,
-    teamName: contestant.teamName ?? contestant.delegation ?? "",
-    delegation: contestant.teamName ?? contestant.delegation ?? "",
-  };
-}
-
-function getApiErrorMessage(error, fallbackMessage) {
-  const responseMessage = error?.response?.data?.message;
-
-  if (typeof responseMessage === "string" && responseMessage.trim()) {
-    return responseMessage;
+function getStatusMessage(currentEventStatus, isDraftToBeHeldRestricted) {
+  if (currentEventStatus === "draft") {
+    return {
+      toneClassName: isDraftToBeHeldRestricted
+        ? "text-warning"
+        : "text-base-content/70",
+      text: isDraftToBeHeldRestricted
+        ? "Complete event details and add at least 1 judge and 1 contestant to move this event out of Draft."
+        : "This event will move to To Be Held automatically once it is ready.",
+    };
   }
 
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
+  if (currentEventStatus === "to_be_held") {
+    return {
+      toneClassName: "text-base-content/70",
+      text: "This event is ready. Use Go Live when judging should begin.",
+    };
   }
 
-  return fallbackMessage;
-}
+  if (currentEventStatus === "live") {
+    return {
+      toneClassName: "text-base-content/70",
+      text: "Move the event back to To Be Held to pause it, or finish it once judging and scoring are complete.",
+    };
+  }
 
-function formatEventStatusLabel(status) {
-  if (!status) return "Unknown";
-
-  return (
-    EVENT_STATUS_LABEL_BY_VALUE[status] ??
-    status
-      .split("_")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ")
-  );
-}
-
-function isConditionMet(condition, fields, values) {
-  const parentField = fields.find(
-    (field) => field.id === condition.parentFieldId,
-  );
-  if (!parentField) return false;
-
-  const selectedParentValue = values[parentField.key];
-  if (!selectedParentValue) return false;
-
-  const requiredOption = parentField.options?.find(
-    (option) => option.id === condition.parentOptionId,
-  );
-  if (!requiredOption) return false;
-
-  return selectedParentValue === requiredOption.value;
-}
-
-function isEventInfoComplete(eventDetails) {
-  if (!eventDetails) return false;
-
-  const eventTitle = eventDetails.event?.title ?? "";
-  if (!eventTitle.trim()) return false;
-
-  const templateFields = eventDetails.template?.fields ?? [];
-  const formValues = eventDetails.formValues ?? {};
-
-  if (!formValues.sport) return false;
-
-  return templateFields.every((field) => {
-    if (field.isActive === false || !field.isRequired) return true;
-
-    if (field.key === "sport") {
-      return Boolean(formValues.sport);
-    }
-
-    if (field.conditions?.length) {
-      const isVisible = field.conditions.some((condition) =>
-        isConditionMet(condition, templateFields, formValues),
-      );
-      if (!isVisible) return true;
-    }
-
-    const value = formValues[field.key];
-    return value !== undefined && value !== null && value !== "";
-  });
+  return null;
 }
 
 export default function EventDetails() {
-  const { eventId } = useParams();
-  const navigate = useNavigate();
   const {
-    isCatalogLoading,
-    isTemplateLoading,
-    selectedEventType,
-    selectedSport,
-    formValues,
-    eventTypeOptions,
-    sportOptions,
-    visibleFields,
-    template,
-    setSelectedEventType,
-    setSelectedSport,
-    updateFieldValue,
-    setFormValues,
-    getFilteredOptions,
-  } = useDynamicTemplate();
+    currentEventPhaseId,
+    currentEventStatus,
+    eventPhases,
+    eventStatusBadgeClass,
+    eventTitle,
+    handleBackToDashboard,
+    handleCurrentPhaseChange,
+    handleEventStatusChange,
+    isDraftToBeHeldRestricted,
+    isLoading,
+    isUpdatingCurrentPhase,
+    isUpdatingEventStatus,
+    loadError,
+    manualEventStatusActions,
+    outletContext,
+    pendingEventStatusAction,
+  } = useEventDetailsPage();
 
-  const [judges, setJudges] = useState([]);
-  const [contestants, setContestants] = useState([]);
-  const [activeContestantId, setActiveContestantId] = useState("");
-  const [judgeScores, setJudgeScores] = useState({});
-  const [eventDetails, setEventDetails] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState(null);
-  const [pendingFormValues, setPendingFormValues] = useState(null);
-  const [didHydrate, setDidHydrate] = useState(false);
-  const [isSavingEventInfo, setIsSavingEventInfo] = useState(false);
-  const [isSavingJudge, setIsSavingJudge] = useState(false);
-  const [isSavingContestant, setIsSavingContestant] = useState(false);
-  const [isUpdatingCurrentPhase, setIsUpdatingCurrentPhase] = useState(false);
-  const [isSwitchingActiveContestant, setIsSwitchingActiveContestant] =
-    useState(false);
-  const [isUpdatingEventStatus, setIsUpdatingEventStatus] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadEvent = async () => {
-      if (!eventId) {
-        setLoadError("Missing event id.");
-        return;
-      }
-      setIsLoading(true);
-      setLoadError(null);
-      setDidHydrate(false);
-      try {
-        const data = await getEventDetails(eventId);
-        if (!isMounted) return;
-
-        applyLoadedEventDetails(data, {
-          setEventDetails,
-          setSelectedEventType,
-          setSelectedSport,
-          setJudges,
-          setContestants,
-          setActiveContestantId,
-          setPendingFormValues,
-          setDidHydrate,
-        });
-      } catch (error) {
-        if (!isMounted) return;
-        console.error(error);
-        setLoadError("Failed to load event details.");
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-
-    loadEvent();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [eventId, setSelectedEventType, setSelectedSport]);
-
-  useEffect(() => {
-    if (!pendingFormValues || !template || didHydrate) return;
-    setFormValues(pendingFormValues);
-    setDidHydrate(true);
-  }, [pendingFormValues, template, didHydrate, setFormValues]);
-  useEffect(() => {
-    setActiveContestantId((currentId) => {
-      if (contestants.some((contestant) => contestant.id === currentId)) {
-        return currentId;
-      }
-
-      return "";
-    });
-  }, [contestants]);
-
-  const eventTitle =
-    eventDetails?.event?.title || formValues.eventTitle || "Event Details";
-  const eventPhases = eventDetails?.eventPhases ?? [];
-  const currentEventPhaseId =
-    eventDetails?.currentEventPhaseId ?? eventPhases[0]?.id ?? "";
-  const currentEventStatus = eventDetails?.event?.status ?? "";
-  const canManageSetup =
-    currentEventStatus === "draft" || currentEventStatus === "to_be_held";
-  const canGenerateJudgeLinks =
-    currentEventStatus !== "draft" && currentEventStatus !== "to_be_held";
-  const canSetToBeHeld = useMemo(
-    () =>
-      isEventInfoComplete(eventDetails) &&
-      judges.length > 0 &&
-      contestants.length > 0,
-    [eventDetails, judges.length, contestants.length],
+  const statusMessage = getStatusMessage(
+    currentEventStatus,
+    isDraftToBeHeldRestricted,
   );
-  const isDraftToBeHeldRestricted =
-    currentEventStatus === "draft" && !canSetToBeHeld;
-
-  const selectableFields = useMemo(
-    () =>
-      visibleFields.filter(
-        (field) => field.fieldType === "select" && field.key !== "apparatus",
-      ),
-    [visibleFields],
-  );
-
-  const handleResetEventInfo = () => {
-    if (!eventDetails) return;
-
-    applyLoadedEventDetails(eventDetails, {
-      setEventDetails,
-      setSelectedEventType,
-      setSelectedSport,
-      setJudges,
-      setContestants,
-      setActiveContestantId,
-      setPendingFormValues,
-      setDidHydrate,
-    });
-  };
-
-  const handleSaveEventInfo = async (eventTitleInput) => {
-    if (!eventId) {
-      toast.error("Missing event id.");
-      return false;
-    }
-
-    try {
-      const payload = buildEventPayload({
-        template,
-        formValues,
-        eventTitle: eventTitleInput,
-      });
-
-      setIsSavingEventInfo(true);
-      const updatedDetails = await updateEvent(eventId, payload);
-
-      applyLoadedEventDetails(updatedDetails, {
-        setEventDetails,
-        setSelectedEventType,
-        setSelectedSport,
-        setJudges,
-        setContestants,
-        setActiveContestantId,
-        setPendingFormValues,
-        setDidHydrate,
-      });
-
-      toast.success("Event info updated");
-      return true;
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === "NO_TEMPLATE_SELECTED") {
-          toast.error("No template selected.");
-          return false;
-        }
-        if (error.message === "NO_EVENT_TITLE") {
-          toast.error("Please enter an event title.");
-          return false;
-        }
-      }
-
-      console.error("Failed to update event info:", error);
-      toast.error("Failed to update event info. Please try again.");
-      return false;
-    } finally {
-      setIsSavingEventInfo(false);
-    }
-  };
-
-  const handleCreateJudge = async (judgeInput) => {
-    if (!eventId) {
-      toast.error("Missing event id.");
-      throw new Error("MISSING_EVENT_ID");
-    }
-
-    try {
-      setIsSavingJudge(true);
-      const createdJudge = await addEventJudge(eventId, judgeInput);
-
-      setJudges((prev) => [...prev, createdJudge]);
-      setEventDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              judges: [...(prev.judges ?? []), createdJudge],
-            }
-          : prev,
-      );
-
-      toast.success("Judge added");
-      return createdJudge;
-    } catch (error) {
-      const message = getApiErrorMessage(error, "Failed to add judge.");
-      console.error("Failed to add judge:", error);
-      toast.error(message);
-      throw error;
-    } finally {
-      setIsSavingJudge(false);
-    }
-  };
-
-  const handleUpdateJudge = async (judgeId, judgeInput) => {
-    if (!eventId) {
-      toast.error("Missing event id.");
-      throw new Error("MISSING_EVENT_ID");
-    }
-
-    try {
-      setIsSavingJudge(true);
-      const updatedJudge = await updateEventJudge(eventId, judgeId, judgeInput);
-
-      setJudges((prev) =>
-        prev.map((judge) => (judge.id === judgeId ? updatedJudge : judge)),
-      );
-      setEventDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              judges: (prev.judges ?? []).map((judge) =>
-                judge.id === judgeId ? updatedJudge : judge,
-              ),
-            }
-          : prev,
-      );
-
-      toast.success("Judge updated");
-      return updatedJudge;
-    } catch (error) {
-      const message = getApiErrorMessage(error, "Failed to update judge.");
-      console.error("Failed to update judge:", error);
-      toast.error(message);
-      throw error;
-    } finally {
-      setIsSavingJudge(false);
-    }
-  };
-
-  const handleDeleteJudge = async (judgeId) => {
-    if (!eventId) {
-      toast.error("Missing event id.");
-      throw new Error("MISSING_EVENT_ID");
-    }
-
-    try {
-      setIsSavingJudge(true);
-      await deleteEventJudge(eventId, judgeId);
-
-      setJudges((prev) => prev.filter((judge) => judge.id !== judgeId));
-      setEventDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              judges: (prev.judges ?? []).filter(
-                (judge) => judge.id !== judgeId,
-              ),
-            }
-          : prev,
-      );
-      setJudgeScores((prev) => {
-        const next = { ...prev };
-        delete next[judgeId];
-        return next;
-      });
-
-      toast.success("Judge deleted");
-    } catch (error) {
-      const message = getApiErrorMessage(error, "Failed to delete judge.");
-      console.error("Failed to delete judge:", error);
-      toast.error(message);
-      throw error;
-    } finally {
-      setIsSavingJudge(false);
-    }
-  };
-
-  const handleCreateContestant = async (contestantInput) => {
-    if (!eventId) {
-      toast.error("Missing event id.");
-      throw new Error("MISSING_EVENT_ID");
-    }
-
-    try {
-      setIsSavingContestant(true);
-      const createdContestant = await addEventContestant(eventId, {
-        fullName: contestantInput.fullName,
-        teamName:
-          contestantInput.teamName ?? contestantInput.delegation ?? null,
-        gender: contestantInput.gender ?? null,
-        entryNo: contestantInput.entryNo ?? null,
-      });
-
-      setContestants((prev) => [
-        ...prev,
-        mapContestantForForm(createdContestant),
-      ]);
-      setEventDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              contestants: [...(prev.contestants ?? []), createdContestant],
-            }
-          : prev,
-      );
-
-      toast.success("Contestant added");
-      return createdContestant;
-    } catch (error) {
-      const message = getApiErrorMessage(error, "Failed to add contestant.");
-      console.error("Failed to add contestant:", error);
-      toast.error(message);
-      throw error;
-    } finally {
-      setIsSavingContestant(false);
-    }
-  };
-
-  const handleUpdateContestant = async (contestantId, contestantInput) => {
-    if (!eventId) {
-      toast.error("Missing event id.");
-      throw new Error("MISSING_EVENT_ID");
-    }
-
-    try {
-      setIsSavingContestant(true);
-      const updatedContestant = await updateEventContestant(
-        eventId,
-        contestantId,
-        {
-          fullName: contestantInput.fullName,
-          teamName:
-            contestantInput.teamName ?? contestantInput.delegation ?? null,
-          gender: contestantInput.gender ?? null,
-          entryNo: contestantInput.entryNo ?? null,
-        },
-      );
-
-      setContestants((prev) =>
-        prev.map((contestant) =>
-          contestant.id === contestantId
-            ? mapContestantForForm(updatedContestant)
-            : contestant,
-        ),
-      );
-      setEventDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              contestants: (prev.contestants ?? []).map((contestant) =>
-                contestant.id === contestantId ? updatedContestant : contestant,
-              ),
-            }
-          : prev,
-      );
-
-      toast.success("Contestant updated");
-      return updatedContestant;
-    } catch (error) {
-      const message = getApiErrorMessage(error, "Failed to update contestant.");
-      console.error("Failed to update contestant:", error);
-      toast.error(message);
-      throw error;
-    } finally {
-      setIsSavingContestant(false);
-    }
-  };
-
-  const handleDeleteContestant = async (contestantId) => {
-    if (!eventId) {
-      toast.error("Missing event id.");
-      throw new Error("MISSING_EVENT_ID");
-    }
-
-    try {
-      setIsSavingContestant(true);
-      await deleteEventContestant(eventId, contestantId);
-
-      setContestants((prev) =>
-        prev.filter((contestant) => contestant.id !== contestantId),
-      );
-      setEventDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              contestants: (prev.contestants ?? []).filter(
-                (contestant) => contestant.id !== contestantId,
-              ),
-            }
-          : prev,
-      );
-
-      toast.success("Contestant deleted");
-    } catch (error) {
-      const message = getApiErrorMessage(error, "Failed to delete contestant.");
-      console.error("Failed to delete contestant:", error);
-      toast.error(message);
-      throw error;
-    } finally {
-      setIsSavingContestant(false);
-    }
-  };
-
-  const handleImportContestants = async (contestantInputs) => {
-    if (!eventId) {
-      throw new Error("MISSING_EVENT_ID");
-    }
-
-    try {
-      setIsSavingContestant(true);
-      const createdContestants = await importEventContestants(eventId, {
-        contestants: contestantInputs.map((contestantInput) => ({
-          fullName: contestantInput.fullName,
-          teamName:
-            contestantInput.teamName ?? contestantInput.delegation ?? null,
-          gender: contestantInput.gender ?? null,
-          entryNo: contestantInput.entryNo ?? null,
-        })),
-      });
-
-      setContestants((prev) => [
-        ...prev,
-        ...createdContestants.map(mapContestantForForm),
-      ]);
-      setEventDetails((prev) =>
-        prev
-          ? {
-              ...prev,
-              contestants: [...(prev.contestants ?? []), ...createdContestants],
-            }
-          : prev,
-      );
-
-      return createdContestants;
-    } catch (error) {
-      console.error("Failed to import contestants:", error);
-      throw error;
-    } finally {
-      setIsSavingContestant(false);
-    }
-  };
-
-  const handleSetActiveContestant = async (nextContestantId) => {
-    if (!eventId || !nextContestantId) {
-      return;
-    }
-
-    try {
-      setIsSwitchingActiveContestant(true);
-      const updatedDetails = await setEventActiveContestant(eventId, {
-        contestantId: nextContestantId,
-      });
-
-      applyLoadedEventDetails(updatedDetails, {
-        setEventDetails,
-        setSelectedEventType,
-        setSelectedSport,
-        setJudges,
-        setContestants,
-        setActiveContestantId,
-        setPendingFormValues,
-        setDidHydrate,
-      });
-    } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        "Failed to switch active contestant.",
-      );
-      console.error("Failed to switch active contestant:", error);
-      toast.error(message);
-      throw error;
-    } finally {
-      setIsSwitchingActiveContestant(false);
-    }
-  };
-
-  const handleCurrentPhaseChange = async (nextPhaseId) => {
-    if (!eventId || !nextPhaseId) {
-      return;
-    }
-
-    try {
-      setIsUpdatingCurrentPhase(true);
-      const updatedDetails = await updateCurrentEventPhase(eventId, {
-        eventPhaseId: nextPhaseId,
-      });
-
-      applyLoadedEventDetails(updatedDetails, {
-        setEventDetails,
-        setSelectedEventType,
-        setSelectedSport,
-        setJudges,
-        setContestants,
-        setActiveContestantId,
-        setPendingFormValues,
-        setDidHydrate,
-      });
-      setJudgeScores({});
-
-      toast.success("Current apparatus updated");
-    } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        "Failed to update current apparatus.",
-      );
-      console.error("Failed to update current apparatus:", error);
-      toast.error(message);
-    } finally {
-      setIsUpdatingCurrentPhase(false);
-    }
-  };
-
-  const handleEventStatusChange = async (nextStatus) => {
-    if (!eventId || !eventDetails) {
-      toast.error("Missing event details.");
-      return;
-    }
-
-    const currentStatus = eventDetails.event?.status;
-
-    if (!nextStatus || !currentStatus || nextStatus === currentStatus) {
-      return;
-    }
-
-    if (
-      currentStatus === "draft" &&
-      (nextStatus === "to_be_held" ||
-        nextStatus === "live" ||
-        nextStatus === "finished") &&
-      !canSetToBeHeld
-    ) {
-      toast.error(
-        "To change Draft Status, complete event details and add at least 1 judge and 1 contestant.",
-      );
-      return;
-    }
-
-    if (
-      currentStatus === "draft" &&
-      (nextStatus === "live" || nextStatus === "finished")
-    ) {
-      toast.error("Draft status can only be changed to To Be Held.");
-      return;
-    }
-
-    if (nextStatus === "finished" && currentStatus !== "live") {
-      toast.error("Event can only be set to Finished when status is Live.");
-      return;
-    }
-
-    try {
-      const payload = {
-        ...buildEventPayload({
-          template: eventDetails.template,
-          formValues: eventDetails.formValues ?? {},
-          eventTitle: eventDetails.event.title,
-        }),
-        status: nextStatus,
-      };
-
-      setIsUpdatingEventStatus(true);
-      const updatedDetails = await updateEvent(eventId, payload);
-
-      applyLoadedEventDetails(updatedDetails, {
-        setEventDetails,
-        setSelectedEventType,
-        setSelectedSport,
-        setJudges,
-        setContestants,
-        setPendingFormValues,
-        setDidHydrate,
-      });
-
-      toast.success(`Status updated to ${formatEventStatusLabel(nextStatus)}`);
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === "NO_TEMPLATE_SELECTED") {
-          toast.error("No template selected.");
-          return;
-        }
-        if (error.message === "NO_EVENT_TITLE") {
-          toast.error("Please enter an event title.");
-          return;
-        }
-      }
-
-      const message = getApiErrorMessage(
-        error,
-        "Failed to update event status.",
-      );
-      console.error("Failed to update event status:", error);
-      toast.error(message);
-    } finally {
-      setIsUpdatingEventStatus(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -788,24 +95,27 @@ export default function EventDetails() {
       <div>
         <button
           className="btn btn-neutral btn-soft w-full text-sm hover:bg-neutral/80 sm:w-auto"
-          onClick={() => navigate("/dashboard")}
+          onClick={handleBackToDashboard}
         >
           <MoveLeft /> Back to Events
         </button>
       </div>
+
       <section className="app-surface">
         <div className="app-section">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0 space-y-3">
+          <div className="min-w-0 space-y-4">
+            <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
                 Event Details
               </p>
               <h1 className="text-3xl font-bold tracking-tight">
                 {eventTitle}
               </h1>
+            </div>
 
+            <div className="flex flex-col gap-3 sm:max-w-[320px]">
               {eventPhases.length ? (
-                <label className="form-control w-full sm:max-w-[280px]">
+                <label className="form-control w-full">
                   <div className="label pb-1">
                     <span className="label-text font-semibold">
                       Current Apparatus
@@ -827,52 +137,78 @@ export default function EventDetails() {
                   </select>
                 </label>
               ) : null}
-            </div>
 
-            {currentEventStatus ? (
-              <div className="w-full md:max-w-[260px]">
-                <label className="form-control w-full">
-                  <div className="label pb-1">
-                    <span className="label-text font-semibold">
-                      Event Status
-                    </span>
-                  </div>
-                  <select
-                    className="select select-bordered w-full"
-                    value={currentEventStatus}
-                    onChange={(event) =>
-                      handleEventStatusChange(event.target.value)
-                    }
-                    disabled={isUpdatingEventStatus}
-                  >
-                    {EVENT_STATUS_OPTIONS.map((statusOption) => (
-                      <option
-                        key={statusOption.value}
-                        value={statusOption.value}
-                        disabled={
-                          (isDraftToBeHeldRestricted &&
-                            statusOption.value !== "draft") ||
-                          (statusOption.value === "finished" &&
-                            currentEventStatus !== "live" &&
-                            currentEventStatus !== "finished") ||
-                          (currentEventStatus === "draft" &&
-                            (statusOption.value === "live" ||
-                              statusOption.value === "finished"))
-                        }
-                      >
-                        {statusOption.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {isDraftToBeHeldRestricted ? (
-                  <p className="mt-2 text-xs text-warning">
-                    To change Draft Status, complete event details and add at
-                    least 1 judge and 1 contestant.
+              {currentEventStatus ? (
+                <div className="rounded-xl border border-base-300 bg-base-100 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
+                    Event Status
                   </p>
-                ) : null}
-              </div>
-            ) : null}
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className={`badge badge-lg ${eventStatusBadgeClass}`}>
+                      {formatEventStatusLabel(currentEventStatus)}
+                    </span>
+                    {isUpdatingEventStatus && !pendingEventStatusAction ? (
+                      <span className="inline-flex items-center gap-2 text-xs text-base-content/60">
+                        <span className="loading loading-spinner loading-xs" />
+                        Updating status
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {statusMessage ? (
+                    <p className={`mt-3 text-xs ${statusMessage.toneClassName}`}>
+                      {statusMessage.text}
+                    </p>
+                  ) : null}
+
+                  {manualEventStatusActions.length ? (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/50">
+                        Actions
+                      </p>
+                      <div className="grid gap-2">
+                        {manualEventStatusActions.map((statusAction) => {
+                          const StatusActionIcon = statusAction.icon;
+                          const isPendingAction =
+                            pendingEventStatusAction === statusAction.nextStatus;
+
+                          return (
+                            <button
+                              key={statusAction.nextStatus}
+                              type="button"
+                              className={`w-full rounded-xl border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-base-content/20 disabled:cursor-not-allowed disabled:opacity-70 ${statusAction.toneClassName} ${!isUpdatingEventStatus ? "hover:-translate-y-0.5" : ""}`}
+                              onClick={() =>
+                                handleEventStatusChange(statusAction.nextStatus)
+                              }
+                              disabled={isUpdatingEventStatus}
+                            >
+                              <div className="flex items-start gap-3">
+                                <span className="mt-0.5 rounded-lg bg-base-100/80 p-2 text-base-content shadow-sm">
+                                  {isPendingAction ? (
+                                    <span className="loading loading-spinner loading-xs" />
+                                  ) : (
+                                    <StatusActionIcon className="h-4 w-4" />
+                                  )}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-sm font-semibold text-base-content">
+                                    {statusAction.label}
+                                  </span>
+                                  <span className="mt-1 block text-xs leading-5 text-base-content/70">
+                                    {statusAction.description}
+                                  </span>
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>
@@ -899,51 +235,7 @@ export default function EventDetails() {
 
       <section className="app-surface">
         <div className="app-section">
-          <Outlet
-            context={{
-              isCatalogLoading,
-              isTemplateLoading,
-              selectedEventType,
-              selectedSport,
-              formValues,
-              eventDetails,
-              eventTypeOptions,
-              sportOptions,
-              selectableFields,
-              setSelectedEventType,
-              setSelectedSport,
-              updateFieldValue,
-              getFilteredOptions,
-              isSavingEventInfo,
-              onResetEventInfo: handleResetEventInfo,
-              onSaveEventInfo: handleSaveEventInfo,
-              eventTitle,
-              eventPhases,
-              currentEventPhaseId,
-              currentEventStatus,
-              canManageSetup,
-              canGenerateJudgeLinks,
-              judges,
-              setJudges,
-              onCreateJudge: handleCreateJudge,
-              onUpdateJudge: handleUpdateJudge,
-              onDeleteJudge: handleDeleteJudge,
-              isSavingJudge,
-              judgeScores,
-              setJudgeScores,
-              contestants,
-              setContestants,
-              activeContestantId,
-              setActiveContestantId,
-              onSetActiveContestant: handleSetActiveContestant,
-              isSwitchingActiveContestant,
-              onCreateContestant: handleCreateContestant,
-              onUpdateContestant: handleUpdateContestant,
-              onDeleteContestant: handleDeleteContestant,
-              onImportContestants: handleImportContestants,
-              isSavingContestant,
-            }}
-          />
+          <Outlet context={outletContext} />
         </div>
       </section>
     </div>
