@@ -19,6 +19,7 @@ import {
   updateEventJudgeController,
   updateEventContestantController,
 } from "../controllers/eventController.ts";
+import { createJudgeAccessLinkController } from "../controllers/judgeAccessController.ts";
 
 const router = Router();
 
@@ -34,6 +35,10 @@ router.post("/events/:id/judge-scores/unlock", unlockJudgeScoreController);
 router.put("/events/:id", updateEventController);
 router.delete("/events/:id", deleteEventController);
 router.post("/events/:id/judges", addEventJudgeController);
+router.post(
+  "/events/:id/judges/:judgeId/access-link",
+  createJudgeAccessLinkController,
+);
 router.put("/events/:id/judges/:judgeId", updateEventJudgeController);
 router.delete("/events/:id/judges/:judgeId", deleteEventJudgeController);
 router.post("/events/:id/contestants", addEventContestantController);
