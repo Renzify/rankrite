@@ -79,6 +79,13 @@ export const deleteEventJudge = async (eventId, judgeId) => {
   await axiosInstance.delete(`/events/${eventId}/judges/${judgeId}`);
 };
 
+export const createJudgeAccessLink = async (eventId, judgeId) => {
+  const res = await axiosInstance.post(
+    `/events/${eventId}/judges/${judgeId}/access-link`,
+  );
+  return res.data;
+};
+
 export const submitJudgeScore = async (eventId, payload) => {
   const res = await axiosInstance.post(
     `/events/${eventId}/judge-scores`,

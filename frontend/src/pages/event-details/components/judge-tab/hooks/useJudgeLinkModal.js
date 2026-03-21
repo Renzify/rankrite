@@ -1,9 +1,10 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
+import { createJudgeAccessLink } from "../../../../../api/eventApi";
 import { useJudgesTabContext } from "./useJudgesTabContext";
 
 export function useJudgeLinkModal(showLinkGeneration) {
-  const { eventDetails, eventTitle, selectedSport, canGenerateJudgeLinks } =
-    useJudgesTabContext();
+  const { eventDetails, canGenerateJudgeLinks } = useJudgesTabContext();
 
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [linkModalTab, setLinkModalTab] = useState("qr");
@@ -15,29 +16,35 @@ export function useJudgeLinkModal(showLinkGeneration) {
   const shouldShowLinkGeneration =
     showLinkGeneration ?? Boolean(eventDetails?.event?.id);
 
-  const createJudgeScoringLink = (judge) => {
+  const createJudgeScoringLink = (accessToken) => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const params = new URLSearchParams();
+    const hashParams = new URLSearchParams();
 
-    if (eventId) params.set("eventId", eventId);
-    if (eventTitle) params.set("eventTitle", eventTitle);
-    if (selectedSport) params.set("sport", selectedSport);
-    if (judge.id) params.set("judgeId", judge.id);
-    if (judge.fullName) params.set("judgeName", judge.fullName);
-    if (judge.judgeType) params.set("judgeType", judge.judgeType);
+    if (accessToken) {
+      hashParams.set("access", accessToken);
+    }
 
-    const queryString = params.toString();
-    return `${baseUrl}/judge-score${queryString ? `?${queryString}` : ""}`;
+    return `${baseUrl}/judge-score${hashParams.toString() ? `#${hashParams.toString()}` : ""}`;
   };
 
-  const handleGenerateLink = (judge) => {
-    if (!eventId || !canGenerateJudgeLinks) return;
+  const handleGenerateLink = async (judge) => {
+    if (!eventId || !canGenerateJudgeLinks || !judge?.id) return;
 
-    setActiveJudgeName(judge.fullName);
-    setActiveJudgeLink(createJudgeScoringLink(judge));
-    setLinkModalTab("qr");
-    setCopyMessage("");
-    setIsLinkModalOpen(true);
+    try {
+      const { accessToken } = await createJudgeAccessLink(eventId, judge.id);
+
+      setActiveJudgeName(judge.fullName);
+      setActiveJudgeLink(createJudgeScoringLink(accessToken));
+      setLinkModalTab("qr");
+      setCopyMessage("");
+      setIsLinkModalOpen(true);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to generate the secure judge access link.",
+      );
+    }
   };
 
   const closeLinkModal = () => {

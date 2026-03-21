@@ -1,28 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useSearchParams } from "react-router";
+import { useLocation } from "react-router";
 import {
-  getEventDetails,
-  getEventJudgeScores,
-  submitJudgeScore,
-} from "../../../api/eventApi";
-import {
-  getSocket,
-  SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED,
-  SOCKET_EVENT_JUDGE_SCORE_UPDATED,
-  subscribeToEventRoom,
-  unsubscribeFromEventRoom,
-} from "../../../shared/lib/socket";
+  getJudgeAccessContext,
+  submitJudgeAccessScore,
+} from "../../../api/judgeAccessApi";
 
 const DEFAULT_SCORE_VALUE = "5.00";
 const POLL_INTERVAL_MS = 3000;
 
-function buildFallbackJudge(judgeId, judgeName, judgeType) {
+function buildFallbackJudge() {
   return {
-    id: judgeId || "",
-    name: judgeName || "Assigned Judge",
-    specialization: judgeType || "Judge",
+    id: "",
+    name: "Assigned Judge",
+    specialization: "Judge",
   };
+}
+
+function getJudgeAccessToken(location) {
+  const searchParams = new URLSearchParams(location.search);
+  const queryToken = String(searchParams.get("access") ?? "").trim();
+
+  if (queryToken) {
+    return queryToken;
+  }
+
+  const hashValue = location.hash.startsWith("#")
+    ? location.hash.slice(1)
+    : location.hash;
+  const hashParams = new URLSearchParams(hashValue);
+
+  return String(hashParams.get("access") ?? "").trim();
 }
 
 function normalizeContestants(contestants) {
@@ -182,31 +190,37 @@ function applyStoredScoreToInputs(rawScore, judgeType, actions) {
   actions.setDecimalValue(formattedScore.split(".")[1] || "");
 }
 
-export function useJudgeScoring() {
-  const [searchParams] = useSearchParams();
+function buildJudgeFromContext(contextJudge, fallbackJudge) {
+  if (!contextJudge) {
+    return fallbackJudge;
+  }
 
-  const eventId = searchParams.get("eventId") ?? "";
-  const eventTitleParam =
-    searchParams.get("eventTitle") ?? searchParams.get("event") ?? "";
-  const sportParam = searchParams.get("sport") ?? "";
-  const judgeId = searchParams.get("judgeId") ?? "";
-  const judgeNameParam = searchParams.get("judgeName") ?? "";
-  const judgeTypeParam = searchParams.get("judgeType") ?? "";
-  const fallbackJudge = useMemo(
-    () => buildFallbackJudge(judgeId, judgeNameParam, judgeTypeParam),
-    [judgeId, judgeNameParam, judgeTypeParam],
+  return {
+    id: contextJudge.id || fallbackJudge.id,
+    name: contextJudge.fullName || fallbackJudge.name,
+    specialization: contextJudge.judgeType || fallbackJudge.specialization,
+  };
+}
+
+function getErrorMessage(error, fallbackMessage) {
+  return error?.response?.data?.message || fallbackMessage;
+}
+
+export function useJudgeScoring() {
+  const location = useLocation();
+  const { hash, search } = location;
+  const accessToken = useMemo(
+    () => getJudgeAccessToken({ hash, search }),
+    [hash, search],
   );
+  const fallbackJudge = useMemo(() => buildFallbackJudge(), []);
 
   const [selectedContestant, setSelectedContestant] = useState("");
   const [scoreValue, setScoreValue] = useState(DEFAULT_SCORE_VALUE);
   const [decimalValue, setDecimalValue] = useState("");
   const [currentJudge, setCurrentJudge] = useState(fallbackJudge);
   const [contestants, setContestants] = useState([]);
-  const [_eventTitle, setEventTitle] = useState(
-    eventTitleParam || "Judge Scoring",
-  );
-  const [_sportLabel, setSportLabel] = useState(sportParam);
-  const [isLoading, setIsLoading] = useState(Boolean(eventId));
+  const [isLoading, setIsLoading] = useState(Boolean(accessToken));
   const [loadError, setLoadError] = useState("");
   const [pageNotice, setPageNotice] = useState("");
   const [deductionValues, setDeductionValues] = useState(["", "", ""]);
@@ -234,82 +248,50 @@ export function useJudgeScoring() {
         setDeductionValues,
         setPenaltyValue,
       });
-      setEventTitle(eventTitleParam || "Judge Scoring");
-      setSportLabel(sportParam);
       setLoadError("");
       setPageNotice("");
 
-      if (!eventId) {
+      if (!accessToken) {
         setIsLoading(false);
-        setLoadError("This judge access link is missing an event id.");
+        setLoadError("This judge access link is missing its secure access token.");
         return;
       }
 
       setIsLoading(true);
 
       try {
-        const data = await getEventDetails(eventId);
+        const data = await getJudgeAccessContext(accessToken);
         if (!isMounted) return;
 
-        const matchedJudge =
-          data.judges.find((judge) => judge.id === judgeId) ??
-          data.judges.find((judge) => judge.fullName === judgeNameParam) ??
-          null;
+        const nextJudge = buildJudgeFromContext(data.judge, fallbackJudge);
         const nextContestants = normalizeContestants(data.contestants ?? []);
+        const nextSubmissionsByContestantId = buildSubmissionsByContestantId(
+          data.judgeScores ?? [],
+          nextJudge.id,
+        );
+        const nextActiveContestantId = resolveEventActiveContestantId(
+          nextContestants,
+          data.event?.activeContestantId,
+        );
 
-        setEventTitle(data.event?.title || eventTitleParam || "Judge Scoring");
-        setSportLabel(data.formValues?.sport || sportParam);
+        setCurrentJudge(nextJudge);
         setContestants(nextContestants);
-
-        if (matchedJudge) {
-          const nextJudge = {
-            id: matchedJudge.id,
-            name: matchedJudge.fullName || fallbackJudge.name,
-            specialization:
-              matchedJudge.judgeType || fallbackJudge.specialization,
-          };
-
-          setCurrentJudge(nextJudge);
-
-          const judgeScores = await getEventJudgeScores(eventId, {
-            judgeId: nextJudge.id,
-          });
-          if (!isMounted) return;
-
-          const nextSubmissionsByContestantId = buildSubmissionsByContestantId(
-            judgeScores,
-            nextJudge.id,
-          );
-
-          setSubmissionsByContestantId(nextSubmissionsByContestantId);
-
-          const nextActiveContestantId = resolveEventActiveContestantId(
-            nextContestants,
-            data.event?.activeContestantId,
-          );
-
-          setSelectedContestant(nextActiveContestantId);
-        } else {
-          setCurrentJudge(fallbackJudge);
-          setPageNotice(
-            judgeId
-              ? "This link did not match a saved judge assignment for the event."
-              : "This link is missing a judge assignment.",
-          );
-        }
+        setSubmissionsByContestantId(nextSubmissionsByContestantId);
+        setSelectedContestant(nextActiveContestantId);
 
         if (!nextContestants.length) {
-          setPageNotice(
-            (previous) =>
-              previous || "No contestants are available for scoring yet.",
-          );
+          setPageNotice("No contestants are available for scoring yet.");
+        } else if (!nextActiveContestantId) {
+          setPageNotice("Waiting for the admin to set the active contestant.");
         }
       } catch (error) {
         console.error(error);
         if (!isMounted) return;
 
         setCurrentJudge(fallbackJudge);
-        setLoadError("Failed to load the assigned event.");
+        setLoadError(
+          getErrorMessage(error, "Failed to load the assigned judge access."),
+        );
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -322,68 +304,58 @@ export function useJudgeScoring() {
     return () => {
       isMounted = false;
     };
-  }, [
-    eventId,
-    eventTitleParam,
-    fallbackJudge,
-    judgeId,
-    judgeNameParam,
-    sportParam,
-  ]);
+  }, [accessToken, fallbackJudge]);
 
   useEffect(() => {
-    if (isLoading || loadError || !eventId || !currentJudge.id) {
+    if (isLoading || loadError || !accessToken || !currentJudge.id) {
       return undefined;
     }
 
     let isMounted = true;
 
     const syncJudgeContext = async () => {
-      const [judgeScoresResult, eventDetailsResult] = await Promise.allSettled([
-        getEventJudgeScores(eventId, {
-          judgeId: currentJudge.id,
-        }),
-        getEventDetails(eventId),
-      ]);
+      try {
+        const data = await getJudgeAccessContext(accessToken);
+        if (!isMounted) return;
 
-      if (!isMounted) return;
-
-      if (judgeScoresResult.status === "fulfilled") {
+        const nextJudge = buildJudgeFromContext(data.judge, fallbackJudge);
+        const nextContestants = normalizeContestants(data.contestants ?? []);
         const nextSubmissionMap = buildSubmissionsByContestantId(
-          judgeScoresResult.value,
-          currentJudge.id,
-        );
-
-        setSubmissionsByContestantId((prev) =>
-          mergeSubmissionMaps(prev, nextSubmissionMap),
-        );
-      } else {
-        console.error(
-          "Failed to refresh judge submissions:",
-          judgeScoresResult.reason,
-        );
-      }
-
-      if (eventDetailsResult.status === "fulfilled") {
-        const nextContestants = normalizeContestants(
-          eventDetailsResult.value?.contestants ?? [],
+          data.judgeScores ?? [],
+          nextJudge.id,
         );
         const nextActiveContestantId = resolveEventActiveContestantId(
           nextContestants,
-          eventDetailsResult.value?.event?.activeContestantId,
+          data.event?.activeContestantId,
         );
 
+        setCurrentJudge(nextJudge);
+        setSubmissionsByContestantId((prev) =>
+          mergeSubmissionMaps(prev, nextSubmissionMap),
+        );
         setContestants(nextContestants);
         setSelectedContestant((previousContestantId) =>
           previousContestantId === nextActiveContestantId
             ? previousContestantId
             : nextActiveContestantId,
         );
-      } else {
-        console.error(
-          "Failed to refresh active contestant:",
-          eventDetailsResult.reason,
-        );
+
+        if (!nextContestants.length) {
+          setPageNotice("No contestants are available for scoring yet.");
+        } else if (!nextActiveContestantId) {
+          setPageNotice("Waiting for the admin to set the active contestant.");
+        } else {
+          setPageNotice("");
+        }
+      } catch (error) {
+        console.error("Failed to refresh judge access:", error);
+        if (!isMounted) return;
+
+        if ([401, 403, 404].includes(error?.response?.status)) {
+          setLoadError(
+            getErrorMessage(error, "This judge access link is no longer valid."),
+          );
+        }
       }
     };
 
@@ -397,26 +369,14 @@ export function useJudgeScoring() {
       syncJudgeContext();
     };
 
-    const socket = getSocket();
-    const handleRealtimeUpdate = (payload) => {
-      if (payload?.eventId && payload.eventId !== eventId) return;
-      syncJudgeContext();
-    };
-
-    subscribeToEventRoom(eventId);
     window.addEventListener("focus", handleWindowFocus);
-    socket.on(SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, handleRealtimeUpdate);
-    socket.on(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeUpdate);
 
     return () => {
       isMounted = false;
       window.clearInterval(pollId);
       window.removeEventListener("focus", handleWindowFocus);
-      socket.off(SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, handleRealtimeUpdate);
-      socket.off(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeUpdate);
-      unsubscribeFromEventRoom(eventId);
     };
-  }, [currentJudge.id, eventId, isLoading, loadError]);
+  }, [accessToken, currentJudge.id, fallbackJudge, isLoading, loadError]);
 
   const syncContestantSubmissionState = (
     contestantId,
@@ -669,6 +629,11 @@ export function useJudgeScoring() {
       return;
     }
 
+    if (!accessToken) {
+      toast.error("This judge access link is missing its secure token.");
+      return;
+    }
+
     if (isSubmissionLocked) {
       toast.error("This submission is locked and can no longer be edited.");
       return;
@@ -686,8 +651,7 @@ export function useJudgeScoring() {
 
     try {
       setIsSubmitting(true);
-      const submittedScore = await submitJudgeScore(eventId, {
-        judgeId: currentJudge.id,
+      const submittedScore = await submitJudgeAccessScore(accessToken, {
         contestantId: selectedContestantData.id,
         score: activeScoreValue,
       });
@@ -710,7 +674,12 @@ export function useJudgeScoring() {
     } catch (error) {
       console.error(error);
 
-      if (error?.response?.status === 409) {
+      const responseMessage = String(error?.response?.data?.message ?? "");
+      const isLockedResponse =
+        error?.response?.status === 409 &&
+        responseMessage.toLowerCase().includes("locked");
+
+      if (isLockedResponse) {
         setSubmissionsByContestantId((prev) => {
           const savedEntry = prev[selectedContestantData.id];
           if (!savedEntry) return prev;
@@ -734,9 +703,7 @@ export function useJudgeScoring() {
         setIsEditingSubmission(false);
       }
 
-      const message =
-        error?.response?.data?.message || "Failed to submit result.";
-      toast.error(message);
+      toast.error(getErrorMessage(error, "Failed to submit result."));
     } finally {
       setIsSubmitting(false);
     }

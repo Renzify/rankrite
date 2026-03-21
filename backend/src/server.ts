@@ -8,6 +8,7 @@ import templateRoutes from "./routes/templateRoute.ts";
 import eventRoutes from "./routes/eventRoute.ts";
 import authRoutes from "./routes/authRoute.ts";
 import activityLogRoutes from "./routes/activityLogRoute.ts";
+import judgeAccessRoutes from "./routes/judgeAccessRoute.ts";
 import { protectRoute } from "./middlewares/authMiddleware.ts";
 import { initSocketServer } from "./realtime/socketServer.ts";
 
@@ -21,6 +22,7 @@ app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 
 app.use("/api", authRoutes);
+app.use("/api", judgeAccessRoutes);
 app.use("/api", protectRoute, templateRoutes);
 app.use("/api", protectRoute, eventRoutes);
 app.use("/api", protectRoute, activityLogRoutes);
