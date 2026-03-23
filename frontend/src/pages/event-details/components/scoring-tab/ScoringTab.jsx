@@ -83,7 +83,10 @@ export default function ScoringTab() {
     scopedJudges.length > 0 &&
     scopedJudges.every((judge) => judgeScores[judge.id]?.locked);
 
-  const { displayScore: difficultyScore, computedScore: computedDifficultyScore } = useDifficultyScore(scopedJudges, judgeScores);
+  const {
+    displayScore: difficultyScore,
+    computedScore: computedDifficultyScore,
+  } = useDifficultyScore(scopedJudges, judgeScores);
   const artistryScore = useMedianJudgeTypeScore(
     scopedJudges,
     judgeScores,
@@ -105,14 +108,21 @@ export default function ScoringTab() {
     totalScore === null || penalties === null ? null : totalScore - penalties;
 
   const {
-    lockingJudgeId,
+    getJudgeScoreInputValue,
     handleJudgeLock,
+    handleJudgeScoreInputChange,
+    handleJudgeScoreInputKeyDown,
+    handleJudgeScoreSave,
     handleConfirmScoreLock,
     handleConfirmScoreUnlock,
     handleContestantSelect,
     handleContestantRowKeyDown,
+    isJudgeScoreDirty,
+    lockingJudgeId,
+    savingJudgeId,
   } = useScoringTabHandlers({
     eventId,
+    judges: scopedJudges,
     scoringLocked,
     selectedContestantId,
     selectedContestantName: selectedContestant?.fullName,
@@ -135,7 +145,8 @@ export default function ScoringTab() {
         </div>
         <p className="text-sm text-base-content/70">
           Click a contestant in the computation table to view that entry&apos;s
-          judge submissions.
+          judge submissions. Admins can also enter or update judge scores
+          directly from the list below.
         </p>
         {selectedContestant ? (
           <p className="text-sm font-medium text-base-content/80">
@@ -174,8 +185,14 @@ export default function ScoringTab() {
         <JudgeList
           judges={scopedJudges}
           judgeScores={judgeScores}
+          getJudgeScoreInputValue={getJudgeScoreInputValue}
           handleJudgeLock={handleJudgeLock}
+          handleJudgeScoreInputChange={handleJudgeScoreInputChange}
+          handleJudgeScoreInputKeyDown={handleJudgeScoreInputKeyDown}
+          handleJudgeScoreSave={handleJudgeScoreSave}
+          isJudgeScoreDirty={isJudgeScoreDirty}
           lockingJudgeId={lockingJudgeId}
+          savingJudgeId={savingJudgeId}
           scoringLocked={scoringLocked}
           selectedContestantId={selectedContestantId}
           createEmptyScoreEntry={createEmptyScoreEntry}
@@ -231,4 +248,3 @@ export default function ScoringTab() {
     </div>
   );
 }
-
