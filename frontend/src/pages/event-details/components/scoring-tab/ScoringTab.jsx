@@ -83,7 +83,7 @@ export default function ScoringTab() {
     scopedJudges.length > 0 &&
     scopedJudges.every((judge) => judgeScores[judge.id]?.locked);
 
-  const difficultyScore = useDifficultyScore(scopedJudges, judgeScores);
+  const { displayScore: difficultyScore, computedScore: computedDifficultyScore } = useDifficultyScore(scopedJudges, judgeScores);
   const artistryScore = useMedianJudgeTypeScore(
     scopedJudges,
     judgeScores,
@@ -95,11 +95,11 @@ export default function ScoringTab() {
     "execution",
   );
   const totalScore =
-    difficultyScore === null ||
+    computedDifficultyScore === null ||
     artistryScore === null ||
     executionScore === null
       ? null
-      : difficultyScore + artistryScore + executionScore;
+      : computedDifficultyScore + artistryScore + executionScore;
   const { penalties } = usePenaltyScore(scopedJudges, judgeScores);
   const finalScore =
     totalScore === null || penalties === null ? null : totalScore - penalties;
@@ -231,3 +231,4 @@ export default function ScoringTab() {
     </div>
   );
 }
+
