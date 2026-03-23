@@ -5,6 +5,11 @@ import {
   getJudgeAccessContext,
   submitJudgeAccessScore,
 } from "../../../api/judgeAccessApi";
+import {
+  clampJudgeScoreDraftValue,
+  getJudgeScoreInputLimits,
+  parseJudgeScoreValue,
+} from "../../../shared/lib/judgeScoreConstraints";
 
 const DEFAULT_SCORE_VALUE = "5.00";
 const POLL_INTERVAL_MS = 3000;
@@ -66,27 +71,6 @@ function resolveEventActiveContestantId(contestants, activeContestantId) {
   return hasContestantId(contestants, normalizedContestantId)
     ? normalizedContestantId
     : "";
-}
-
-function parseScoreNumber(value) {
-  const numericValue = Number.parseFloat(String(value ?? "").trim());
-  if (!Number.isFinite(numericValue) || numericValue < 0) {
-    return null;
-  }
-  return numericValue;
-}
-
-function getMedian(values) {
-  if (!values.length) return null;
-
-  const sortedValues = [...values].sort((left, right) => left - right);
-  const middleIndex = Math.floor(sortedValues.length / 2);
-
-  if (sortedValues.length % 2 === 0) {
-    return (sortedValues[middleIndex - 1] + sortedValues[middleIndex]) / 2;
-  }
-
-  return sortedValues[middleIndex];
 }
 
 function formatScore(value) {
@@ -157,12 +141,10 @@ function mergeSubmissionMaps(currentMap, nextMap) {
 function resetScoreInputs({
   setScoreValue,
   setDecimalValue,
-  setDeductionValues,
   setPenaltyValue,
 }) {
   setScoreValue(DEFAULT_SCORE_VALUE);
   setDecimalValue("");
-  setDeductionValues(["", "", ""]);
   setPenaltyValue("");
 }
 
@@ -172,17 +154,11 @@ function applyStoredScoreToInputs(rawScore, judgeType, actions) {
 
   if (
     normalizedJudgeType === "line judge" ||
-    normalizedJudgeType === "time judge"
-  ) {
-    actions.setPenaltyValue(formattedScore);
-    return;
-  }
-
-  if (
+    normalizedJudgeType === "time judge" ||
     normalizedJudgeType === "artistry" ||
     normalizedJudgeType === "execution"
   ) {
-    actions.setDeductionValues([formatScore(Math.max(0, 10 - rawScore))]);
+    actions.setPenaltyValue(formattedScore);
     return;
   }
 
@@ -223,7 +199,6 @@ export function useJudgeScoring() {
   const [isLoading, setIsLoading] = useState(Boolean(accessToken));
   const [loadError, setLoadError] = useState("");
   const [pageNotice, setPageNotice] = useState("");
-  const [deductionValues, setDeductionValues] = useState(["", "", ""]);
   const [penaltyValue, setPenaltyValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionsByContestantId, setSubmissionsByContestantId] = useState(
@@ -245,7 +220,6 @@ export function useJudgeScoring() {
       resetScoreInputs({
         setScoreValue,
         setDecimalValue,
-        setDeductionValues,
         setPenaltyValue,
       });
       setLoadError("");
@@ -388,7 +362,6 @@ export function useJudgeScoring() {
       resetScoreInputs({
         setScoreValue,
         setDecimalValue,
-        setDeductionValues,
         setPenaltyValue,
       });
       return;
@@ -403,7 +376,6 @@ export function useJudgeScoring() {
       resetScoreInputs({
         setScoreValue,
         setDecimalValue,
-        setDeductionValues,
         setPenaltyValue,
       });
       return;
@@ -415,7 +387,6 @@ export function useJudgeScoring() {
       {
         setScoreValue,
         setDecimalValue,
-        setDeductionValues,
         setPenaltyValue,
       },
     );
@@ -433,7 +404,6 @@ export function useJudgeScoring() {
       resetScoreInputs({
         setScoreValue,
         setDecimalValue,
-        setDeductionValues,
         setPenaltyValue,
       });
       return;
@@ -448,7 +418,6 @@ export function useJudgeScoring() {
       resetScoreInputs({
         setScoreValue,
         setDecimalValue,
-        setDeductionValues,
         setPenaltyValue,
       });
       return;
@@ -460,7 +429,6 @@ export function useJudgeScoring() {
       {
         setScoreValue,
         setDecimalValue,
-        setDeductionValues,
         setPenaltyValue,
       },
     );
@@ -482,39 +450,22 @@ export function useJudgeScoring() {
     normalizedJudgeType === "difficulty body" ||
     normalizedJudgeType === "difficulty apparatus" ||
     normalizedJudgeType === "";
-  const isMedianDeductionJudge =
+  const isSingleScoreJudge =
     normalizedJudgeType === "artistry" || normalizedJudgeType === "execution";
   const isPenaltyJudge =
     normalizedJudgeType === "line judge" ||
     normalizedJudgeType === "time judge";
+  const singleValueInputLimits = getJudgeScoreInputLimits(
+    currentJudge.specialization,
+  );
+  const parsedSingleValue = parseJudgeScoreValue(
+    penaltyValue,
+    currentJudge.specialization,
+  );
 
-  const parsedDeductionValues = deductionValues
-    .map(parseScoreNumber)
-    .filter((value) => value !== null);
-  const medianDeduction = parsedDeductionValues.length
-    ? getMedian(parsedDeductionValues)
-    : null;
-  const calculatedMedianScore =
-    medianDeduction === null ? null : Math.max(0, 10 - medianDeduction);
-  const parsedPenaltyValue = parseScoreNumber(penaltyValue);
-
-  const handleDeductionInputChange = (index, nextValue) => {
-    setDeductionValues((prev) =>
-      prev.map((value, valueIndex) =>
-        valueIndex === index ? nextValue : value,
-      ),
-    );
-  };
-
-  const handleAddDeductionInput = () => {
-    setDeductionValues((prev) => [...prev, ""]);
-  };
-
-  const handleRemoveDeductionInput = (index) => {
-    setDeductionValues((prev) =>
-      prev.length === 1
-        ? prev
-        : prev.filter((_, valueIndex) => valueIndex !== index),
+  const handleSingleValueChange = (nextValue) => {
+    setPenaltyValue(
+      clampJudgeScoreDraftValue(nextValue, currentJudge.specialization),
     );
   };
 
@@ -595,23 +546,18 @@ export function useJudgeScoring() {
     }
   };
 
-  const activeScoreValue = isMedianDeductionJudge
-    ? calculatedMedianScore === null
-      ? ""
-      : formatScore(calculatedMedianScore)
-    : isPenaltyJudge
-      ? parsedPenaltyValue === null
+  const activeScoreValue =
+    isSingleScoreJudge || isPenaltyJudge
+      ? parsedSingleValue === null
         ? ""
-        : formatScore(parsedPenaltyValue)
+        : formatScore(parsedSingleValue)
       : getFinalScore();
 
   const canSubmitCurrentEntry = isDifficultyJudge
     ? true
-    : isMedianDeductionJudge
-      ? medianDeduction !== null
-      : isPenaltyJudge
-        ? parsedPenaltyValue !== null
-        : true;
+    : isSingleScoreJudge || isPenaltyJudge
+      ? parsedSingleValue !== null
+      : true;
   const hasSavedSubmission = Boolean(submittedEntry);
   const isSubmissionLocked = Boolean(submittedEntry?.locked);
   const isViewingSavedSubmission = hasSavedSubmission && !isEditingSubmission;
@@ -639,13 +585,12 @@ export function useJudgeScoring() {
       return;
     }
 
-    if (isMedianDeductionJudge && medianDeduction === null) {
-      toast.error("Enter at least one deduction.");
-      return;
-    }
-
-    if (isPenaltyJudge && parsedPenaltyValue === null) {
-      toast.error("Enter a deduction or penalty first.");
+    if ((isSingleScoreJudge || isPenaltyJudge) && parsedSingleValue === null) {
+      toast.error(
+        isPenaltyJudge
+          ? "Enter a deduction or penalty first."
+          : "Enter a score first.",
+      );
       return;
     }
 
@@ -723,7 +668,6 @@ export function useJudgeScoring() {
     applyStoredScoreToInputs(savedEntry.rawScore, currentJudge.specialization, {
       setScoreValue,
       setDecimalValue,
-      setDeductionValues,
       setPenaltyValue,
     });
     setSubmittedEntry(savedEntry);
@@ -738,42 +682,37 @@ export function useJudgeScoring() {
 
   return {
     activeScoreValue,
-    calculatedMedianScore,
     canSubmitCurrentEntry,
     contestants,
     currentJudge,
-    deductionValues,
     formatScore,
     getFinalScore,
     getWholeNumber,
-    handleAddDeductionInput,
     handleCancelEdit,
     handleContestantChange,
     handleDecrease,
-    handleDeductionInputChange,
     handleEditSubmission,
     handleIncrease,
-    handleRemoveDeductionInput,
     handleScoreClick,
     handleScoreInputChange,
+    handleSingleValueChange,
     handleSubmit,
     hasSavedSubmission,
     isDifficultyJudge,
     isEditingSubmission,
     isEntryLocked,
     isLoading,
-    isMedianDeductionJudge,
     isPenaltyJudge,
+    isSingleScoreJudge,
     isSubmitting,
     isSubmissionLocked,
     loadError,
-    medianDeduction,
     pageNotice,
-    parsedPenaltyValue,
+    parsedSingleValue,
     penaltyValue,
     scoreValue,
     selectedContestant,
     selectedContestantData,
-    setPenaltyValue,
+    singleValueInputLimits,
   };
 }

@@ -263,6 +263,14 @@ function computeMedianJudgeTypeScoreFromValues(
   return getMedianScore(submittedScores);
 }
 
+function computeMedianDeductionJudgeTypeScoreFromValues(
+  rawValues: Array<number | null | undefined>,
+) {
+  const medianScore = computeMedianJudgeTypeScoreFromValues(rawValues);
+
+  return medianScore === null ? null : Math.max(0, 10 - medianScore);
+}
+
 function computePenaltyScoreFromValues(
   rawValues: Array<number | null | undefined>,
   configuredJudgeCount: number,
@@ -2349,10 +2357,10 @@ export async function getEventDetails(
     ]);
     const computedDifficultyScore = computeTotalDifficultyScore([dbScore, daScore]);
 
-    const aScore = computeMedianJudgeTypeScoreFromValues(
+    const aScore = computeMedianDeductionJudgeTypeScoreFromValues(
       artistryAssignments.map((assignment) => getScoreValue(assignment.id)),
     );
-    const eScore = computeMedianJudgeTypeScoreFromValues(
+    const eScore = computeMedianDeductionJudgeTypeScoreFromValues(
       executionAssignments.map((assignment) => getScoreValue(assignment.id)),
     );
 

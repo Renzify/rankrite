@@ -1,5 +1,4 @@
 import { User } from "lucide-react";
-import DeductionScorePanel from "./components/DeductionScorePanel.jsx";
 import DifficultyScorePanel from "./components/DifficultyScorePanel.jsx";
 import PenaltyScorePanel from "./components/PenaltyScorePanel.jsx";
 import { useJudgeScoring } from "./hooks/useJudgeScoring.js";
@@ -7,41 +6,36 @@ import { useJudgeScoring } from "./hooks/useJudgeScoring.js";
 function JudgeScore() {
   const {
     activeScoreValue,
-    calculatedMedianScore,
     canSubmitCurrentEntry,
     currentJudge,
-    deductionValues,
     formatScore,
     getFinalScore,
     getWholeNumber,
-    handleAddDeductionInput,
     handleCancelEdit,
     handleDecrease,
-    handleDeductionInputChange,
     handleEditSubmission,
     handleIncrease,
-    handleRemoveDeductionInput,
     handleScoreClick,
     handleScoreInputChange,
+    handleSingleValueChange,
     handleSubmit,
     hasSavedSubmission,
     isDifficultyJudge,
     isEditingSubmission,
     isEntryLocked,
     isLoading,
-    isMedianDeductionJudge,
     isPenaltyJudge,
+    isSingleScoreJudge,
     isSubmitting,
     isSubmissionLocked,
     loadError,
-    medianDeduction,
     pageNotice,
-    parsedPenaltyValue,
+    parsedSingleValue,
     penaltyValue,
     scoreValue,
     selectedContestant,
     selectedContestantData,
-    setPenaltyValue,
+    singleValueInputLimits,
   } = useJudgeScoring();
 
   const inputPanelDisabled = isEntryLocked || isSubmitting;
@@ -61,27 +55,29 @@ function JudgeScore() {
     />
   );
 
-  const scoreInputContent = isDifficultyJudge ? (
-    difficultyPanel
-  ) : isMedianDeductionJudge ? (
-    <DeductionScorePanel
-      calculatedMedianScore={calculatedMedianScore}
-      deductionValues={deductionValues}
-      formatScore={formatScore}
-      isDisabled={inputPanelDisabled}
-      medianDeduction={medianDeduction}
-      onAddDeductionInput={handleAddDeductionInput}
-      onDeductionInputChange={handleDeductionInputChange}
-      onRemoveDeductionInput={handleRemoveDeductionInput}
-    />
-  ) : isPenaltyJudge ? (
+  const singleValuePanel = (
     <PenaltyScorePanel
       formatScore={formatScore}
+      inputLabel={
+        isPenaltyJudge
+          ? "Enter deduction / penalty:"
+          : "Enter deduction:"
+      }
       isDisabled={inputPanelDisabled}
-      onPenaltyChange={setPenaltyValue}
-      parsedPenaltyValue={parsedPenaltyValue}
-      penaltyValue={penaltyValue}
+      maxValue={singleValueInputLimits.max ?? undefined}
+      onValueChange={handleSingleValueChange}
+      parsedValue={parsedSingleValue}
+      value={penaltyValue}
+      valueLabel={
+        isPenaltyJudge ? "Recorded Penalty:" : "Recorded Deduction:"
+      }
     />
+  );
+
+  const scoreInputContent = isDifficultyJudge ? (
+    difficultyPanel
+  ) : isSingleScoreJudge || isPenaltyJudge ? (
+    singleValuePanel
   ) : (
     difficultyPanel
   );

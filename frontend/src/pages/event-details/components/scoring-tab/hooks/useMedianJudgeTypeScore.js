@@ -24,7 +24,8 @@ export function useMedianJudgeTypeScore(judges, judgeScores, judgeTypeName) {
     const normalizedJudgeTypeName = normalizeJudgeType(judgeTypeName);
 
     const scoreJudges = judges.filter(
-      (judge) => normalizeJudgeType(judge.judgeType) === normalizedJudgeTypeName,
+      (judge) =>
+        normalizeJudgeType(judge.judgeType) === normalizedJudgeTypeName,
     );
 
     if (!scoreJudges.length) {
@@ -40,6 +41,14 @@ export function useMedianJudgeTypeScore(judges, judgeScores, judgeTypeName) {
     }
 
     const medianScore = getMedian(submittedScores);
+
+    if (
+      normalizedJudgeTypeName === "artistry" ||
+      normalizedJudgeTypeName === "execution"
+    ) {
+      return Math.max(0, 10 - medianScore);
+    }
+
     return medianScore;
   }, [judges, judgeScores, judgeTypeName]);
 }
