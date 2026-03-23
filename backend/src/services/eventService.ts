@@ -201,6 +201,58 @@ function computeDifficultyAverageFromValues(
   return null;
 }
 
+function computeDisplayedDifficultyAverageFromValues(
+  rawValues: Array<number | null | undefined>,
+) {
+  const submittedScores = rawValues
+    .map(parsePositiveScoreValue)
+    .filter((value): value is number => value !== null);
+
+  if (!submittedScores.length) {
+    return null;
+  }
+
+  return (
+    submittedScores.reduce((total, score) => total + score, 0) /
+    submittedScores.length
+  );
+}
+
+function sumSubmittedDifficultyScores(
+  components: Array<number | null | undefined>,
+) {
+  const submittedScores = components.filter(
+    (component): component is number => typeof component === "number",
+  );
+
+  return submittedScores.length
+    ? submittedScores.reduce((total, score) => total + score, 0)
+    : null;
+}
+
+function computeTotalDifficultyScore(
+  components: Array<number | null | undefined>,
+) {
+  let hasConfiguredComponent = false;
+  let total = 0;
+
+  for (const component of components) {
+    if (component === undefined) {
+      continue;
+    }
+
+    hasConfiguredComponent = true;
+
+    if (component === null) {
+      return null;
+    }
+
+    total += component;
+  }
+
+  return hasConfiguredComponent ? total : null;
+}
+
 function computeMedianJudgeTypeScoreFromValues(
   rawValues: Array<number | null | undefined>,
 ) {
@@ -2264,18 +2316,38 @@ export async function getEventDetails(
         `${contestantId}:${judgeAssignmentId}`,
       ) ?? null;
 
-    const dbScore = computeDifficultyAverageFromValues(
-      difficultyBodyAssignments.map((assignment) => getScoreValue(assignment.id)),
-      difficultyBodyAssignments.length,
-    );
-    const daScore = computeDifficultyAverageFromValues(
-      difficultyApparatusAssignments.map((assignment) =>
-        getScoreValue(assignment.id),
-      ),
-      difficultyApparatusAssignments.length,
-    );
+    const dbDisplayedScore = difficultyBodyAssignments.length
+      ? computeDisplayedDifficultyAverageFromValues(
+          difficultyBodyAssignments.map((assignment) => getScoreValue(assignment.id)),
+        )
+      : undefined;
+    const daDisplayedScore = difficultyApparatusAssignments.length
+      ? computeDisplayedDifficultyAverageFromValues(
+          difficultyApparatusAssignments.map((assignment) =>
+            getScoreValue(assignment.id),
+          ),
+        )
+      : undefined;
+    const dbScore = difficultyBodyAssignments.length
+      ? computeDifficultyAverageFromValues(
+          difficultyBodyAssignments.map((assignment) => getScoreValue(assignment.id)),
+          difficultyBodyAssignments.length,
+        )
+      : undefined;
+    const daScore = difficultyApparatusAssignments.length
+      ? computeDifficultyAverageFromValues(
+          difficultyApparatusAssignments.map((assignment) =>
+            getScoreValue(assignment.id),
+          ),
+          difficultyApparatusAssignments.length,
+        )
+      : undefined;
 
-    const dScore = dbScore === null || daScore === null ? null : dbScore + daScore;
+    const dScore = sumSubmittedDifficultyScores([
+      dbDisplayedScore,
+      daDisplayedScore,
+    ]);
+    const computedDifficultyScore = computeTotalDifficultyScore([dbScore, daScore]);
 
     const aScore = computeMedianJudgeTypeScoreFromValues(
       artistryAssignments.map((assignment) => getScoreValue(assignment.id)),
@@ -2285,9 +2357,9 @@ export async function getEventDetails(
     );
 
     const totalScore =
-      dScore === null || aScore === null || eScore === null
+      computedDifficultyScore === null || aScore === null || eScore === null
         ? null
-        : dScore + aScore + eScore;
+        : computedDifficultyScore + aScore + eScore;
 
     const timePenalty = computePenaltyScoreFromValues(
       timeJudgeAssignments.map((assignment) => getScoreValue(assignment.id)),
@@ -2341,3 +2413,5 @@ export async function getEventDetails(
     currentEventPhaseLabel,
   };
 }
+
+
