@@ -14,12 +14,12 @@ function ComputationTable({
   formatEnteredValue,
 }) {
   const getDisplayValue = (contestantValue, selectedFallback, isSelected) => {
-    if (contestantValue !== null && contestantValue !== undefined) {
-      return formatEnteredValue(contestantValue);
-    }
-
     if (isSelected && selectedFallback !== null) {
       return formatEnteredValue(selectedFallback);
+    }
+
+    if (contestantValue !== null && contestantValue !== undefined) {
+      return formatEnteredValue(contestantValue);
     }
 
     return "--";
