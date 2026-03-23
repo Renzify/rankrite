@@ -1,4 +1,5 @@
 import { DEFAULT_LIVE_DISPLAY_STATE, mergeLiveDisplayState } from "../helpers/liveDisplayState";
+import { formatScoreValue } from "../../../../../shared/lib/scoreFormatting";
 
 function InfoItem({ label, value, isPreview = false }) {
   return (
@@ -27,6 +28,7 @@ export default function LiveDisplayCanvas({
   fillContainer = false,
 }) {
   const displayState = mergeLiveDisplayState(DEFAULT_LIVE_DISPLAY_STATE, liveState);
+  const displayScore = formatScoreValue(displayState.contestant.score, "--");
   const viewportClassName = fillContainer
     ? "h-full overflow-hidden"
     : "min-h-screen";
@@ -162,7 +164,7 @@ export default function LiveDisplayCanvas({
                   : "text-[clamp(2.4rem,11vw,6rem)] md:text-[clamp(3.75rem,10vw,10rem)]"
               }`}
             >
-              {displayState.contestant.score}
+              {displayScore}
             </p>
           </section>
         </main>
