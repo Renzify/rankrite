@@ -1,3 +1,5 @@
+import { formatScoreValue } from "../../../../../shared/lib/scoreFormatting";
+
 export function createEmptyScoreEntry() {
   return {
     value: "",
@@ -9,8 +11,7 @@ export function createEmptyScoreEntry() {
 }
 
 export function formatEnteredValue(value) {
-  const parsedValue = Number.parseFloat(String(value ?? ""));
-  return Number.isFinite(parsedValue) ? parsedValue.toFixed(2) : "";
+  return formatScoreValue(value);
 }
 
 export function normalizeJudgeType(judgeType) {
