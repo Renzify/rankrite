@@ -1,12 +1,27 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router";
 import { formatLiveLabel } from "./helpers/liveDisplaySync";
 import useDisplayControlEffects from "./hooks/useDisplayControlEffects";
 import useDisplayControlHandlers from "./hooks/useDisplayControlHandlers";
-import LivePreview from "./components/LivePreview";
-import ViewingControls from "./components/ViewingControls";
 import ContestantList from "./components/ContestantList";
+import OneByOneDisplayTab from "./components/OneByOneDisplayTab";
+import LeaderboardDisplayTab from "./components/LeaderboardDisplayTab";
 import InfoTooltip from "../../../../shared/components/InfoTooltip";
+import {
+  buildLeaderboardRows,
+  rankContestantsByScore,
+} from "./helpers/contestantRanking";
+
+const DISPLAY_LAYOUTS = [
+  {
+    value: "one-by-one",
+    label: "One-By-One",
+  },
+  {
+    value: "leaderboard",
+    label: "Leaderboard",
+  },
+];
 
 export default function DisplayControlTab() {
   const {
@@ -21,7 +36,8 @@ export default function DisplayControlTab() {
     setContestants,
   } = useOutletContext();
 
-  const [viewMode, setViewMode] = useState("manual");
+  const [displayLayout, setDisplayLayout] = useState("one-by-one");
+  const [swapMode, setSwapMode] = useState("manual");
   const [activeIndex, setActiveIndex] = useState(0);
   const [swapSeconds, setSwapSeconds] = useState(5);
   const [isAutoRunning, setIsAutoRunning] = useState(false);
@@ -30,28 +46,41 @@ export default function DisplayControlTab() {
 
   const eventId = eventDetails?.event?.id ?? "";
 
-  const hasContestants = contestants.length > 0;
-  const safeActiveIndex = hasContestants
-    ? Math.min(activeIndex, contestants.length - 1)
+  const { scoredContestants, unscoredContestants } = useMemo(
+    () => rankContestantsByScore(contestants),
+    [contestants],
+  );
+
+  const hasScoredContestants = scoredContestants.length > 0;
+  const safeActiveIndex = hasScoredContestants
+    ? Math.min(activeIndex, scoredContestants.length - 1)
     : 0;
 
-  const activeContestant = hasContestants ? contestants[safeActiveIndex] : null;
+  const activeContestant = hasScoredContestants
+    ? scoredContestants[safeActiveIndex]
+    : null;
 
-  const nextIndex = hasContestants
-    ? (safeActiveIndex + 1) % contestants.length
+  const nextIndex = hasScoredContestants
+    ? (safeActiveIndex + 1) % scoredContestants.length
     : 0;
+
+  useEffect(() => {
+    if (!hasScoredContestants) {
+      setActiveIndex(0);
+      setIsAutoRunning(false);
+      return;
+    }
+
+    setActiveIndex((previousIndex) =>
+      Math.min(previousIndex, scoredContestants.length - 1),
+    );
+  }, [hasScoredContestants, scoredContestants.length]);
 
   const activeContestantName =
-    activeContestant?.fullName ||
-    activeContestant?.name ||
-    "Awaiting contestant";
-  const activeContestantDelegation =
-    activeContestant?.delegation || activeContestant?.teamName || "-";
+    activeContestant?.displayName ?? "Awaiting contestant";
+  const activeContestantDelegation = activeContestant?.displayDelegation ?? "-";
   const activeContestantScore = String(
-    activeContestant?.score ??
-      activeContestant?.totalScore ??
-      activeContestant?.finalScore ??
-      "--",
+    activeContestant?.scoreValue ?? "--",
   );
 
   const currentEventPhase = useMemo(
@@ -79,6 +108,15 @@ export default function DisplayControlTab() {
     "Event Division",
   );
 
+  const leaderboardRows = useMemo(
+    () =>
+      buildLeaderboardRows(scoredContestants, {
+        divisionLevel: divisionLevelLabel,
+        apparatus: currentApparatusLabel,
+      }),
+    [scoredContestants, divisionLevelLabel, currentApparatusLabel],
+  );
+
   const liveDisplayPayload = useMemo(
     () => ({
       eventName: eventTitle || "Event Competition",
@@ -86,27 +124,34 @@ export default function DisplayControlTab() {
       division: eventDivisionLabel,
       divisionLevel: divisionLevelLabel,
       apparatus: currentApparatusLabel,
+      displayLayout,
+      swapMode,
+      mode: swapMode,
+      hasScoredContestants,
       contestant: {
         name: activeContestantName,
         delegation: activeContestantDelegation,
         score: activeContestantScore,
       },
+      leaderboardRows,
       isBlackout,
       isFrozen,
-      mode: viewMode,
     }),
     [
       activeContestantDelegation,
       activeContestantName,
       activeContestantScore,
       currentApparatusLabel,
+      displayLayout,
       divisionLevelLabel,
       eventCategoryLabel,
       eventDivisionLabel,
       eventTitle,
+      hasScoredContestants,
       isBlackout,
       isFrozen,
-      viewMode,
+      leaderboardRows,
+      swapMode,
     ],
   );
 
@@ -114,11 +159,11 @@ export default function DisplayControlTab() {
     eventId,
     liveDisplayPayload,
     setContestants,
-    viewMode,
+    swapMode,
     isAutoRunning,
     isFrozen,
     isBlackout,
-    contestantsLength: contestants.length,
+    scoredContestantsLength: scoredContestants.length,
     swapSeconds,
     setActiveIndex,
   });
@@ -129,18 +174,18 @@ export default function DisplayControlTab() {
     handleOpenLiveDisplay,
     handleToggleAutoSwap,
     handleSwapSecondsChange,
-    handleViewModeChange,
+    handleSwapModeChange,
     handleFreezeStateChange,
     handleOutputStateChange,
   } = useDisplayControlHandlers({
-    hasContestants,
-    contestantsLength: contestants.length,
+    hasContestants: hasScoredContestants,
+    contestantsLength: scoredContestants.length,
     isFrozen,
     isBlackout,
     setActiveIndex,
     setIsAutoRunning,
     setSwapSeconds,
-    setViewMode,
+    setSwapMode,
     setIsFrozen,
     setIsBlackout,
   });
@@ -156,8 +201,13 @@ export default function DisplayControlTab() {
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <div className="badge badge-outline">
-            {viewMode === "manual" ? "Manual Swapping" : "Automatic Swapping "}
+            {displayLayout === "one-by-one" ? "One-By-One Mode" : "Leaderboard Mode"}
           </div>
+          {displayLayout === "one-by-one" ? (
+            <div className="badge badge-outline">
+              {swapMode === "manual" ? "Manual Swapping" : "Automatic Swapping"}
+            </div>
+          ) : null}
           {isFrozen ? <div className="badge badge-warning">Frozen</div> : null}
           {isBlackout ? (
             <div className="badge badge-error">Blackout</div>
@@ -165,35 +215,62 @@ export default function DisplayControlTab() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <LivePreview
-          handleOpenLiveDisplay={handleOpenLiveDisplay}
-          isFrozen={isFrozen}
+      <div className="flex flex-wrap items-center gap-2">
+        {DISPLAY_LAYOUTS.map((layoutOption) => {
+          const isActive = displayLayout === layoutOption.value;
+
+          return (
+            <button
+              key={layoutOption.value}
+              type="button"
+              className={`btn btn-sm ${isActive ? "btn-neutral" : "btn-outline"}`}
+              onClick={() => setDisplayLayout(layoutOption.value)}
+            >
+              {layoutOption.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {displayLayout === "one-by-one" ? (
+        <OneByOneDisplayTab
           liveDisplayPayload={liveDisplayPayload}
-        />
-        <ViewingControls
-          viewMode={viewMode}
-          handlePrev={handlePrev}
-          handleNext={handleNext}
-          hasContestants={hasContestants}
           isFrozen={isFrozen}
+          handleOpenLiveDisplay={handleOpenLiveDisplay}
+          swapMode={swapMode}
+          handlePrev={handlePrev}
+          hasScoredContestants={hasScoredContestants}
           isBlackout={isBlackout}
+          handleNext={handleNext}
           handleToggleAutoSwap={handleToggleAutoSwap}
           handleSwapSecondsChange={handleSwapSecondsChange}
-          handleViewModeChange={handleViewModeChange}
-          handleFreezeStateChange={handleFreezeStateChange}
-          handleOutputStateChange={handleOutputStateChange}
+          handleSwapModeChange={handleSwapModeChange}
           isAutoRunning={isAutoRunning}
           swapSeconds={swapSeconds}
+          handleFreezeStateChange={handleFreezeStateChange}
+          handleOutputStateChange={handleOutputStateChange}
         />
-      </div>
+      ) : (
+        <LeaderboardDisplayTab
+          liveDisplayPayload={liveDisplayPayload}
+          isFrozen={isFrozen}
+          isBlackout={isBlackout}
+          handleOpenLiveDisplay={handleOpenLiveDisplay}
+          handleFreezeStateChange={handleFreezeStateChange}
+          handleOutputStateChange={handleOutputStateChange}
+          scoredCount={scoredContestants.length}
+          unscoredCount={unscoredContestants.length}
+        />
+      )}
 
       <div className="app-table-wrap">
         <ContestantList
-          contestants={contestants}
+          scoredContestants={scoredContestants}
+          unscoredContestants={unscoredContestants}
           safeActiveIndex={safeActiveIndex}
           nextIndex={nextIndex}
           isBlackout={isBlackout}
+          displayLayout={displayLayout}
         />
       </div>
     </div>
