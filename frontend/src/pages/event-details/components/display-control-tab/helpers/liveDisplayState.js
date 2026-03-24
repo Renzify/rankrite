@@ -4,6 +4,10 @@ export const DEFAULT_LIVE_DISPLAY_STATE = {
   division: "Event Division",
   divisionLevel: "Division Level",
   apparatus: "Current Apparatus",
+  displayLayout: "one-by-one",
+  swapMode: "manual",
+  leaderboardRows: [],
+  hasScoredContestants: false,
   contestant: {
     name: "Awaiting contestant",
     delegation: "-",
@@ -15,9 +19,33 @@ export const DEFAULT_LIVE_DISPLAY_STATE = {
 };
 
 export function mergeLiveDisplayState(base, incoming) {
+  const nextSwapMode =
+    incoming?.swapMode ?? incoming?.mode ?? base.swapMode ?? base.mode;
+  const inferredHasScoredContestants =
+    Array.isArray(incoming?.leaderboardRows) && incoming.leaderboardRows.length
+      ? true
+      : Number.isFinite(
+          Number.parseFloat(String(incoming?.contestant?.score ?? "")),
+        );
+
   return {
     ...base,
     ...incoming,
+    displayLayout:
+      incoming?.displayLayout === "leaderboard"
+        ? "leaderboard"
+        : incoming?.displayLayout === "one-by-one"
+          ? "one-by-one"
+          : base.displayLayout,
+    swapMode: nextSwapMode,
+    mode: nextSwapMode,
+    leaderboardRows: Array.isArray(incoming?.leaderboardRows)
+      ? incoming.leaderboardRows
+      : base.leaderboardRows,
+    hasScoredContestants:
+      typeof incoming?.hasScoredContestants === "boolean"
+        ? incoming.hasScoredContestants
+        : inferredHasScoredContestants || base.hasScoredContestants,
     contestant: {
       ...base.contestant,
       ...(incoming?.contestant ?? {}),

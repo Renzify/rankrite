@@ -8,7 +8,7 @@ export default function useDisplayControlHandlers({
   setActiveIndex,
   setIsAutoRunning,
   setSwapSeconds,
-  setViewMode,
+  setSwapMode,
   setIsFrozen,
   setIsBlackout,
 }) {
@@ -44,11 +44,11 @@ export default function useDisplayControlHandlers({
     [setSwapSeconds],
   );
 
-  const handleViewModeChange = useCallback(
+  const handleSwapModeChange = useCallback(
     (mode) => {
-      setViewMode(mode);
+      setSwapMode(mode);
     },
-    [setViewMode],
+    [setSwapMode],
   );
 
   const handleFreezeStateChange = useCallback(
@@ -71,7 +71,7 @@ export default function useDisplayControlHandlers({
     handleOpenLiveDisplay,
     handleToggleAutoSwap,
     handleSwapSecondsChange,
-    handleViewModeChange,
+    handleSwapModeChange,
     handleFreezeStateChange,
     handleOutputStateChange,
   };

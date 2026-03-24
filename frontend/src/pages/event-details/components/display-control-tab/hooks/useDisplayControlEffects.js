@@ -19,11 +19,11 @@ export default function useDisplayControlEffects({
   eventId,
   liveDisplayPayload,
   setContestants,
-  viewMode,
+  swapMode,
   isAutoRunning,
   isFrozen,
   isBlackout,
-  contestantsLength,
+  scoredContestantsLength,
   swapSeconds,
   setActiveIndex,
 }) {
@@ -115,23 +115,23 @@ export default function useDisplayControlEffects({
   }, [eventId, setContestants]);
 
   useEffect(() => {
-    if (viewMode !== "auto") return;
+    if (swapMode !== "auto") return;
     if (!isAutoRunning) return;
     if (isFrozen || isBlackout) return;
-    if (contestantsLength < 2) return;
+    if (scoredContestantsLength < 2) return;
 
     const interval = window.setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % contestantsLength);
+      setActiveIndex((prev) => (prev + 1) % scoredContestantsLength);
     }, swapSeconds * 1000);
 
     return () => window.clearInterval(interval);
   }, [
-    viewMode,
+    swapMode,
     isAutoRunning,
     isFrozen,
     isBlackout,
     swapSeconds,
-    contestantsLength,
+    scoredContestantsLength,
     setActiveIndex,
   ]);
 }

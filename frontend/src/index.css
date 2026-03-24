@@ -110,6 +110,23 @@ textarea {
     }
   }
 
+  @keyframes live-leaderboard-pop-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    65% {
+      opacity: 1;
+      transform: scale(1.03);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   .landing-navbar-stuck {
     animation: landing-navbar-slide 260ms ease-out;
   }
@@ -147,6 +164,15 @@ textarea {
     filter: blur(0);
   }
 
+  .live-leaderboard-row {
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .live-leaderboard-row-enter {
+    animation: live-leaderboard-pop-in 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .reveal-on-scroll,
     .reveal-on-scroll.is-visible {
@@ -154,6 +180,15 @@ textarea {
       transform: none;
       filter: none;
       transition: none;
+    }
+
+    .live-leaderboard-row {
+      transition: none !important;
+      transform: none !important;
+    }
+
+    .live-leaderboard-row-enter {
+      animation: none;
     }
   }
 
