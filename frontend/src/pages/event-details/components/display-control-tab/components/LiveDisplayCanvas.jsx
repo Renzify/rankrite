@@ -219,11 +219,22 @@ export default function LiveDisplayCanvas({
       }
 
       node.style.transition = "transform 0s";
-      node.style.transform = `translateY(${deltaY}px)`;
+      node.style.transform = `translate3d(0, ${deltaY}px, 0)`;
+      node.style.zIndex = "1";
 
       requestAnimationFrame(() => {
-        node.style.transition = "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)";
-        node.style.transform = "translateY(0)";
+        node.style.transition =
+          "transform 520ms cubic-bezier(0.16, 1, 0.3, 1)";
+        node.style.transform = "translate3d(0, 0, 0)";
+      });
+
+      const handleTransitionEnd = () => {
+        node.style.transition = "";
+        node.style.zIndex = "";
+      };
+
+      node.addEventListener("transitionend", handleTransitionEnd, {
+        once: true,
       });
     });
 
@@ -347,7 +358,6 @@ export default function LiveDisplayCanvas({
                         } ${isEntering ? "live-leaderboard-row-enter" : ""}`}
                       >
                         <span className="flex items-center gap-2">
-                          <span className="font-bold text-cyan-300">#{row.rank}</span>
                           {placement ? (
                             <span
                               className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] md:text-[10px] ${placement.badgeClassName}`}
@@ -357,7 +367,11 @@ export default function LiveDisplayCanvas({
                               />
                               {placement.label}
                             </span>
-                          ) : null}
+                          ) : (
+                            <span className="font-bold text-cyan-300">
+                              #{row.rank}
+                            </span>
+                          )}
                         </span>
                         <span className="truncate font-semibold text-white">
                           {row.name}

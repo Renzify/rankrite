@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 export default function useDisplayControlHandlers({
+  eventId,
   hasContestants,
   contestantsLength,
   isFrozen,
@@ -30,8 +31,20 @@ export default function useDisplayControlHandlers({
 
   const handleOpenLiveDisplay = useCallback(() => {
     if (typeof window === "undefined") return;
-    window.open("/live-display", "_blank", "noopener,noreferrer");
-  }, []);
+
+    const queryParams = new URLSearchParams();
+    const normalizedEventId = String(eventId ?? "").trim();
+    if (normalizedEventId) {
+      queryParams.set("eventId", normalizedEventId);
+    }
+
+    const queryString = queryParams.toString();
+    const liveDisplayPath = queryString
+      ? `/live-display?${queryString}`
+      : "/live-display";
+
+    window.open(liveDisplayPath, "_blank", "noopener,noreferrer");
+  }, [eventId]);
 
   const handleToggleAutoSwap = useCallback(() => {
     setIsAutoRunning((prev) => !prev);

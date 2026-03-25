@@ -78,7 +78,9 @@ export function buildLeaderboardRows(
   { divisionLevel, apparatus },
 ) {
   return scoredContestants.map((contestant, index) => ({
-    id: contestant.id ?? `${contestant.displayName}-${index}`,
+    id:
+      contestant.id ??
+      `contestant-${contestant.originalIndex ?? contestant.displayName}`,
     rank: index + 1,
     name: contestant.displayName,
     delegation: contestant.displayDelegation,
