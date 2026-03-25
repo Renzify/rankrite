@@ -12,6 +12,21 @@ type EventRoomPayload = {
   eventId?: string;
 };
 
+type DisplayControlStatePayload = {
+  displayLayout?: "one-by-one" | "leaderboard";
+  swapMode?: "manual" | "auto";
+  activeContestantId?: string | null;
+  swapSeconds?: number;
+  isAutoRunning?: boolean;
+  isFrozen?: boolean;
+  isBlackout?: boolean;
+};
+
+type DisplayControlSyncPayload = {
+  eventId?: string;
+  displayState?: DisplayControlStatePayload;
+};
+
 export type ActiveContestantUpdatedPayload = {
   eventId: string;
   activeContestantId: string | null;
@@ -34,6 +49,9 @@ export const SOCKET_EVENT_LEAVE_ROOM = "event:leave";
 export const SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED =
   "event:active-contestant-updated";
 export const SOCKET_EVENT_JUDGE_SCORE_UPDATED = "event:judge-score-updated";
+export const SOCKET_EVENT_DISPLAY_CONTROL_SYNC = "event:display-control-sync";
+export const SOCKET_EVENT_DISPLAY_CONTROL_UPDATED =
+  "event:display-control-updated";
 
 const AUTH_COOKIE_NAME = "jwt";
 const EVENT_ROOM_PREFIX = "event:";
@@ -144,6 +162,25 @@ export function initSocketServer(httpServer: HttpServer) {
 
       socket.leave(getEventRoomName(eventId));
     });
+
+    socket.on(
+      SOCKET_EVENT_DISPLAY_CONTROL_SYNC,
+      (payload?: DisplayControlSyncPayload) => {
+        const eventId = normalizeEventId(payload?.eventId);
+        const displayState = payload?.displayState;
+
+        if (!eventId) return;
+        if (!displayState || typeof displayState !== "object") return;
+        if (Array.isArray(displayState)) return;
+
+        emitToEventRoom(eventId, SOCKET_EVENT_DISPLAY_CONTROL_UPDATED, {
+          eventId,
+          displayState,
+          sourceSocketId: socket.id,
+          updatedAt: new Date().toISOString(),
+        });
+      },
+    );
   });
 
   return io;

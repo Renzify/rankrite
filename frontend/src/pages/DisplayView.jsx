@@ -9,16 +9,34 @@ import {
   LIVE_DISPLAY_MESSAGE_TYPE,
   LIVE_DISPLAY_STORAGE_KEY,
   readLiveDisplayState,
+  writeLiveDisplayState,
 } from "./event-details/components/display-control-tab/helpers/liveDisplaySync";
+import {
+  getSocket,
+  SOCKET_EVENT_DISPLAY_CONTROL_UPDATED,
+  subscribeToEventRoom,
+  unsubscribeFromEventRoom,
+} from "../shared/lib/socket";
 
 function DisplayView() {
   const isPreview =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("preview") === "1";
+  const queryEventId =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("eventId") ?? ""
+      : "";
 
-  const [liveState, setLiveState] = useState(() =>
-    mergeLiveDisplayState(DEFAULT_LIVE_DISPLAY_STATE, readLiveDisplayState()),
-  );
+  const [liveState, setLiveState] = useState(() => {
+    const storedState = readLiveDisplayState();
+
+    return mergeLiveDisplayState(DEFAULT_LIVE_DISPLAY_STATE, {
+      ...storedState,
+      eventId: queryEventId || storedState?.eventId || "",
+    });
+  });
+
+  const activeEventId = String(queryEventId || liveState?.eventId || "").trim();
 
   useEffect(() => {
     const handleStorage = (event) => {
@@ -46,6 +64,7 @@ function DisplayView() {
 
     const handleMessage = (event) => {
       if (event.data?.type !== LIVE_DISPLAY_MESSAGE_TYPE) return;
+      writeLiveDisplayState(event.data.payload);
       setLiveState((prev) => mergeLiveDisplayState(prev, event.data.payload));
     };
 
@@ -56,6 +75,36 @@ function DisplayView() {
       channel.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (!activeEventId) return undefined;
+
+    const socket = getSocket();
+    const handleRealtimeLiveDisplaySync = (payload) => {
+      const payloadEventId = String(payload?.eventId ?? "").trim();
+      if (!payloadEventId || payloadEventId !== activeEventId) return;
+
+      const incomingState = payload?.displayState;
+      if (!incomingState || typeof incomingState !== "object") return;
+      if (Array.isArray(incomingState)) return;
+
+      writeLiveDisplayState(incomingState);
+      setLiveState((previousState) =>
+        mergeLiveDisplayState(previousState, incomingState),
+      );
+    };
+
+    subscribeToEventRoom(activeEventId);
+    socket.on(SOCKET_EVENT_DISPLAY_CONTROL_UPDATED, handleRealtimeLiveDisplaySync);
+
+    return () => {
+      socket.off(
+        SOCKET_EVENT_DISPLAY_CONTROL_UPDATED,
+        handleRealtimeLiveDisplaySync,
+      );
+      unsubscribeFromEventRoom(activeEventId);
+    };
+  }, [activeEventId]);
 
   return <LiveDisplayCanvas liveState={liveState} isPreview={isPreview} />;
 }

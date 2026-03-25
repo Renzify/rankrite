@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router";
 import { formatLiveLabel } from "./helpers/liveDisplaySync";
 import useDisplayControlEffects from "./hooks/useDisplayControlEffects";
@@ -119,6 +119,7 @@ export default function DisplayControlTab() {
 
   const liveDisplayPayload = useMemo(
     () => ({
+      eventId,
       eventName: eventTitle || "Event Competition",
       category: eventCategoryLabel,
       division: eventDivisionLabel,
@@ -146,6 +147,7 @@ export default function DisplayControlTab() {
       divisionLevelLabel,
       eventCategoryLabel,
       eventDivisionLabel,
+      eventId,
       eventTitle,
       hasScoredContestants,
       isBlackout,
@@ -155,9 +157,82 @@ export default function DisplayControlTab() {
     ],
   );
 
+  const displayControlSyncState = useMemo(
+    () => ({
+      ...liveDisplayPayload,
+      activeContestantId: activeContestant?.id ?? null,
+      swapSeconds,
+      isAutoRunning,
+    }),
+    [activeContestant?.id, isAutoRunning, liveDisplayPayload, swapSeconds],
+  );
+
+  const applyRemoteDisplayControlState = useCallback(
+    (incomingState) => {
+      if (!incomingState || typeof incomingState !== "object") {
+        return;
+      }
+
+      if (
+        incomingState.displayLayout === "one-by-one" ||
+        incomingState.displayLayout === "leaderboard"
+      ) {
+        setDisplayLayout(incomingState.displayLayout);
+      }
+
+      if (incomingState.swapMode === "manual" || incomingState.swapMode === "auto") {
+        setSwapMode(incomingState.swapMode);
+      }
+
+      const parsedSwapSeconds = Number.parseInt(
+        String(incomingState.swapSeconds ?? ""),
+        10,
+      );
+      if (Number.isFinite(parsedSwapSeconds) && parsedSwapSeconds > 0) {
+        setSwapSeconds(parsedSwapSeconds);
+      }
+
+      if (typeof incomingState.isAutoRunning === "boolean") {
+        setIsAutoRunning(incomingState.isAutoRunning);
+      }
+
+      if (typeof incomingState.isFrozen === "boolean") {
+        setIsFrozen(incomingState.isFrozen);
+      }
+
+      if (typeof incomingState.isBlackout === "boolean") {
+        setIsBlackout(incomingState.isBlackout);
+      }
+
+      if (Object.prototype.hasOwnProperty.call(incomingState, "activeContestantId")) {
+        const nextActiveContestantId =
+          typeof incomingState.activeContestantId === "string"
+            ? incomingState.activeContestantId.trim()
+            : "";
+
+        if (!nextActiveContestantId) {
+          setActiveIndex(0);
+          return;
+        }
+
+        const nextIndex = scoredContestants.findIndex(
+          (contestant) =>
+            String(contestant?.id ?? "").trim() === nextActiveContestantId,
+        );
+
+        if (nextIndex >= 0) {
+          setActiveIndex(nextIndex);
+        }
+      }
+    },
+    [scoredContestants],
+  );
+
   useDisplayControlEffects({
     eventId,
     liveDisplayPayload,
+    displayControlSyncState,
+    applyRemoteDisplayControlState,
     setContestants,
     swapMode,
     isAutoRunning,
@@ -178,6 +253,7 @@ export default function DisplayControlTab() {
     handleFreezeStateChange,
     handleOutputStateChange,
   } = useDisplayControlHandlers({
+    eventId,
     hasContestants: hasScoredContestants,
     contestantsLength: scoredContestants.length,
     isFrozen,

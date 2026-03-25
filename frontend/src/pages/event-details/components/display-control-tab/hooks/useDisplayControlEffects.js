@@ -3,6 +3,8 @@ import { getEventDetails } from "../../../../../api/eventApi";
 import {
   getSocket,
   SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED,
+  SOCKET_EVENT_DISPLAY_CONTROL_SYNC,
+  SOCKET_EVENT_DISPLAY_CONTROL_UPDATED,
   SOCKET_EVENT_JUDGE_SCORE_UPDATED,
   subscribeToEventRoom,
   unsubscribeFromEventRoom,
@@ -15,9 +17,18 @@ import {
 
 const POLL_INTERVAL_MS = 3000;
 
+function serializeDisplayControlSyncState(eventId, displayState) {
+  return JSON.stringify({
+    eventId,
+    displayState,
+  });
+}
+
 export default function useDisplayControlEffects({
   eventId,
   liveDisplayPayload,
+  displayControlSyncState,
+  applyRemoteDisplayControlState,
   setContestants,
   swapMode,
   isAutoRunning,
@@ -29,6 +40,20 @@ export default function useDisplayControlEffects({
 }) {
   const channelRef = useRef(null);
   const lastSyncedPayloadRef = useRef("");
+  const hasInitializedDisplayControlSyncRef = useRef(false);
+  const lastSentDisplayControlSyncRef = useRef("");
+  const lastAppliedDisplayControlSyncRef = useRef("");
+  const applyRemoteDisplayControlStateRef = useRef(applyRemoteDisplayControlState);
+
+  useEffect(() => {
+    applyRemoteDisplayControlStateRef.current = applyRemoteDisplayControlState;
+  }, [applyRemoteDisplayControlState]);
+
+  useEffect(() => {
+    hasInitializedDisplayControlSyncRef.current = false;
+    lastSentDisplayControlSyncRef.current = "";
+    lastAppliedDisplayControlSyncRef.current = "";
+  }, [eventId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -57,6 +82,35 @@ export default function useDisplayControlEffects({
       payload: liveDisplayPayload,
     });
   }, [liveDisplayPayload]);
+
+  useEffect(() => {
+    if (!eventId) return;
+
+    const serializedState = serializeDisplayControlSyncState(
+      eventId,
+      displayControlSyncState,
+    );
+
+    if (!hasInitializedDisplayControlSyncRef.current) {
+      hasInitializedDisplayControlSyncRef.current = true;
+      lastSentDisplayControlSyncRef.current = serializedState;
+      return;
+    }
+
+    if (
+      serializedState === lastSentDisplayControlSyncRef.current ||
+      serializedState === lastAppliedDisplayControlSyncRef.current
+    ) {
+      return;
+    }
+
+    lastSentDisplayControlSyncRef.current = serializedState;
+
+    getSocket().emit(SOCKET_EVENT_DISPLAY_CONTROL_SYNC, {
+      eventId,
+      displayState: displayControlSyncState,
+    });
+  }, [eventId, displayControlSyncState]);
 
   useEffect(() => {
     if (!eventId) return undefined;
@@ -98,11 +152,33 @@ export default function useDisplayControlEffects({
       if (payload?.eventId && payload.eventId !== eventId) return;
       void refreshContestantScores();
     };
+    const handleRealtimeDisplayControlSync = (payload) => {
+      if (payload?.eventId && payload.eventId !== eventId) return;
+      if (payload?.sourceSocketId && payload.sourceSocketId === socket.id) {
+        return;
+      }
+
+      const incomingState = payload?.displayState;
+      if (!incomingState || typeof incomingState !== "object") return;
+      if (Array.isArray(incomingState)) return;
+
+      const serializedState = serializeDisplayControlSyncState(
+        eventId,
+        incomingState,
+      );
+      lastAppliedDisplayControlSyncRef.current = serializedState;
+      lastSentDisplayControlSyncRef.current = serializedState;
+      applyRemoteDisplayControlStateRef.current?.(incomingState);
+    };
 
     subscribeToEventRoom(eventId);
     window.addEventListener("focus", onWindowFocus);
     socket.on(SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, handleRealtimeRefresh);
     socket.on(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeRefresh);
+    socket.on(
+      SOCKET_EVENT_DISPLAY_CONTROL_UPDATED,
+      handleRealtimeDisplayControlSync,
+    );
 
     return () => {
       isMounted = false;
@@ -110,6 +186,10 @@ export default function useDisplayControlEffects({
       window.removeEventListener("focus", onWindowFocus);
       socket.off(SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED, handleRealtimeRefresh);
       socket.off(SOCKET_EVENT_JUDGE_SCORE_UPDATED, handleRealtimeRefresh);
+      socket.off(
+        SOCKET_EVENT_DISPLAY_CONTROL_UPDATED,
+        handleRealtimeDisplayControlSync,
+      );
       unsubscribeFromEventRoom(eventId);
     };
   }, [eventId, setContestants]);

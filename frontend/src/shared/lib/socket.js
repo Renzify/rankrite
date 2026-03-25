@@ -5,6 +5,9 @@ export const SOCKET_EVENT_LEAVE_ROOM = "event:leave";
 export const SOCKET_EVENT_ACTIVE_CONTESTANT_UPDATED =
   "event:active-contestant-updated";
 export const SOCKET_EVENT_JUDGE_SCORE_UPDATED = "event:judge-score-updated";
+export const SOCKET_EVENT_DISPLAY_CONTROL_SYNC = "event:display-control-sync";
+export const SOCKET_EVENT_DISPLAY_CONTROL_UPDATED =
+  "event:display-control-updated";
 
 let socketInstance = null;
 const roomSubscriberCount = new Map();
