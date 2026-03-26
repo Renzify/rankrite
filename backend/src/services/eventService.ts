@@ -68,6 +68,7 @@ export type EventContestantRecord = {
   teamName: string | null;
   gender: string | null;
   entryNo: number;
+  isScoreLocked?: boolean;
   dScore?: number | null;
   aScore?: number | null;
   eScore?: number | null;
@@ -2275,6 +2276,7 @@ export async function getEventDetails(
       contestantId: scoreSheet.contestantId,
       judgeAssignmentId: eventJudgeAssignment.id,
       rawScore: judgeScore.rawScore,
+      locked: judgeScore.isLocked,
     })
     .from(judgeScore)
     .innerJoin(
@@ -2299,13 +2301,22 @@ export async function getEventDetails(
     )
     .orderBy(desc(judgeScore.createdAt));
 
-  const latestScoreByContestantAndAssignment = new Map<string, number | null>();
+  const latestScoreByContestantAndAssignment = new Map<
+    string,
+    {
+      rawScore: number | null;
+      locked: boolean;
+    }
+  >();
 
   for (const scoreRow of latestScoreRows) {
     const key = `${scoreRow.contestantId}:${scoreRow.judgeAssignmentId}`;
 
     if (!latestScoreByContestantAndAssignment.has(key)) {
-      latestScoreByContestantAndAssignment.set(key, scoreRow.rawScore);
+      latestScoreByContestantAndAssignment.set(key, {
+        rawScore: scoreRow.rawScore,
+        locked: Boolean(scoreRow.locked),
+      });
     }
   }
 
@@ -2322,7 +2333,17 @@ export async function getEventDetails(
     const getScoreValue = (judgeAssignmentId: string) =>
       latestScoreByContestantAndAssignment.get(
         `${contestantId}:${judgeAssignmentId}`,
-      ) ?? null;
+      )?.rawScore ?? null;
+
+    const isScoreLocked =
+      scoringJudgeAssignments.length > 0 &&
+      scoringJudgeAssignments.every((assignment) =>
+        Boolean(
+          latestScoreByContestantAndAssignment.get(
+            `${contestantId}:${assignment.id}`,
+          )?.locked,
+        ),
+      );
 
     const dbDisplayedScore = difficultyBodyAssignments.length
       ? computeDisplayedDifficultyAverageFromValues(
@@ -2392,6 +2413,7 @@ export async function getEventDetails(
       teamName: link.contestant?.teamName ?? null,
       gender: link.contestant?.gender ?? null,
       entryNo: link.entryNo,
+      isScoreLocked,
       dScore,
       aScore,
       eScore,
@@ -2421,5 +2443,3 @@ export async function getEventDetails(
     currentEventPhaseLabel,
   };
 }
-
-

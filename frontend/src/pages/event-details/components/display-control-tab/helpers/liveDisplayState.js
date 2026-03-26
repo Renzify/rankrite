@@ -22,11 +22,7 @@ export function mergeLiveDisplayState(base, incoming) {
   const nextSwapMode =
     incoming?.swapMode ?? incoming?.mode ?? base.swapMode ?? base.mode;
   const inferredHasScoredContestants =
-    Array.isArray(incoming?.leaderboardRows) && incoming.leaderboardRows.length
-      ? true
-      : Number.isFinite(
-          Number.parseFloat(String(incoming?.contestant?.score ?? "")),
-        );
+    Array.isArray(incoming?.leaderboardRows) && incoming.leaderboardRows.length > 0;
 
   return {
     ...base,
@@ -45,7 +41,7 @@ export function mergeLiveDisplayState(base, incoming) {
     hasScoredContestants:
       typeof incoming?.hasScoredContestants === "boolean"
         ? incoming.hasScoredContestants
-        : inferredHasScoredContestants || base.hasScoredContestants,
+        : inferredHasScoredContestants,
     contestant: {
       ...base.contestant,
       ...(incoming?.contestant ?? {}),
