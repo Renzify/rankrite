@@ -1,4 +1,5 @@
 const SCORE_FIELDS = ["score", "finalScore", "totalScore"];
+const LOCK_STATE_FIELDS = ["isScoreLocked", "scoreLocked", "isLocked", "locked"];
 
 function parseNumericScore(value) {
   const parsedValue = Number.parseFloat(String(value ?? "").trim());
@@ -28,23 +29,29 @@ export function resolveContestantDelegation(contestant) {
   return normalizedDelegation || "-";
 }
 
+export function isContestantScoreLocked(contestant) {
+  return LOCK_STATE_FIELDS.some((fieldKey) => contestant?.[fieldKey] === true);
+}
+
 export function rankContestantsByScore(contestants = []) {
   const normalizedContestants = contestants.map((contestant, originalIndex) => {
     const scoreValue = resolveContestantScore(contestant);
     const displayName = resolveContestantName(contestant);
     const displayDelegation = resolveContestantDelegation(contestant);
+    const isScoreLocked = isContestantScoreLocked(contestant);
 
     return {
       ...contestant,
       scoreValue,
       displayName,
       displayDelegation,
+      isScoreLocked,
       originalIndex,
     };
   });
 
   const scoredContestants = normalizedContestants
-    .filter((contestant) => contestant.scoreValue !== null)
+    .filter((contestant) => contestant.isScoreLocked && contestant.scoreValue !== null)
     .sort((leftContestant, rightContestant) => {
       if (rightContestant.scoreValue !== leftContestant.scoreValue) {
         return rightContestant.scoreValue - leftContestant.scoreValue;
@@ -64,7 +71,7 @@ export function rankContestantsByScore(contestants = []) {
     });
 
   const unscoredContestants = normalizedContestants.filter(
-    (contestant) => contestant.scoreValue === null,
+    (contestant) => !contestant.isScoreLocked || contestant.scoreValue === null,
   );
 
   return {

@@ -111,10 +111,15 @@ export default function LiveDisplayCanvas({
         : [],
     [displayState.leaderboardRows],
   );
+  const leaderboardRowOrderSignature = useMemo(
+    () =>
+      leaderboardRows
+        .map((row, index) => String(row?.id ?? `leaderboard-row-${index}`))
+        .join("|"),
+    [leaderboardRows],
+  );
 
-  const fallbackHasScoredContestant =
-    Number.isFinite(Number.parseFloat(String(displayState.contestant.score))) ||
-    leaderboardRows.length > 0;
+  const fallbackHasScoredContestant = leaderboardRows.length > 0;
   const hasScoredContestants =
     typeof displayState.hasScoredContestants === "boolean"
       ? displayState.hasScoredContestants
@@ -142,6 +147,7 @@ export default function LiveDisplayCanvas({
 
   const leaderboardRowRefs = useRef(new Map());
   const previousRowRectsRef = useRef(new Map());
+  const previousLeaderboardOrderSignatureRef = useRef("");
   const seenLeaderboardRowIdsRef = useRef(new Set());
   const [enteringRowIds, setEnteringRowIds] = useState([]);
 
@@ -157,6 +163,7 @@ export default function LiveDisplayCanvas({
   useEffect(() => {
     if (displayLayout !== "leaderboard") {
       previousRowRectsRef.current.clear();
+      previousLeaderboardOrderSignatureRef.current = "";
       setEnteringRowIds([]);
       return;
     }
@@ -187,7 +194,7 @@ export default function LiveDisplayCanvas({
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [displayLayout, leaderboardRows]);
+  }, [displayLayout, leaderboardRows, leaderboardRowOrderSignature]);
 
   useLayoutEffect(() => {
     if (displayLayout !== "leaderboard") {
@@ -202,6 +209,17 @@ export default function LiveDisplayCanvas({
       if (!node) return;
       currentRowRects.set(rowId, node.getBoundingClientRect());
     });
+
+    const previousOrderSignature = previousLeaderboardOrderSignatureRef.current;
+    previousLeaderboardOrderSignatureRef.current = leaderboardRowOrderSignature;
+
+    if (
+      previousOrderSignature &&
+      previousOrderSignature === leaderboardRowOrderSignature
+    ) {
+      previousRowRectsRef.current = currentRowRects;
+      return;
+    }
 
     leaderboardRows.forEach((row, index) => {
       const rowId = String(row?.id ?? `leaderboard-row-${index}`);
@@ -239,7 +257,7 @@ export default function LiveDisplayCanvas({
     });
 
     previousRowRectsRef.current = currentRowRects;
-  }, [displayLayout, leaderboardRows]);
+  }, [displayLayout, leaderboardRows, leaderboardRowOrderSignature]);
 
   if (displayState.isBlackout) {
     return (
